@@ -1,0 +1,9 @@
+[workspace]
+members = ["core", "standalone"]
+
+[profile.release]
+# codegen-units = 1 
+lto = true 
+opt-level = 3 # Optimize for size.
+panic = "abort" 
+strip = true # Automatically strip symbols from the binary.
