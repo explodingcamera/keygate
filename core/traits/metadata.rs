@@ -1,4 +1,4 @@
-use crate::{storage::Storage, Health, KeySignal};
+use crate::{Health, KeySignal};
 
 pub trait Metadata: Send + Sync {
     fn version(&self) -> &'static str;

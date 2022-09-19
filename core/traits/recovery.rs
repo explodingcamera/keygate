@@ -1,4 +1,4 @@
-use crate::{storage::Storage, KeySignal};
+use crate::KeySignal;
 
 pub trait Recovery: Send + Sync {
     /// Initiate a recovery flow for a user.

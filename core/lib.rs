@@ -3,12 +3,10 @@ mod storage;
 pub mod models;
 pub mod traits;
 use std::fmt::Debug;
-use std::fmt::Display;
 
-use models::Session;
-pub use storage::SorageExt;
+pub use storage::Storage;
 pub use storage::StorageType;
-pub use storage::{InMemoryStorage, Storage};
+pub use storage::{InMemoryStorage, RedisStorage, RocksDBStorage};
 
 #[derive(Clone, Copy)]
 pub enum Health {
@@ -17,11 +15,11 @@ pub enum Health {
     Unhealthy,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Configuration {}
 
 pub struct KeySignal {
-    config: Configuration,
+    pub config: Configuration,
     storage: Box<dyn Storage + Send + Sync>,
     health: Health,
 }
@@ -43,7 +41,7 @@ impl KeySignal {
         }
     }
 
-    fn get<T>(&self, key: &str) -> std::io::Result<Option<T>>
+    pub fn get<T>(&self, key: &str) -> std::io::Result<Option<T>>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -62,7 +60,7 @@ impl KeySignal {
             .map(|v| Some(v))
     }
 
-    fn set<T>(&self, key: &str, value: &T) -> std::io::Result<Option<()>>
+    pub fn set<T>(&self, key: &str, value: &T) -> std::io::Result<Option<()>>
     where
         T: serde::Serialize,
     {

@@ -1,4 +1,4 @@
-use crate::{storage::Storage, KeySignal};
+use crate::KeySignal;
 
 pub trait Identity: Send + Sync {
     fn identity(&self) -> Result<(), String>;

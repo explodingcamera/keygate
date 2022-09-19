@@ -8,7 +8,7 @@ path = "lib.rs"
 
 [dependencies]
 dashmap = "5"
-jsonwebtoken = {version = "8", default-features = false}
+jsonwebtoken = {version = "8", default-features = false, optional = true}
 nanoid = "0.4.0"
 oauth2 = {version = "4", optional = true, default-features = false, features = ["rustls-tls"]}
 rmp-serde = "1.1"
@@ -25,4 +25,5 @@ default = ["oauth2", "backend-redis", "backend-rocksdb"]
 backend-redis = ["dep:redis"]
 backend-rocksdb = ["dep:rocksdb", "r2d2"]
 
+jwt = ["dep:jsonwebtoken"]
 oauth2 = ["dep:oauth2"]

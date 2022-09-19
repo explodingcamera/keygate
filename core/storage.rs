@@ -19,6 +19,8 @@ pub trait Storage {
 
 pub struct SorageExt();
 impl SorageExt {
+    // has to be a boxed reference, we can't use a trait object here since it's not sized
+    #[allow(clippy::borrowed_box)]
     pub fn get<T>(storage: &Box<dyn Storage + Send + Sync>, key: &str) -> Option<T>
     where
         T: serde::de::DeserializeOwned,
@@ -30,6 +32,8 @@ impl SorageExt {
         rmp_serde::from_slice(bytes.as_slice()).ok()
     }
 
+    // has to be a boxed reference, we can't use a trait object here since it's not sized
+    #[allow(clippy::borrowed_box)]
     pub fn set<T>(storage: &Box<dyn Storage + Send + Sync>, key: &str, value: &T) -> Option<()>
     where
         T: serde::Serialize,

@@ -1,4 +1,4 @@
-use crate::{storage::Storage, KeySignal};
+use crate::KeySignal;
 
 pub trait Session: Send + Sync {
     fn session_validate(&self) -> Result<(), String>;
