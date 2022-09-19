@@ -8,7 +8,7 @@ pub async fn run() -> Result<()> {
     let keysignal = web::Data::new(KeySignal::new(Configuration {}));
 
     HttpServer::new(move || {
-        let api = web::scope("/identity").service(greet);
+        let api = web::scope("/identity").service(test).service(test2);
         App::new()
             .app_data(keysignal.clone())
             .service(web::scope("/api/v0").service(api))
@@ -18,7 +18,12 @@ pub async fn run() -> Result<()> {
     .await
 }
 
-#[get("/hello/{name}")]
-async fn greet(name: web::Path<String>, data: KS) -> impl Responder {
-    format!("Hello {name}! {:?}", data.get())
+#[get("/test2")]
+async fn test2() -> impl Responder {
+    "Hello!"
+}
+
+#[get("/test")]
+async fn test(ks: KS) -> impl Responder {
+    "Hello"
 }

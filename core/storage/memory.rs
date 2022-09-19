@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-
-use dashmap::DashMap;
-
 use super::Storage;
+use dashmap::DashMap;
 
 #[derive(Default)]
 pub struct InMemoryStorage {
-    data: DashMap<String, String>,
+    data: DashMap<String, Vec<u8>>,
 }
 
 impl InMemoryStorage {
@@ -16,11 +13,11 @@ impl InMemoryStorage {
 }
 
 impl Storage for InMemoryStorage {
-    fn get(&self, key: &str) -> Option<String> {
-        self.data.get(key).map(|s| s.to_string())
+    fn get_u8(&self, key: &str) -> Vec<u8> {
+        self.data.get(key).unwrap().to_vec()
     }
 
-    fn set(&self, key: &str, value: &str) {
-        self.data.insert(key.to_string(), value.to_string());
+    fn set_u8(&self, key: &str, value: &[u8]) {
+        self.data.insert(key.to_string(), value.to_vec());
     }
 }

@@ -11,10 +11,18 @@ dashmap = "5"
 jsonwebtoken = {version = "8", default-features = false}
 nanoid = "0.4.0"
 oauth2 = {version = "4", optional = true, default-features = false, features = ["rustls-tls"]}
-rkyv = {version = "0.7", features = ["strict"]}
-rocksdb = {default-features = false, version = "0.19.0", features = ["lz4"]}
+rmp-serde = "1.1"
 rust-argon2 = "1.0"
+serde = {version = "1.0", features = ["derive"]}
+
+r2d2 = {version = "0.8", optional = true}
+redis = {version = "0.21", default-features = false, optional = true, features = ["r2d2"]}
+rocksdb = {version = "0.19.0", default-features = false, optional = true, features = ["lz4"]}
 
 [features]
-default = ["oauth2"]
+default = ["oauth2", "backend-redis", "backend-rocksdb"]
+
+backend-redis = ["dep:redis"]
+backend-rocksdb = ["dep:rocksdb", "r2d2"]
+
 oauth2 = ["dep:oauth2"]

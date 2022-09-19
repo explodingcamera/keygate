@@ -20,11 +20,11 @@ impl RocksDBStorage {
 }
 
 impl Storage for RocksDBStorage {
-    fn get(&self, key: &str) -> Option<String> {
-        self.db.get(key).unwrap().map(|_| "hello".to_string())
+    fn get_u8(&self, key: &str) -> Vec<u8> {
+        self.db.get(key).unwrap().unwrap()
     }
 
-    fn set(&self, key: &str, value: &str) {
-        todo!()
+    fn set_u8(&self, key: &str, value: &[u8]) {
+        self.db.put(key, value).unwrap()
     }
 }
