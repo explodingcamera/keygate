@@ -4,9 +4,12 @@ name = "keysignal-standalone"
 publish = false
 version = "0.1.0"
 
+[lib]
+path = "lib.rs"
+
 [[bin]]
 name = "keysignal"
-path = "main.rs"
+path = "bin.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
