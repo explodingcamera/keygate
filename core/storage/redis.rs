@@ -62,14 +62,14 @@ impl Storage for RedisStorage {
             .map_err(RedisStorageError::from)?)
     }
 
-    fn get_prefix_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .get_pool()?
             .get(prefix.to_owned() + ":" + key)
             .map_err(RedisStorageError::from)?)
     }
 
-    fn set_prefix_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         Ok(self
             .get_pool()?
             .set(prefix.to_owned() + ":" + key, value)

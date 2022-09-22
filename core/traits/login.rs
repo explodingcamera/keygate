@@ -1,35 +1,46 @@
-use crate::{models::LoginFlow, KeySignal};
+use crate::{models::LoginFlow, KeySignal, KeysignalError};
+
+use super::storage_extension::StorageExtension;
+static PREFIX: &str = "loginflow";
 
 pub trait Login: Send + Sync {
-    fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, String>;
-    fn login_get_flow(&self, device_id: &str, login_flow_id: &str) -> Result<LoginFlow, String>;
+    fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, KeysignalError>;
+    fn login_get_flow(
+        &self,
+        device_id: &str,
+        login_flow_id: &str,
+    ) -> Result<LoginFlow, KeysignalError>;
 
     fn login_submit_password(
         &self,
         login_flow_id: &str,
         password: &str,
-    ) -> Result<LoginFlow, String>;
+    ) -> Result<LoginFlow, KeysignalError>;
 
     fn login_submit_magic_link(
         &self,
         login_flow_id: &str,
         password: &str,
-    ) -> Result<LoginFlow, String>;
+    ) -> Result<LoginFlow, KeysignalError>;
 
     fn login_submit_otp(
         &self,
         login_flow_id: &str,
         device_id: &str,
         magic_link: &str,
-    ) -> Result<LoginFlow, String>;
+    ) -> Result<LoginFlow, KeysignalError>;
 }
 
 impl Login for KeySignal {
-    fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, String> {
+    fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, KeysignalError> {
         todo!()
     }
 
-    fn login_get_flow(&self, device_id: &str, login_flow_id: &str) -> Result<LoginFlow, String> {
+    fn login_get_flow(
+        &self,
+        device_id: &str,
+        login_flow_id: &str,
+    ) -> Result<LoginFlow, KeysignalError> {
         todo!()
     }
 
@@ -37,7 +48,7 @@ impl Login for KeySignal {
         &self,
         login_flow_id: &str,
         password: &str,
-    ) -> Result<LoginFlow, String> {
+    ) -> Result<LoginFlow, KeysignalError> {
         todo!()
     }
 
@@ -45,7 +56,7 @@ impl Login for KeySignal {
         &self,
         login_flow_id: &str,
         password: &str,
-    ) -> Result<LoginFlow, String> {
+    ) -> Result<LoginFlow, KeysignalError> {
         todo!()
     }
 
@@ -54,7 +65,7 @@ impl Login for KeySignal {
         login_flow_id: &str,
         device_id: &str,
         magic_link: &str,
-    ) -> Result<LoginFlow, String> {
+    ) -> Result<LoginFlow, KeysignalError> {
         todo!()
     }
 }

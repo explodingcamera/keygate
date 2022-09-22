@@ -15,15 +15,15 @@ pub type RedisStorage = redis::RedisStorage;
 #[derive(Error, Debug)]
 pub enum StorageError {
     #[error(transparent)]
-    InMemoryStorageError(#[from] InMemoryStorageError),
+    InMemoryStorage(#[from] InMemoryStorageError),
     #[error(transparent)]
-    RocksDBStorageError(#[from] RocksDBStorageError),
+    RocksDBStorage(#[from] RocksDBStorageError),
     #[error(transparent)]
-    RedisStorageError(#[from] RedisStorageError),
+    RedisStorage(#[from] RedisStorageError),
     #[error("decoding error")]
-    DecodingError(#[from] rmp_serde::decode::Error),
+    Decoding(#[from] rmp_serde::decode::Error),
     #[error("encoding error")]
-    EncodingError(#[from] rmp_serde::encode::Error),
+    Encoding(#[from] rmp_serde::encode::Error),
 }
 
 #[derive(Clone, Copy)]
@@ -33,9 +33,9 @@ pub enum StorageType {
 
 pub trait Storage: Downcast {
     fn get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
-    fn get_prefix_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
+    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
     fn set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError>;
-    fn set_prefix_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError>;
+    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError>;
 }
 
 impl_downcast!(Storage);

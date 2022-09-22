@@ -1,5 +1,5 @@
 use actix_web::{get, web, App, HttpServer, Responder};
-use keysignal_core::{Configuration, KeySignal};
+use keysignal_core::{Configuration, Identity, KeySignal};
 use std::io::Result;
 
 type KS = web::Data<KeySignal>;

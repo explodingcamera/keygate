@@ -27,14 +27,14 @@ impl Storage for InMemoryStorage {
         Ok(())
     }
 
-    fn get_prefix_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .data
             .get(&(prefix.to_owned() + "-" + key))
             .map(|v| v.to_vec()))
     }
 
-    fn set_prefix_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.data
             .insert(prefix.to_owned() + "-" + key, value.to_vec());
         Ok(())

@@ -36,14 +36,14 @@ impl Storage for RocksDBStorage {
         Ok(())
     }
 
-    fn get_prefix_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .db
             .get(prefix.to_owned() + ":" + key)
             .map_err(RocksDBStorageError::from)?)
     }
 
-    fn set_prefix_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.db
             .put(prefix.to_owned() + ":" + key, value)
             .map_err(RocksDBStorageError::from)?;

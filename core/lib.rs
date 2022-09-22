@@ -1,14 +1,16 @@
-mod storage;
-
 pub mod models;
-pub mod traits;
+pub mod storage;
 pub mod utils;
-use std::fmt::Debug;
 
-pub use storage::Storage;
+mod traits;
 use storage::StorageError;
+pub use traits::all::*;
+
+use std::fmt::Debug;
+pub use storage::Storage;
 pub use storage::StorageType;
 pub use storage::{InMemoryStorage, RedisStorage, RocksDBStorage};
+use thiserror::Error;
 
 #[derive(Clone, Copy)]
 pub enum Health {
@@ -19,6 +21,14 @@ pub enum Health {
 
 #[derive(Clone, Debug)]
 pub struct Configuration {}
+
+#[derive(Error, Debug)]
+pub enum KeysignalError {
+    #[error(transparent)]
+    Storage(#[from] StorageError),
+    #[error("unknown error")]
+    Unknown,
+}
 
 pub struct KeySignal {
     pub config: Configuration,
@@ -41,31 +51,5 @@ impl KeySignal {
             storage,
             health: Health::Starting,
         }
-    }
-
-    pub fn get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
-    where
-        T: serde::de::DeserializeOwned,
-    {
-        let bytes = self.storage.get_u8(key)?;
-
-        if let Some(data) = bytes {
-            if data.is_empty() {
-                return Ok(None);
-            }
-
-            let res = rmp_serde::from_slice(data.as_slice())?;
-            return Ok(Some(res));
-        }
-
-        Ok(None)
-    }
-
-    pub fn set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
-    where
-        T: serde::Serialize,
-    {
-        let val = rmp_serde::to_vec(value)?;
-        self.storage.set_u8(key, &val)
     }
 }
