@@ -1,3 +1,8 @@
+use downcast_rs::{impl_downcast, Downcast};
+use thiserror::Error;
+
+use self::{memory::InMemoryStorageError, redis::RedisStorageError, rocksdb::RocksDBStorageError};
+
 mod memory;
 pub type InMemoryStorage = memory::InMemoryStorage;
 
@@ -7,39 +12,30 @@ pub type RocksDBStorage = rocksdb::RocksDBStorage;
 mod redis;
 pub type RedisStorage = redis::RedisStorage;
 
+#[derive(Error, Debug)]
+pub enum StorageError {
+    #[error(transparent)]
+    InMemoryStorageError(#[from] InMemoryStorageError),
+    #[error(transparent)]
+    RocksDBStorageError(#[from] RocksDBStorageError),
+    #[error(transparent)]
+    RedisStorageError(#[from] RedisStorageError),
+    #[error("decoding error")]
+    DecodingError(#[from] rmp_serde::decode::Error),
+    #[error("encoding error")]
+    EncodingError(#[from] rmp_serde::encode::Error),
+}
+
 #[derive(Clone, Copy)]
 pub enum StorageType {
     InMemory,
 }
 
-pub trait Storage {
-    fn get_u8(&self, key: &str) -> Vec<u8>;
-    fn set_u8(&self, key: &str, value: &[u8]);
+pub trait Storage: Downcast {
+    fn get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
+    fn get_prefix_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
+    fn set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError>;
+    fn set_prefix_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError>;
 }
 
-pub struct SorageExt();
-impl SorageExt {
-    // has to be a boxed reference, we can't use a trait object here since it's not sized
-    #[allow(clippy::borrowed_box)]
-    pub fn get<T>(storage: &Box<dyn Storage + Send + Sync>, key: &str) -> Option<T>
-    where
-        T: serde::de::DeserializeOwned,
-    {
-        let bytes = storage.get_u8(key);
-        if bytes.is_empty() {
-            return None;
-        }
-        rmp_serde::from_slice(bytes.as_slice()).ok()
-    }
-
-    // has to be a boxed reference, we can't use a trait object here since it's not sized
-    #[allow(clippy::borrowed_box)]
-    pub fn set<T>(storage: &Box<dyn Storage + Send + Sync>, key: &str, value: &T) -> Option<()>
-    where
-        T: serde::Serialize,
-    {
-        let val = rmp_serde::to_vec(value).unwrap();
-        storage.set_u8(key, &val);
-        Some(())
-    }
-}
+impl_downcast!(Storage);

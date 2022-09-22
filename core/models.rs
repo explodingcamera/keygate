@@ -39,6 +39,7 @@ pub struct IdentitySettings {}
 pub struct LoginFlow {
     pub id: String,
     pub identity_id: String,
+    pub device_id: String,
     pub expires_at: u64,
     pub created_at: u64,
 }

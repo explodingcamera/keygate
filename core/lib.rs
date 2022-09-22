@@ -2,9 +2,11 @@ mod storage;
 
 pub mod models;
 pub mod traits;
+pub mod utils;
 use std::fmt::Debug;
 
 pub use storage::Storage;
+use storage::StorageError;
 pub use storage::StorageType;
 pub use storage::{InMemoryStorage, RedisStorage, RocksDBStorage};
 
@@ -41,36 +43,29 @@ impl KeySignal {
         }
     }
 
-    pub fn get<T>(&self, key: &str) -> std::io::Result<Option<T>>
+    pub fn get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let bytes = self.storage.get_u8(key);
-        if bytes.is_empty() {
-            return Ok(None);
+        let bytes = self.storage.get_u8(key)?;
+
+        if let Some(data) = bytes {
+            if data.is_empty() {
+                return Ok(None);
+            }
+
+            let res = rmp_serde::from_slice(data.as_slice())?;
+            return Ok(Some(res));
         }
 
-        rmp_serde::from_slice(bytes.as_slice())
-            .map_err(|e| {
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    format!("failed to deserialize data: {e}"),
-                )
-            })
-            .map(|v| Some(v))
+        Ok(None)
     }
 
-    pub fn set<T>(&self, key: &str, value: &T) -> std::io::Result<Option<()>>
+    pub fn set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
     where
         T: serde::Serialize,
     {
-        let val = rmp_serde::to_vec(value).map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("failed to serialize data: {e}"),
-            )
-        })?;
-        self.storage.set_u8(key, &val);
-        Ok(Some(()))
+        let val = rmp_serde::to_vec(value)?;
+        self.storage.set_u8(key, &val)
     }
 }

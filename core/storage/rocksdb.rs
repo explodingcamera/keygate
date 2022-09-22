@@ -1,8 +1,15 @@
-use std::io::{Error, ErrorKind, Result};
-
 use rocksdb::{DBWithThreadMode, MultiThreaded};
+use thiserror::Error;
 
-use super::Storage;
+use super::{Storage, StorageError};
+
+#[derive(Error, Debug)]
+pub enum RocksDBStorageError {
+    #[error("RocksDB error: {0}")]
+    RocksDBError(#[from] rocksdb::Error),
+    #[error("unknown data store error")]
+    Unknown,
+}
 
 type RocksDB = DBWithThreadMode<MultiThreaded>;
 
@@ -11,20 +18,35 @@ pub struct RocksDBStorage {
 }
 
 impl RocksDBStorage {
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, RocksDBStorageError> {
         let opts = rocksdb::Options::default();
-        let db =
-            RocksDB::open(&opts, "./db").map_err(|_| Error::new(ErrorKind::Other, "oh no!"))?;
+        let db = RocksDB::open(&opts, "./db")?;
         Ok(Self { db })
     }
 }
 
 impl Storage for RocksDBStorage {
-    fn get_u8(&self, key: &str) -> Vec<u8> {
-        self.db.get(key).unwrap().unwrap()
+    fn get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+        let res = self.db.get(key).map_err(RocksDBStorageError::from)?;
+        Ok(res)
     }
 
-    fn set_u8(&self, key: &str, value: &[u8]) {
-        self.db.put(key, value).unwrap()
+    fn set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
+        self.db.put(key, value).map_err(RocksDBStorageError::from)?;
+        Ok(())
+    }
+
+    fn get_prefix_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+        Ok(self
+            .db
+            .get(prefix.to_owned() + ":" + key)
+            .map_err(RocksDBStorageError::from)?)
+    }
+
+    fn set_prefix_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+        self.db
+            .put(prefix.to_owned() + ":" + key, value)
+            .map_err(RocksDBStorageError::from)?;
+        Ok(())
     }
 }
