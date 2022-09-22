@@ -10,13 +10,17 @@ path = "lib.rs"
 argon2 = "0.4"
 dashmap = "5"
 downcast-rs = "1.2.0"
+hex = "0.4.3"
 jsonwebtoken = {version = "8", default-features = false, optional = true}
 nanoid = "0.4.0"
 oauth2 = {version = "4", optional = true, default-features = false, features = ["rustls-tls"]}
 rand_core = {version = "0.6", features = ["std"]}
+reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]}
 rmp-serde = "1.1"
 serde = {version = "1.0", features = ["derive"]}
+sha1 = "0.10"
 thiserror = "1"
+tokio = {version = "1", default-features = false, features = ["macros"]}
 
 r2d2 = {version = "0.8", optional = true}
 redis = {version = "0.21", default-features = false, optional = true, features = ["r2d2"]}

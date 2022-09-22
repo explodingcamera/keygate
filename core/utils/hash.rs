@@ -23,3 +23,16 @@ pub fn verify(password: &str, hash: &str) -> std::io::Result<bool> {
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::hash;
+    use super::verify;
+
+    #[test]
+    fn test() -> std::io::Result<()> {
+        let some_hash = hash("somepw")?;
+        assert!(verify("somepw", &some_hash)?);
+        Ok(())
+    }
+}

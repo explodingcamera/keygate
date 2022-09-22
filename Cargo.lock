@@ -614,6 +614,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
 name = "http"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -767,16 +773,20 @@ dependencies = [
  "argon2",
  "dashmap",
  "downcast-rs",
+ "hex",
  "jsonwebtoken",
  "nanoid",
  "oauth2",
  "r2d2",
  "rand_core",
  "redis",
+ "reqwest",
  "rmp-serde",
  "rocksdb",
  "serde",
+ "sha1",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -1538,7 +1548,19 @@ dependencies = [
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
+ "tokio-macros",
  "winapi",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9724f9a975fb987ef7a3cd9be0350edcbe130698af5b8f7a631e23d42d052484"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
