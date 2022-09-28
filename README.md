@@ -1,5 +1,5 @@
-# KeySignal (to be renamed)
+# KEYGATE
 
 > Open Source User Identification and Authentication
 
-### License: Apache-2.0
+### License: AGPL-2.0
