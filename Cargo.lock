@@ -767,7 +767,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "keysignal-core"
+name = "keygate-core"
 version = "0.1.0"
 dependencies = [
  "argon2",
@@ -790,11 +790,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "keysignal-standalone"
+name = "keygate-standalone"
 version = "0.1.0"
 dependencies = [
  "actix-web",
- "keysignal-core",
+ "keygate-core",
 ]
 
 [[package]]

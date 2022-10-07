@@ -1,8 +1,6 @@
 use downcast_rs::{impl_downcast, Downcast};
 use thiserror::Error;
 
-use crate::models;
-
 use self::{memory::InMemoryStorageError, redis::RedisStorageError, rocksdb::RocksDBStorageError};
 
 mod memory;

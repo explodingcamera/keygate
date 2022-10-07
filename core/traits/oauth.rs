@@ -1,5 +1,5 @@
-use crate::KeySignal;
+use crate::Keygate;
 
 pub trait OAuth: Send + Sync {}
 
-impl OAuth for KeySignal {}
+impl OAuth for Keygate {}

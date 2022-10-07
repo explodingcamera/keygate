@@ -24,30 +24,30 @@ pub enum Health {
 pub struct Configuration {}
 
 #[derive(Error, Debug)]
-pub enum KeysignalError {
+pub enum KeygateError {
     #[error(transparent)]
     Storage(#[from] StorageError),
     #[error("unknown error")]
     Unknown,
 }
 
-pub struct KeySignal {
+pub struct Keygate {
     pub config: Configuration,
     storage: Box<dyn Storage + Send + Sync>,
     health: Health,
 }
 
-impl KeySignal {
-    pub fn new(config: Configuration) -> KeySignal {
+impl Keygate {
+    pub fn new(config: Configuration) -> Keygate {
         let storage = InMemoryStorage::new();
-        KeySignal::new_with_storage(config, Box::new(storage))
+        Keygate::new_with_storage(config, Box::new(storage))
     }
 
     pub fn new_with_storage(
         config: Configuration,
         storage: Box<dyn Storage + Send + Sync>,
-    ) -> KeySignal {
-        KeySignal {
+    ) -> Keygate {
+        Keygate {
             config,
             storage,
             health: Health::Starting,

@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "keysignal-standalone"
+name = "keygate-standalone"
 publish = false
 version = "0.1.0"
 
@@ -8,11 +8,11 @@ version = "0.1.0"
 path = "lib.rs"
 
 [[bin]]
-name = "keysignal"
+name = "keygate"
 path = "bin.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 actix-web = {version = "4", default-features = false, features = ["macros", "cookies"]}
-keysignal-core = {path = "../core"}
+keygate-core = {path = "../core"}

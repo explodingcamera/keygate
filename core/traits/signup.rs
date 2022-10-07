@@ -1,4 +1,4 @@
-use crate::KeySignal;
+use crate::Keygate;
 
 pub trait Signup: Send + Sync {}
-impl Signup for KeySignal {}
+impl Signup for Keygate {}

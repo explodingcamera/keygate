@@ -1,4 +1,4 @@
-use crate::KeySignal;
+use crate::Keygate;
 
 pub trait Verification: Send + Sync {}
-impl Verification for KeySignal {}
+impl Verification for Keygate {}
