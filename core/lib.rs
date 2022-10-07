@@ -4,6 +4,7 @@ pub mod utils;
 
 mod traits;
 use storage::StorageError;
+use storage::StorageSerdeExtension;
 pub use traits::all::*;
 
 use std::fmt::Debug;

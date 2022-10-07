@@ -15,5 +15,3 @@ pub mod all {
         super::session::Session, super::signup::Signup, super::verification::Verification,
     };
 }
-
-pub mod storage_extension;

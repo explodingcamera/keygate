@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::Storage;
 
-use super::StorageError;
+use super::{StorageError, StorageSerdeExtension, StorageUtilsExtension};
 
 #[derive(Error, Debug)]
 pub enum RedisStorageError {
@@ -76,3 +76,6 @@ impl Storage for RedisStorage {
             .map_err(RedisStorageError::from)?)
     }
 }
+
+impl StorageSerdeExtension for RedisStorage {}
+impl StorageUtilsExtension for RedisStorage {}

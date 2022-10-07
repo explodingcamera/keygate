@@ -1,4 +1,4 @@
-use super::{Storage, StorageError};
+use super::{Storage, StorageError, StorageSerdeExtension, StorageUtilsExtension};
 use dashmap::DashMap;
 
 use thiserror::Error;
@@ -40,3 +40,6 @@ impl Storage for InMemoryStorage {
         Ok(())
     }
 }
+
+impl StorageSerdeExtension for InMemoryStorage {}
+impl StorageUtilsExtension for InMemoryStorage {}

@@ -1,7 +1,9 @@
 use rocksdb::{DBWithThreadMode, MultiThreaded};
 use thiserror::Error;
 
-use super::{Storage, StorageError};
+use crate::models;
+
+use super::{Storage, StorageError, StorageSerdeExtension, StorageUtilsExtension};
 
 #[derive(Error, Debug)]
 pub enum RocksDBStorageError {
@@ -47,6 +49,14 @@ impl Storage for RocksDBStorage {
         self.db
             .put(prefix.to_owned() + ":" + key, value)
             .map_err(RocksDBStorageError::from)?;
+        Ok(())
+    }
+}
+
+impl StorageSerdeExtension for RocksDBStorage {}
+impl StorageUtilsExtension for RocksDBStorage {
+    fn create_user(&self) -> Result<(), StorageError> {
+        self.get::<models::Identity>(":")?;
         Ok(())
     }
 }

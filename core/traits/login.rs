@@ -1,6 +1,4 @@
 use crate::{models::LoginFlow, KeySignal, KeysignalError};
-
-use super::storage_extension::StorageExtension;
 static PREFIX: &str = "loginflow";
 
 pub trait Login: Send + Sync {

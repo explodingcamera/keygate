@@ -1,6 +1,8 @@
 use downcast_rs::{impl_downcast, Downcast};
 use thiserror::Error;
 
+use crate::models;
+
 use self::{memory::InMemoryStorageError, redis::RedisStorageError, rocksdb::RocksDBStorageError};
 
 mod memory;
@@ -11,6 +13,11 @@ pub type RocksDBStorage = rocksdb::RocksDBStorage;
 
 mod redis;
 pub type RedisStorage = redis::RedisStorage;
+
+mod storage_serde_extension;
+mod storage_utils_extension;
+pub use storage_serde_extension::StorageSerdeExtension;
+pub use storage_utils_extension::StorageUtilsExtension;
 
 #[derive(Error, Debug)]
 pub enum StorageError {
