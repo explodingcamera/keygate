@@ -15,3 +15,12 @@ pub mod all {
         super::session::Session, super::signup::Signup, super::verification::Verification,
     };
 }
+
+pub mod errors {
+    pub use {
+        super::identity::IdentityError, super::login::LoginError, super::metadata::MetadataError,
+        super::oauth::OAuthError, super::recovery::RecoveryError,
+        super::registration::RegistrationError, super::session::SessionError,
+        super::signup::SignupError, super::verification::VerificationError,
+    };
+}

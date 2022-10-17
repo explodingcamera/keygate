@@ -4,8 +4,8 @@ pub mod utils;
 
 mod traits;
 use storage::StorageError;
-use storage::StorageSerdeExtension;
 pub use traits::all::*;
+pub use traits::errors::*;
 
 use std::fmt::Debug;
 pub use storage::Storage;
@@ -27,6 +27,8 @@ pub struct Configuration {}
 pub enum KeygateError {
     #[error(transparent)]
     Storage(#[from] StorageError),
+    #[error(transparent)]
+    Session(#[from] SessionError),
     #[error("unknown error")]
     Unknown,
 }
@@ -40,6 +42,7 @@ pub struct Keygate {
 impl Keygate {
     pub fn new(config: Configuration) -> Keygate {
         let storage = InMemoryStorage::new();
+
         Keygate::new_with_storage(config, Box::new(storage))
     }
 

@@ -1,7 +1,7 @@
 use rocksdb::{DBWithThreadMode, MultiThreaded};
 use thiserror::Error;
 
-use crate::models;
+use crate::models::{self, Session};
 
 use super::{Storage, StorageError, StorageSerdeExtension, StorageUtilsExtension};
 
@@ -17,35 +17,40 @@ type RocksDB = DBWithThreadMode<MultiThreaded>;
 
 pub struct RocksDBStorage {
     db: RocksDB,
+    session_cache: dashmap::DashMap<String, Session>,
 }
 
 impl RocksDBStorage {
     pub fn new() -> Result<Self, RocksDBStorageError> {
         let opts = rocksdb::Options::default();
         let db = RocksDB::open(&opts, "./db")?;
-        Ok(Self { db })
+
+        Ok(Self {
+            db,
+            session_cache: dashmap::DashMap::new(),
+        })
     }
 }
 
 impl Storage for RocksDBStorage {
-    fn get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         let res = self.db.get(key).map_err(RocksDBStorageError::from)?;
         Ok(res)
     }
 
-    fn set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.db.put(key, value).map_err(RocksDBStorageError::from)?;
         Ok(())
     }
 
-    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .db
             .get(prefix.to_owned() + ":" + key)
             .map_err(RocksDBStorageError::from)?)
     }
 
-    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.db
             .put(prefix.to_owned() + ":" + key, value)
             .map_err(RocksDBStorageError::from)?;
@@ -55,8 +60,8 @@ impl Storage for RocksDBStorage {
 
 impl StorageSerdeExtension for RocksDBStorage {}
 impl StorageUtilsExtension for RocksDBStorage {
-    fn create_user(&self) -> Result<(), StorageError> {
-        self.get::<models::Identity>(":")?;
+    fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
+        self._get::<models::Identity>(":")?;
         Ok(())
     }
 }

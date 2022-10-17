@@ -1,4 +1,11 @@
 use crate::{Keygate, KeygateError};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum RecoveryError {
+    #[error("unknown error")]
+    Unknown,
+}
 
 pub trait Recovery: Send + Sync {
     /// Initiate a recovery flow for a user.

@@ -6,6 +6,8 @@ use crate::Storage;
 
 use super::{StorageError, StorageSerdeExtension, StorageUtilsExtension};
 
+const REDIS_PREFIX: &str = "kg";
+
 #[derive(Error, Debug)]
 pub enum RedisStorageError {
     #[error("Redis error: {0}")]
@@ -51,28 +53,45 @@ impl RedisStorage {
 }
 
 impl Storage for RedisStorage {
-    fn get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        Ok(self.get_pool()?.get(key).map_err(RedisStorageError::from)?)
-    }
-
-    fn set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .get_pool()?
-            .set(key, value)
+            .get(REDIS_PREFIX.to_owned() + ":" + key)
             .map_err(RedisStorageError::from)?)
     }
 
-    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
         Ok(self
             .get_pool()?
-            .get(prefix.to_owned() + ":" + key)
+            .set(REDIS_PREFIX.to_owned() + ":" + key, value)
             .map_err(RedisStorageError::from)?)
     }
 
-    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .get_pool()?
-            .set(prefix.to_owned() + ":" + key, value)
+            .get(REDIS_PREFIX.to_owned() + ":" + prefix + ":" + key)
+            .map_err(RedisStorageError::from)?)
+    }
+
+    fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+        Ok(self
+            .get_pool()?
+            .set(REDIS_PREFIX.to_owned() + ":" + prefix + ":" + key, value)
+            .map_err(RedisStorageError::from)?)
+    }
+
+    fn exists(&self, key: &str) -> Result<bool, StorageError> {
+        Ok(self
+            .get_pool()?
+            .exists(REDIS_PREFIX.to_owned() + ":" + key)
+            .map_err(RedisStorageError::from)?)
+    }
+
+    fn pexists(&self, prefix: &str, key: &str) -> Result<bool, StorageError> {
+        Ok(self
+            .get_pool()?
+            .exists(REDIS_PREFIX.to_owned() + ":" + prefix + ":" + key)
             .map_err(RedisStorageError::from)?)
     }
 }

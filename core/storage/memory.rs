@@ -18,23 +18,23 @@ impl InMemoryStorage {
 }
 
 impl Storage for InMemoryStorage {
-    fn get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self.data.get(key).map(|v| v.to_vec()))
     }
 
-    fn set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.data.insert(key.to_string(), value.to_vec());
         Ok(())
     }
 
-    fn pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .data
             .get(&(prefix.to_owned() + "-" + key))
             .map(|v| v.to_vec()))
     }
 
-    fn pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.data
             .insert(prefix.to_owned() + "-" + key, value.to_vec());
         Ok(())

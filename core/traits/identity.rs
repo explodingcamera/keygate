@@ -1,6 +1,13 @@
+use crate::storage::constants::IDENTITY_KEY;
 use crate::storage::StorageSerdeExtension;
 use crate::{models, Keygate, KeygateError};
-static PREFIX: &str = "identity";
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum IdentityError {
+    #[error("unknown error")]
+    Unknown,
+}
 
 pub trait Identity: Send + Sync {
     fn identity_get(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError>;
@@ -40,7 +47,9 @@ impl Identity for Keygate {
     }
 
     fn identity_get(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.pget::<models::Identity>(PREFIX, user_id)?)
+        Ok(self
+            .storage
+            ._pget::<models::Identity>(IDENTITY_KEY, user_id)?)
     }
 
     fn identity_delete(&self, _user_id: &str) -> Result<(), KeygateError> {
@@ -52,7 +61,7 @@ impl Identity for Keygate {
         user_id: &str,
         identity: &models::Identity,
     ) -> Result<(), KeygateError> {
-        Ok(self.storage.pset(PREFIX, user_id, identity)?)
+        Ok(self.storage._pset(IDENTITY_KEY, user_id, identity)?)
     }
 
     fn identities(&self) -> Result<(), KeygateError> {

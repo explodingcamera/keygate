@@ -1,4 +1,11 @@
 use crate::{Health, Keygate};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum MetadataError {
+    #[error("unknown error")]
+    Unknown,
+}
 
 pub trait Metadata: Send + Sync {
     fn version(&self) -> &'static str;

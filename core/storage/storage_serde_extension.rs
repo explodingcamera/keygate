@@ -1,11 +1,11 @@
 use crate::{storage::StorageError, Storage};
 
 pub trait StorageSerdeExtension: Storage {
-    fn get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
+    fn _get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let bytes = self.get_u8(key)?;
+        let bytes = self._get_u8(key)?;
 
         if let Some(data) = bytes {
             if data.is_empty() {
@@ -19,19 +19,19 @@ pub trait StorageSerdeExtension: Storage {
         Ok(None)
     }
 
-    fn set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
+    fn _set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
     where
         T: serde::Serialize + ?Sized,
     {
         let val = rmp_serde::to_vec(value)?;
-        self.set_u8(key, &val)
+        self._set_u8(key, &val)
     }
 
-    fn pget<T>(&self, prefix: &str, key: &str) -> Result<Option<T>, StorageError>
+    fn _pget<T>(&self, prefix: &str, key: &str) -> Result<Option<T>, StorageError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let bytes = self.pget_u8(prefix, key)?;
+        let bytes = self._pget_u8(prefix, key)?;
 
         if let Some(data) = bytes {
             if data.is_empty() {
@@ -45,12 +45,12 @@ pub trait StorageSerdeExtension: Storage {
         Ok(None)
     }
 
-    fn pset<T>(&self, prefix: &str, key: &str, value: &T) -> Result<(), StorageError>
+    fn _pset<T>(&self, prefix: &str, key: &str, value: &T) -> Result<(), StorageError>
     where
         T: serde::Serialize + ?Sized,
     {
         let val = rmp_serde::to_vec(value)?;
-        self.pset_u8(prefix, key, &val)
+        self._pset_u8(prefix, key, &val)
     }
 
     fn to_bytes(value: &impl serde::Serialize) -> Result<Vec<u8>, StorageError> {
@@ -65,11 +65,11 @@ pub trait StorageSerdeExtension: Storage {
 }
 
 impl StorageSerdeExtension for dyn Storage + Send + Sync {
-    fn get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
+    fn _get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let bytes = self.get_u8(key)?;
+        let bytes = self._get_u8(key)?;
 
         if let Some(data) = bytes {
             if data.is_empty() {
@@ -83,19 +83,19 @@ impl StorageSerdeExtension for dyn Storage + Send + Sync {
         Ok(None)
     }
 
-    fn set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
+    fn _set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
     where
         T: serde::Serialize + ?Sized,
     {
         let val = rmp_serde::to_vec(value)?;
-        self.set_u8(key, &val)
+        self._set_u8(key, &val)
     }
 
-    fn pget<T>(&self, prefix: &str, key: &str) -> Result<Option<T>, StorageError>
+    fn _pget<T>(&self, prefix: &str, key: &str) -> Result<Option<T>, StorageError>
     where
         T: serde::de::DeserializeOwned,
     {
-        let bytes = self.pget_u8(prefix, key)?;
+        let bytes = self._pget_u8(prefix, key)?;
 
         if let Some(data) = bytes {
             if data.is_empty() {
@@ -109,11 +109,11 @@ impl StorageSerdeExtension for dyn Storage + Send + Sync {
         Ok(None)
     }
 
-    fn pset<T>(&self, prefix: &str, key: &str, value: &T) -> Result<(), StorageError>
+    fn _pset<T>(&self, prefix: &str, key: &str, value: &T) -> Result<(), StorageError>
     where
         T: serde::Serialize + ?Sized,
     {
         let val = rmp_serde::to_vec(value)?;
-        self.pset_u8(prefix, key, &val)
+        self._pset_u8(prefix, key, &val)
     }
 }

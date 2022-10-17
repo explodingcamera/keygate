@@ -1,5 +1,11 @@
 use crate::{models::LoginFlow, Keygate, KeygateError};
-static PREFIX: &str = "loginflow";
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum LoginError {
+    #[error("unknown error")]
+    Unknown,
+}
 
 pub trait Login: Send + Sync {
     fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, KeygateError>;
