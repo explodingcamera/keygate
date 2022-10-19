@@ -43,9 +43,11 @@ pub enum LogicStorageError {
     Unknown,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, serde::Deserialize)]
 pub enum StorageType {
     InMemory,
+    RocksDB,
+    Redis,
 }
 
 pub trait Storage: Downcast {

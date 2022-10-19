@@ -5,7 +5,12 @@ type KS = web::Data<Keygate>;
 mod api;
 
 pub async fn run() -> Result<()> {
-    let keygate = web::Data::new(Keygate::new(Configuration {}));
+    let config = Configuration {
+        storage_type: keygate_core::StorageType::InMemory,
+        ..Default::default()
+    };
+
+    let keygate = web::Data::new(Keygate::new(config));
 
     HttpServer::new(move || {
         let api = web::scope("/admin").service(api::admin::get());
