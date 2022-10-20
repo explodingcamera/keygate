@@ -17,3 +17,7 @@ path = "bin.rs"
 actix-web = {version = "4", default-features = false, features = ["macros", "cookies"]}
 keygate-core = {path = "../core"}
 tokio = {version = "1"}
+
+env_logger = "0.9"
+utoipa = {version = "2", features = ["actix_extras", "json"]}
+utoipa-swagger-ui = {version = "2", features = ["actix-web"]}
