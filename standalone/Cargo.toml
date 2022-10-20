@@ -16,3 +16,4 @@ path = "bin.rs"
 [dependencies]
 actix-web = {version = "4", default-features = false, features = ["macros", "cookies"]}
 keygate-core = {path = "../core"}
+tokio = {version = "1"}

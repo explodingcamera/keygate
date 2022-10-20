@@ -1,9 +1,9 @@
+use crate::KS;
 use actix_web::{get, web, Responder, Scope};
 
-use crate::KS;
-
 pub fn get() -> Scope {
-    web::scope("/identity").service(test).service(test2)
+    let identity = web::scope("/admin").service(test2).service(test);
+    web::scope("/v1").service(identity)
 }
 
 #[get("/test2")]

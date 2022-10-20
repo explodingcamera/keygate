@@ -36,6 +36,14 @@ fn default_public_port() -> u16 {
     8080
 }
 
+fn default_admin_interface() -> String {
+    "127.0.0.1".to_string()
+}
+
+fn default_public_interface() -> String {
+    "0.0.0.0".to_string()
+}
+
 fn default_storage_type() -> StorageType {
     StorageType::RocksDB
 }
@@ -95,6 +103,10 @@ pub struct Configuration {
     #[serde(default = "default_admin_port")]
     pub admin_port: u16,
 
+    /// admin api interface
+    #[serde(default = "default_admin_interface")]
+    pub admin_interface: String,
+
     /// admin api prefix
     pub admin_prefix: Option<String>,
 
@@ -102,6 +114,10 @@ pub struct Configuration {
     /// if set to 0, the api will not be available
     #[serde(default = "default_public_port")]
     pub public_port: u16,
+
+    /// public api interface
+    #[serde(default = "default_public_interface")]
+    pub public_interface: String,
 
     /// public api prefix
     pub public_prefix: Option<String>,
@@ -128,7 +144,9 @@ impl Default for Configuration {
             access_token_lifetime: default_access_token_lifetime(),
             refresh_token_lifetime: default_refresh_token_lifetime(),
             admin_port: default_admin_port(),
+            admin_interface: default_admin_interface(),
             public_port: default_public_port(),
+            public_interface: default_public_interface(),
             storage_type: default_storage_type(),
             storage_options: default_storage_options(),
             cookie_domain: None,
