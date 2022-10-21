@@ -39,6 +39,8 @@ pub enum StorageError {
 pub enum LogicStorageError {
     #[error("the key {0} already exists")]
     AlreadyExists(String),
+    #[error("the key {0} wasn't found")]
+    NotFound(String),
     #[error("unknown storage error")]
     Unknown,
 }

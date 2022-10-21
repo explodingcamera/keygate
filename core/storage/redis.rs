@@ -2,9 +2,9 @@ use r2d2::Pool;
 use redis::{Client, Commands};
 use thiserror::Error;
 
-use crate::Storage;
+use crate::{models, utils::serialize, Storage};
 
-use super::{StorageError, StorageSerdeExtension, StorageUtilsExtension};
+use super::{constants::IDENTITY_KEY, StorageError, StorageSerdeExtension, StorageUtilsExtension};
 
 const REDIS_PREFIX: &str = "kg";
 
@@ -31,6 +31,10 @@ impl RedisStorage {
         let client = redis::Client::open("redis://127.0.0.1/").unwrap();
         let pool = r2d2::Pool::builder().max_size(15).build(client).unwrap();
         Self { pool }
+    }
+
+    fn get_key(&self, key: &str) -> String {
+        format!("{REDIS_PREFIX}:{IDENTITY_KEY}:{key}")
     }
 
     fn get_pool(&self) -> Result<r2d2::PooledConnection<Client>, RedisStorageError> {
@@ -96,5 +100,49 @@ impl Storage for RedisStorage {
     }
 }
 
+static REDIS_USERNAME_INDEX_KEY: &str = "zusernames";
+static REDIS_IDENTITY_KEY: &str = "identities";
+static REDIS_IDENTITY_BY_USERNAME_KEY: &str = "by_username";
+static REDIS_IDENTITY_BY_EMAIL_KEY: &str = "by_email";
+
 impl StorageSerdeExtension for RedisStorage {}
-impl StorageUtilsExtension for RedisStorage {}
+impl StorageUtilsExtension for RedisStorage {
+    fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
+        let mut pool = self.get_pool()?;
+
+        let identity_bytes = serialize::to_bytes(identity)?;
+
+        let identity_username = identity.username.as_str();
+        let identity_emails = identity
+            .emails
+            .iter()
+            .map(|email| (email.email.as_str(), identity.id.as_str()))
+            .collect::<Vec<_>>();
+
+        redis::pipe()
+            .atomic()
+            // Set the identity
+            .hset(
+                self.get_key(REDIS_IDENTITY_KEY),
+                &identity.id,
+                identity_bytes,
+            )
+            // Set the email index
+            .hset_multiple(self.get_key(REDIS_IDENTITY_BY_EMAIL_KEY), &identity_emails)
+            // Set the username index
+            .hset(
+                self.get_key(REDIS_IDENTITY_BY_USERNAME_KEY),
+                &identity_username,
+                &identity.id,
+            )
+            // set the username secondary index (lexicographically sorted)
+            .zadd(REDIS_USERNAME_INDEX_KEY, identity_username, 0)
+            .query(&mut *pool)
+            .map_err(RedisStorageError::from)?;
+        Ok(())
+    }
+
+    fn update_identity(&self, _identity: &models::Identity) -> Result<(), StorageError> {
+        todo!()
+    }
+}

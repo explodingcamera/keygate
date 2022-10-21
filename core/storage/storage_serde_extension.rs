@@ -52,16 +52,6 @@ pub trait StorageSerdeExtension: Storage {
         let val = rmp_serde::to_vec(value)?;
         self._pset_u8(prefix, key, &val)
     }
-
-    fn to_bytes(value: &impl serde::Serialize) -> Result<Vec<u8>, StorageError> {
-        Ok(rmp_serde::to_vec(value)?)
-    }
-    fn from_bytes<T>(bytes: &[u8]) -> Result<T, StorageError>
-    where
-        T: serde::de::DeserializeOwned,
-    {
-        Ok(rmp_serde::from_slice(bytes)?)
-    }
 }
 
 impl StorageSerdeExtension for dyn Storage + Send + Sync {
