@@ -1,6 +1,4 @@
-use super::{
-    BaseStorage, GenericKV, Storage, StorageError, StorageIdentityExtension, StorageSerdeExtension,
-};
+use super::{BaseStorage, GenericKV, Storage, StorageError, StorageSerdeExtension};
 use dashmap::DashMap;
 
 use thiserror::Error;

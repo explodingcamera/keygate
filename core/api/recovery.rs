@@ -1,4 +1,4 @@
-use crate::{Keygate, KeygateError};
+use crate::{KeygateConfigInternal, KeygateError, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,7 +7,18 @@ pub enum RecoveryError {
     Unknown,
 }
 
-pub trait Recovery: Send + Sync {
+pub struct Recovery {
+    config: KeygateConfigInternal,
+    storage: KeygateStorage,
+}
+
+impl Recovery {
+    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+        Self { config, storage }
+    }
+}
+
+pub trait RecoveryTrait: Send + Sync {
     /// Initiate a recovery flow for a user.
     fn recovery_initiate(&self) -> Result<(), KeygateError>;
 
@@ -18,7 +29,7 @@ pub trait Recovery: Send + Sync {
     fn recovery(&self) -> Result<(), KeygateError>;
 }
 
-impl Recovery for Keygate {
+impl RecoveryTrait for Recovery {
     fn recovery_initiate(&self) -> Result<(), KeygateError> {
         todo!()
     }

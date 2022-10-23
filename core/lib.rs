@@ -7,7 +7,6 @@ pub mod models;
 pub mod utils;
 
 pub mod config;
-use api::identity::IdentityError;
 use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
@@ -34,7 +33,23 @@ pub enum KeygateError {
     Storage(#[from] StorageError),
 
     #[error(transparent)]
-    Identity(#[from] IdentityError),
+    Identity(#[from] api::IdentityError),
+    #[error(transparent)]
+    Login(#[from] api::LoginError),
+    #[error(transparent)]
+    Metadata(#[from] api::MetadataError),
+    #[error(transparent)]
+    OAuth(#[from] api::OAuthError),
+    #[error(transparent)]
+    Recovery(#[from] api::RecoveryError),
+    #[error(transparent)]
+    Registration(#[from] api::RegistrationError),
+    #[error(transparent)]
+    Session(#[from] api::SessionError),
+    #[error(transparent)]
+    Signup(#[from] api::SignupError),
+    #[error(transparent)]
+    Verification(#[from] api::VerificationError),
 
     #[error("unknown error")]
     Unknown,
@@ -49,7 +64,15 @@ pub struct Keygate {
     pub storage: KeygateStorage,
     pub health: Arc<RwLock<Health>>,
 
-    pub identity: api::identity::Identity,
+    pub identity: api::Identity,
+    pub login: api::Login,
+    pub metadata: api::Metadata,
+    pub oauth: api::OAuth,
+    pub recovery: api::Recovery,
+    pub registration: api::Registration,
+    pub session: api::Session,
+    pub signup: api::Signup,
+    pub verification: api::Verification,
 }
 
 impl Keygate {
@@ -81,7 +104,16 @@ impl Keygate {
             config: config.clone(),
             storage: storage.clone(),
             health: Arc::new(RwLock::new(Health::Starting)),
-            identity: api::identity::Identity::new(config, storage),
+
+            identity: api::Identity::new(config.clone(), storage.clone()),
+            login: api::Login::new(config.clone(), storage.clone()),
+            metadata: api::Metadata::new(config.clone(), storage.clone()),
+            oauth: api::OAuth::new(config.clone(), storage.clone()),
+            recovery: api::Recovery::new(config.clone(), storage.clone()),
+            registration: api::Registration::new(config.clone(), storage.clone()),
+            session: api::Session::new(config.clone(), storage.clone()),
+            signup: api::Signup::new(config.clone(), storage.clone()),
+            verification: api::Verification::new(config, storage),
         }
     }
 }

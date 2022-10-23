@@ -1,4 +1,4 @@
-use crate::Keygate;
+use crate::{KeygateConfigInternal, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,5 +7,16 @@ pub enum SignupError {
     Unknown,
 }
 
-pub trait Signup: Send + Sync {}
-impl Signup for Keygate {}
+pub struct Signup {
+    config: KeygateConfigInternal,
+    storage: KeygateStorage,
+}
+
+impl Signup {
+    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+        Self { config, storage }
+    }
+}
+
+pub trait SignupTrait: Send + Sync {}
+impl SignupTrait for Signup {}

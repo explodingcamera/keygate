@@ -1,4 +1,4 @@
-use crate::{Health, Keygate};
+use crate::{Health, KeygateConfigInternal, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,17 +7,28 @@ pub enum MetadataError {
     Unknown,
 }
 
-pub trait Metadata: Send + Sync {
+pub struct Metadata {
+    config: KeygateConfigInternal,
+    storage: KeygateStorage,
+}
+
+impl Metadata {
+    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+        Self { config, storage }
+    }
+}
+
+pub trait MetadataTrait: Send + Sync {
     fn version(&self) -> &'static str;
     fn health(&self) -> Health;
 }
 
-impl Metadata for Keygate {
+impl MetadataTrait for Metadata {
     fn version(&self) -> &'static str {
         env!("CARGO_PKG_VERSION")
     }
 
     fn health(&self) -> Health {
-        self.health
+        Health::Healthy
     }
 }

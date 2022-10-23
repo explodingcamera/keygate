@@ -1,4 +1,4 @@
-use crate::{models::LoginFlow, Keygate, KeygateError};
+use crate::{models::LoginFlow, KeygateConfigInternal, KeygateError, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,7 +7,18 @@ pub enum LoginError {
     Unknown,
 }
 
-pub trait Login: Send + Sync {
+pub struct Login {
+    config: KeygateConfigInternal,
+    storage: KeygateStorage,
+}
+
+impl Login {
+    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+        Self { config, storage }
+    }
+}
+
+pub trait LoginTrait: Send + Sync {
     fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, KeygateError>;
     fn login_get_flow(
         &self,
@@ -35,7 +46,7 @@ pub trait Login: Send + Sync {
     ) -> Result<LoginFlow, KeygateError>;
 }
 
-impl Login for Keygate {
+impl LoginTrait for Login {
     fn login_init_flow(&self, device_id: &str) -> Result<LoginFlow, KeygateError> {
         todo!()
     }

@@ -1,4 +1,4 @@
-use crate::{models, utils::tokens, Keygate, KeygateError};
+use crate::{models, utils::tokens, KeygateConfigInternal, KeygateError, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,7 +9,18 @@ pub enum SessionError {
     Unknown,
 }
 
-pub trait Session: Send + Sync {
+pub struct Session {
+    config: KeygateConfigInternal,
+    storage: KeygateStorage,
+}
+
+impl Session {
+    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+        Self { config, storage }
+    }
+}
+
+pub trait SessionTrait: Send + Sync {
     fn session_validate(&self, session_token: &str) -> Result<models::Session, KeygateError>;
 
     fn session_invalidate(&self, session_token: &str) -> Result<(), KeygateError>;
@@ -24,7 +35,7 @@ pub trait Session: Send + Sync {
     fn sessions(&self, user_id: &str) -> Result<(), KeygateError>;
 }
 
-impl Session for Keygate {
+impl SessionTrait for Session {
     fn session_validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
         todo!()
     }

@@ -3,9 +3,7 @@ use thiserror::Error;
 
 use crate::models::{self, Session};
 
-use super::{
-    BaseStorage, GenericKV, Storage, StorageError, StorageIdentityExtension, StorageSerdeExtension,
-};
+use super::{BaseStorage, GenericKV, Storage, StorageError, StorageSerdeExtension};
 
 #[derive(Error, Debug)]
 pub enum RocksDBStorageError {
