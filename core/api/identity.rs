@@ -1,6 +1,4 @@
-use crate::storage::constants::IDENTITY_KEY;
-use crate::storage::StorageSerdeExtension;
-use crate::{models, Keygate, KeygateError};
+use crate::{models, KeygateConfigInternal, KeygateError, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -9,7 +7,18 @@ pub enum IdentityError {
     Unknown,
 }
 
-pub trait Identity: Send + Sync {
+pub struct Identity {
+    config: KeygateConfigInternal,
+    storage: KeygateStorage,
+}
+
+impl Identity {
+    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+        Self { config, storage }
+    }
+}
+
+pub trait IdentityTrait: Send + Sync {
     fn identity_get(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError>;
     fn identity_delete(&self, user_id: &str) -> Result<(), KeygateError>;
     fn identity_update(
@@ -27,7 +36,7 @@ pub trait Identity: Send + Sync {
     fn identities(&self) -> Result<(), KeygateError>;
 }
 
-impl Identity for Keygate {
+impl IdentityTrait for Identity {
     fn identity_update_in_place<F>(
         &self,
         user_id: &str,
@@ -47,9 +56,7 @@ impl Identity for Keygate {
     }
 
     fn identity_get(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self
-            .storage
-            ._pget::<models::Identity>(IDENTITY_KEY, user_id)?)
+        todo!()
     }
 
     fn identity_delete(&self, _user_id: &str) -> Result<(), KeygateError> {
@@ -61,7 +68,7 @@ impl Identity for Keygate {
         user_id: &str,
         identity: &models::Identity,
     ) -> Result<(), KeygateError> {
-        Ok(self.storage._pset(IDENTITY_KEY, user_id, identity)?)
+        Ok(self.storage.update_identity(identity)?)
     }
 
     fn identities(&self) -> Result<(), KeygateError> {

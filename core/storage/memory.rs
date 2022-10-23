@@ -1,4 +1,6 @@
-use super::{Storage, StorageError, StorageSerdeExtension, StorageUtilsExtension};
+use super::{
+    BaseStorage, GenericKV, Storage, StorageError, StorageIdentityExtension, StorageSerdeExtension,
+};
 use dashmap::DashMap;
 
 use thiserror::Error;
@@ -17,7 +19,7 @@ impl InMemoryStorage {
     }
 }
 
-impl Storage for InMemoryStorage {
+impl BaseStorage for InMemoryStorage {
     fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self.data.get(key).map(|v| v.to_vec()))
     }
@@ -42,4 +44,5 @@ impl Storage for InMemoryStorage {
 }
 
 impl StorageSerdeExtension for InMemoryStorage {}
-impl StorageUtilsExtension for InMemoryStorage {}
+impl GenericKV for InMemoryStorage {}
+impl Storage for InMemoryStorage {}

@@ -70,6 +70,7 @@ impl TryFrom<String> for SessionToken {
 }
 
 impl SessionToken {
+    #[no_panic::no_panic]
     pub fn new(user_id: &str, audience: &str, expires_in_seconds: u64) -> Self {
         let jti = random::secure_random_id();
         let now = chrono::Utc::now().timestamp() as u64;
@@ -93,6 +94,7 @@ impl SessionToken {
 }
 
 impl RefreshToken {
+    #[no_panic::no_panic]
     pub fn new() -> Self {
         let token = random::secure_random_id();
         RefreshToken(token)

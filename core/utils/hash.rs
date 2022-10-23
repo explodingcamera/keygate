@@ -1,7 +1,8 @@
 use argon2::{password_hash::SaltString, PasswordHash, PasswordHasher, PasswordVerifier};
 use rand_core::OsRng;
 
-pub fn hash(password: &str) -> std::io::Result<String> {
+#[no_panic::no_panic]
+pub fn password(password: &str) -> std::io::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
 
     let argon2 = argon2::Argon2::default();
@@ -12,6 +13,7 @@ pub fn hash(password: &str) -> std::io::Result<String> {
     Ok(hash)
 }
 
+#[no_panic::no_panic]
 pub fn verify(password: &str, hash: &str) -> std::io::Result<bool> {
     let argon2 = argon2::Argon2::default();
     let hash = PasswordHash::new(hash)
@@ -26,12 +28,12 @@ pub fn verify(password: &str, hash: &str) -> std::io::Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use super::hash;
+    use super::password;
     use super::verify;
 
     #[test]
     fn test() -> std::io::Result<()> {
-        let some_hash = hash("somepw")?;
+        let some_hash = password("somepw")?;
         assert!(verify("somepw", &some_hash)?);
         Ok(())
     }

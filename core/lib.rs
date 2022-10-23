@@ -1,16 +1,24 @@
+use std::fmt::Debug;
+use std::sync::Arc;
+use std::sync::RwLock;
+
+mod api;
 pub mod models;
-pub mod storage;
 pub mod utils;
 
-mod traits;
-use storage::StorageError;
-pub use traits::all::*;
-pub use traits::errors::*;
+pub mod config;
+use api::identity::IdentityError;
+use config::Configuration;
+pub use config::Configuration as KeygateConfig;
 
-use std::fmt::Debug;
+mod storage;
+use storage::StorageError;
+
+pub use storage::traits;
 pub use storage::Storage;
 pub use storage::StorageType;
 pub use storage::{InMemoryStorage, RedisStorage, RocksDBStorage};
+
 use thiserror::Error;
 
 #[derive(Clone, Copy)]
@@ -20,172 +28,44 @@ pub enum Health {
     Unhealthy,
 }
 
-fn default_access_token_lifetime() -> u64 {
-    30 * 60
-}
-
-fn default_refresh_token_lifetime() -> u64 {
-    14 * 24 * 3600
-}
-
-fn default_admin_port() -> u16 {
-    8081
-}
-
-fn default_public_port() -> u16 {
-    8080
-}
-
-fn default_admin_interface() -> String {
-    "127.0.0.1".to_string()
-}
-
-fn default_public_interface() -> String {
-    "0.0.0.0".to_string()
-}
-
-fn default_storage_type() -> StorageType {
-    StorageType::RocksDB
-}
-
-fn default_storage_path() -> String {
-    "./data".to_string()
-}
-
-fn default_environment() -> Environment {
-    Environment::Development
-}
-
-fn default_storage_options() -> StorageOptions {
-    StorageOptions::default()
-}
-
-impl Default for StorageOptions {
-    fn default() -> Self {
-        StorageOptions {
-            storage_path: default_storage_path(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Environment {
-    Development,
-    Production,
-}
-
-#[derive(Clone, Debug, serde::Deserialize)]
-pub struct StorageOptions {
-    #[serde(default = "default_storage_path")]
-    pub storage_path: String,
-}
-
-#[derive(Clone, Debug, serde::Deserialize)]
-pub struct Configuration {
-    #[serde(default = "default_environment")]
-    pub environment: Environment,
-
-    /// What storage backend to use
-    #[serde(default = "default_storage_type")]
-    pub storage_type: StorageType,
-
-    /// Options for the storage backend
-    #[serde(default = "default_storage_options")]
-    pub storage_options: StorageOptions,
-
-    /// what domain to set the refresh token cookie on
-    /// if not set, the cookie will be set on the current domain
-    pub cookie_domain: Option<String>,
-
-    /// admin api port
-    /// if set to 0, the admin api will not be available
-    #[serde(default = "default_admin_port")]
-    pub admin_port: u16,
-
-    /// admin api interface
-    #[serde(default = "default_admin_interface")]
-    pub admin_interface: String,
-
-    /// admin api prefix
-    pub admin_prefix: Option<String>,
-
-    /// public api port
-    /// if set to 0, the api will not be available
-    #[serde(default = "default_public_port")]
-    pub public_port: u16,
-
-    /// public api interface
-    #[serde(default = "default_public_interface")]
-    pub public_interface: String,
-
-    /// public api prefix
-    pub public_prefix: Option<String>,
-
-    /// the host keygate should listen on
-    pub host: String,
-
-    /// access token lifetime in seconds
-    #[serde(default = "default_access_token_lifetime")]
-    pub access_token_lifetime: u64,
-
-    /// refresh token lifetime in seconds
-    #[serde(default = "default_refresh_token_lifetime")]
-    pub refresh_token_lifetime: u64,
-
-    /// set to true to enable multi domain support
-    /// if enabled, `host` needs to equal `cookie_domain`
-    pub multi_domain: bool,
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            access_token_lifetime: default_access_token_lifetime(),
-            refresh_token_lifetime: default_refresh_token_lifetime(),
-            admin_port: default_admin_port(),
-            admin_interface: default_admin_interface(),
-            public_port: default_public_port(),
-            public_interface: default_public_interface(),
-            storage_type: default_storage_type(),
-            storage_options: default_storage_options(),
-            cookie_domain: None,
-            environment: Environment::Development,
-            host: "localhost".to_string(),
-            admin_prefix: None,
-            public_prefix: None,
-            multi_domain: false,
-        }
-    }
-}
-
 #[derive(Error, Debug)]
 pub enum KeygateError {
     #[error(transparent)]
     Storage(#[from] StorageError),
+
     #[error(transparent)]
-    Session(#[from] SessionError),
+    Identity(#[from] IdentityError),
+
     #[error("unknown error")]
     Unknown,
 }
 
+pub type KeygateResult<T> = Result<T, KeygateError>;
+type KeygateConfigInternal = Arc<RwLock<Configuration>>;
+type KeygateStorage = Arc<dyn Storage + Send + Sync>;
+
 pub struct Keygate {
-    pub config: Configuration,
-    storage: Box<dyn Storage + Send + Sync>,
-    health: Health,
+    pub config: KeygateConfigInternal,
+    pub storage: KeygateStorage,
+    pub health: Arc<RwLock<Health>>,
+
+    pub identity: api::identity::Identity,
 }
 
 impl Keygate {
     pub fn new(config: Configuration) -> Result<Keygate, KeygateError> {
         let res = match config.storage_type {
             StorageType::InMemory => {
-                Keygate::new_with_storage(config, Box::new(InMemoryStorage::new()))
+                Keygate::new_with_storage(config, Arc::new(InMemoryStorage::new()))
             }
             StorageType::RocksDB => match RocksDBStorage::new() {
-                Ok(storage) => Keygate::new_with_storage(config, Box::new(storage)),
-                Err(e) => return Err(KeygateError::Storage(e.into())),
+                Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
+                Err(e) => return Err(e.into()),
             },
-            StorageType::Redis => Keygate::new_with_storage(config, Box::new(RedisStorage::new())),
+            StorageType::Redis => match RedisStorage::new() {
+                Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
+                Err(e) => return Err(e.into()),
+            },
         };
 
         Ok(res)
@@ -193,12 +73,15 @@ impl Keygate {
 
     pub fn new_with_storage(
         config: Configuration,
-        storage: Box<dyn Storage + Send + Sync>,
+        storage: Arc<dyn Storage + Send + Sync>,
     ) -> Keygate {
+        let config = Arc::new(RwLock::new(config));
+
         Keygate {
-            config,
-            storage,
-            health: Health::Starting,
+            config: config.clone(),
+            storage: storage.clone(),
+            health: Arc::new(RwLock::new(Health::Starting)),
+            identity: api::identity::Identity::new(config, storage),
         }
     }
 }

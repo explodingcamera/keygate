@@ -3,12 +3,16 @@ use thiserror::Error;
 
 use crate::models::{self, Session};
 
-use super::{Storage, StorageError, StorageSerdeExtension, StorageUtilsExtension};
+use super::{
+    BaseStorage, GenericKV, Storage, StorageError, StorageIdentityExtension, StorageSerdeExtension,
+};
 
 #[derive(Error, Debug)]
 pub enum RocksDBStorageError {
     #[error("RocksDB error: {0}")]
     RocksDBError(#[from] rocksdb::Error),
+    #[error("RocksDB error: {0}")]
+    RocksDBStringError(String),
     #[error("unknown data store error")]
     Unknown,
 }
@@ -21,9 +25,11 @@ pub struct RocksDBStorage {
 }
 
 impl RocksDBStorage {
-    pub fn new() -> Result<Self, RocksDBStorageError> {
+    pub fn new() -> Result<Self, StorageError> {
         let opts = rocksdb::Options::default();
-        let db = RocksDB::open(&opts, "./db")?;
+
+        let db =
+            RocksDB::open(&opts, "./db").map_err(|e| StorageError::RocksDBStorage(e.into()))?;
 
         Ok(Self {
             db,
@@ -32,7 +38,9 @@ impl RocksDBStorage {
     }
 }
 
-impl Storage for RocksDBStorage {
+impl Storage for RocksDBStorage {}
+
+impl BaseStorage for RocksDBStorage {
     fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         let res = self.db.get(key).map_err(RocksDBStorageError::from)?;
         Ok(res)
@@ -59,9 +67,4 @@ impl Storage for RocksDBStorage {
 }
 
 impl StorageSerdeExtension for RocksDBStorage {}
-impl StorageUtilsExtension for RocksDBStorage {
-    fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
-        self._get::<models::Identity>(":")?;
-        Ok(())
-    }
-}
+impl GenericKV for RocksDBStorage {}

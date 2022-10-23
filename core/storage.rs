@@ -14,10 +14,8 @@ pub type RocksDBStorage = rocksdb::RocksDBStorage;
 mod redis;
 pub type RedisStorage = redis::RedisStorage;
 
-mod storage_serde_extension;
-mod storage_utils_extension;
-pub use storage_serde_extension::StorageSerdeExtension;
-pub use storage_utils_extension::StorageUtilsExtension;
+pub mod traits;
+pub use traits::*;
 
 #[derive(Error, Debug)]
 pub enum StorageError {
@@ -33,6 +31,8 @@ pub enum StorageError {
     Encoding(#[from] rmp_serde::encode::Error),
     #[error(transparent)]
     Storage(#[from] LogicStorageError),
+    #[error("paniced at {0}")]
+    Panic(String),
 }
 
 #[derive(Error, Debug)]
@@ -52,7 +52,7 @@ pub enum StorageType {
     Redis,
 }
 
-pub trait Storage: Downcast {
+pub trait BaseStorage {
     /// Get a value from the storage, if it exists. If it doesn't exist, return None.
     /// Should be avoided if other methods (e.g get_identity) are available, as these
     /// can have side effects (e.g. creating/updating an index or cache).
@@ -83,5 +83,7 @@ pub trait Storage: Downcast {
         Ok(self._pget_u8(prefix, key)?.is_some())
     }
 }
+
+pub trait Storage: BaseStorage + traits::StorageIdentityExtension + Downcast + Send + Sync {}
 
 impl_downcast!(Storage);

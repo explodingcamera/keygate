@@ -1,12 +1,10 @@
+use super::{
+    constants::*, BaseStorage, StorageError, StorageIdentityExtension, StorageSerdeExtension,
+};
+use crate::{models, utils::serialize, Storage};
 use r2d2::Pool;
 use redis::{Client, Commands};
 use thiserror::Error;
-
-use crate::{models, utils::serialize, Storage};
-
-use super::{constants::IDENTITY_KEY, StorageError, StorageSerdeExtension, StorageUtilsExtension};
-
-const REDIS_PREFIX: &str = "kg";
 
 #[derive(Error, Debug)]
 pub enum RedisStorageError {
@@ -20,21 +18,14 @@ pub struct RedisStorage {
     pool: Pool<Client>,
 }
 
-impl Default for RedisStorage {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RedisStorage {
-    pub fn new() -> Self {
-        let client = redis::Client::open("redis://127.0.0.1/").unwrap();
-        let pool = r2d2::Pool::builder().max_size(15).build(client).unwrap();
-        Self { pool }
-    }
-
-    fn get_key(&self, key: &str) -> String {
-        format!("{REDIS_PREFIX}:{IDENTITY_KEY}:{key}")
+    pub fn new() -> Result<Self, StorageError> {
+        let client = redis::Client::open("redis://127.0.0.1/").map_err(RedisStorageError::from)?;
+        let pool = r2d2::Pool::builder()
+            .max_size(15)
+            .build(client)
+            .map_err(RedisStorageError::from)?;
+        Ok(Self { pool })
     }
 
     fn get_pool(&self) -> Result<r2d2::PooledConnection<Client>, RedisStorageError> {
@@ -56,57 +47,50 @@ impl RedisStorage {
     }
 }
 
-impl Storage for RedisStorage {
+impl Storage for RedisStorage {}
+impl BaseStorage for RedisStorage {
     fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        Ok(self
-            .get_pool()?
-            .get(REDIS_PREFIX.to_owned() + ":" + key)
-            .map_err(RedisStorageError::from)?)
+        Ok(self.get_pool()?.get(key).map_err(RedisStorageError::from)?)
     }
 
     fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
         Ok(self
             .get_pool()?
-            .set(REDIS_PREFIX.to_owned() + ":" + key, value)
+            .set(key, value)
             .map_err(RedisStorageError::from)?)
     }
 
     fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .get_pool()?
-            .get(REDIS_PREFIX.to_owned() + ":" + prefix + ":" + key)
+            .get(join_keys!(prefix, key))
             .map_err(RedisStorageError::from)?)
     }
 
     fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         Ok(self
             .get_pool()?
-            .set(REDIS_PREFIX.to_owned() + ":" + prefix + ":" + key, value)
+            .set(join_keys!(prefix, key), value)
             .map_err(RedisStorageError::from)?)
     }
 
     fn exists(&self, key: &str) -> Result<bool, StorageError> {
         Ok(self
             .get_pool()?
-            .exists(REDIS_PREFIX.to_owned() + ":" + key)
+            .exists(key)
             .map_err(RedisStorageError::from)?)
     }
 
     fn pexists(&self, prefix: &str, key: &str) -> Result<bool, StorageError> {
         Ok(self
             .get_pool()?
-            .exists(REDIS_PREFIX.to_owned() + ":" + prefix + ":" + key)
+            .exists(prefix.to_owned() + ":" + key)
             .map_err(RedisStorageError::from)?)
     }
 }
 
-static REDIS_USERNAME_INDEX_KEY: &str = "zusernames";
-static REDIS_IDENTITY_KEY: &str = "identities";
-static REDIS_IDENTITY_BY_USERNAME_KEY: &str = "by_username";
-static REDIS_IDENTITY_BY_EMAIL_KEY: &str = "by_email";
-
 impl StorageSerdeExtension for RedisStorage {}
-impl StorageUtilsExtension for RedisStorage {
+impl StorageIdentityExtension for RedisStorage {
     fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
         let mut pool = self.get_pool()?;
 
@@ -122,27 +106,47 @@ impl StorageUtilsExtension for RedisStorage {
         redis::pipe()
             .atomic()
             // Set the identity
-            .hset(
-                self.get_key(REDIS_IDENTITY_KEY),
-                &identity.id,
-                identity_bytes,
-            )
+            .hset(IDENTITY_BY_ID, &identity.id, identity_bytes)
             // Set the email index
-            .hset_multiple(self.get_key(REDIS_IDENTITY_BY_EMAIL_KEY), &identity_emails)
+            .hset_multiple(IDENTITY_ID_BY_EMAIL, &identity_emails)
             // Set the username index
-            .hset(
-                self.get_key(REDIS_IDENTITY_BY_USERNAME_KEY),
-                &identity_username,
-                &identity.id,
-            )
+            .hset(IDENTITY_ID_BY_USERNAME, &identity_username, &identity.id)
             // set the username secondary index (lexicographically sorted)
-            .zadd(REDIS_USERNAME_INDEX_KEY, identity_username, 0)
+            .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0)
             .query(&mut *pool)
             .map_err(RedisStorageError::from)?;
+
         Ok(())
     }
 
-    fn update_identity(&self, _identity: &models::Identity) -> Result<(), StorageError> {
+    fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
+        let identity_bytes = serialize::to_bytes(identity)?;
+        let identity_username = identity.username.as_str();
+        let identity_emails = identity
+            .emails
+            .iter()
+            .map(|email| (email.email.as_str(), identity.id.as_str()))
+            .collect::<Vec<_>>();
+
+        todo!()
+    }
+
+    fn get_identity(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
+        todo!()
+    }
+
+    fn get_identity_by_username(
+        &self,
+        username: &str,
+    ) -> Result<Option<models::Identity>, StorageError> {
+        todo!()
+    }
+
+    fn get_identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
+        todo!()
+    }
+
+    fn get_identity_by_usern(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
         todo!()
     }
 }

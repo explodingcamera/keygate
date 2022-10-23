@@ -29,6 +29,8 @@ r2d2 = {version = "0.8", optional = true}
 redis = {version = "0.21", default-features = false, optional = true, features = ["r2d2"]}
 rocksdb = {version = "0.19.0", default-features = false, optional = true, features = ["lz4"]}
 
+no-panic = "0.1"
+
 [features]
 default = ["oauth2", "backend-redis", "backend-rocksdb"]
 
