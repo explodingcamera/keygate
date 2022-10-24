@@ -18,17 +18,12 @@ impl Metadata {
     }
 }
 
-pub trait MetadataTrait: Send + Sync {
-    fn version(&self) -> &'static str;
-    fn health(&self) -> Health;
-}
-
-impl MetadataTrait for Metadata {
-    fn version(&self) -> &'static str {
+impl Metadata {
+    pub fn version(&self) -> &'static str {
         env!("CARGO_PKG_VERSION")
     }
 
-    fn health(&self) -> Health {
+    pub fn health(&self) -> Health {
         Health::Healthy
     }
 }

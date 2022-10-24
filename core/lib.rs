@@ -13,6 +13,7 @@ pub use config::Configuration as KeygateConfig;
 mod storage;
 use storage::StorageError;
 
+pub use storage::constants as storage_constants;
 pub use storage::traits;
 pub use storage::Storage;
 pub use storage::StorageType;

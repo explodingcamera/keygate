@@ -20,39 +20,24 @@ impl Session {
     }
 }
 
-pub trait SessionTrait: Send + Sync {
-    fn session_validate(&self, session_token: &str) -> Result<models::Session, KeygateError>;
-
-    fn session_invalidate(&self, session_token: &str) -> Result<(), KeygateError>;
-
-    fn session_refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError>;
-
-    fn session_refresh(
-        &self,
-        refresh_token: &str,
-    ) -> Result<(tokens::SessionToken, tokens::RefreshToken), KeygateError>;
-
-    fn sessions(&self, user_id: &str) -> Result<(), KeygateError>;
-}
-
-impl SessionTrait for Session {
-    fn session_validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
+impl Session {
+    pub fn session_validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
         todo!()
     }
 
-    fn session_invalidate(&self, session_token: &str) -> Result<(), KeygateError> {
+    pub fn session_invalidate(&self, session_token: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    fn sessions(&self, user_id: &str) -> Result<(), KeygateError> {
+    pub fn sessions(&self, user_id: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    fn session_refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError> {
+    pub fn session_refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    fn session_refresh(
+    pub fn session_refresh(
         &self,
         refresh_token: &str,
     ) -> Result<(tokens::SessionToken, tokens::RefreshToken), KeygateError> {

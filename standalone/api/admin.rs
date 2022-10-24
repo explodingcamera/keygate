@@ -19,5 +19,5 @@ pub fn get() -> Scope {
 )]
 #[get("/test")]
 async fn test(ks: KS) -> impl Responder {
-    "Hello"
+    ks.identity.get("something").unwrap().unwrap().username
 }
