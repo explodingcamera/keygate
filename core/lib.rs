@@ -17,7 +17,7 @@ pub use storage::constants as storage_constants;
 pub use storage::traits;
 pub use storage::Storage;
 pub use storage::StorageType;
-pub use storage::{InMemoryStorage, RedisStorage, RocksDBStorage};
+pub use storage::{RedisStorage, RocksDBStorage};
 
 use thiserror::Error;
 
@@ -79,9 +79,6 @@ pub struct Keygate {
 impl Keygate {
     pub fn new(config: Configuration) -> Result<Keygate, KeygateError> {
         let res = match config.storage_type {
-            StorageType::InMemory => {
-                Keygate::new_with_storage(config, Arc::new(InMemoryStorage::new()))
-            }
             StorageType::RocksDB => match RocksDBStorage::new() {
                 Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
                 Err(e) => return Err(e.into()),

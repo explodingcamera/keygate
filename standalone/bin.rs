@@ -4,7 +4,7 @@ use keygate_standalone::run;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = KeygateConfig {
-        storage_type: keygate_core::StorageType::InMemory,
+        storage_type: keygate_core::StorageType::RocksDB,
         ..Default::default()
     };
 

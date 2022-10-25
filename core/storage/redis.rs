@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use super::{
-    constants::*, BaseStorage, StorageError, StorageIdentityExtension, StorageSerdeExtension,
+    constants::*, BaseStorage, LogicStorageError, StorageError, StorageIdentityExtension,
+    StorageSerdeExtension,
 };
 use crate::{models, utils::serialize, Storage};
 use r2d2::Pool;
@@ -84,7 +87,18 @@ impl BaseStorage for RedisStorage {
     fn pexists(&self, prefix: &str, key: &str) -> Result<bool, StorageError> {
         Ok(self
             .get_pool()?
-            .exists(prefix.to_owned() + ":" + key)
+            .exists(join_keys!(prefix, key))
+            .map_err(RedisStorageError::from)?)
+    }
+
+    fn _del(&self, key: &str) -> Result<(), StorageError> {
+        Ok(self.get_pool()?.del(key).map_err(RedisStorageError::from)?)
+    }
+
+    fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError> {
+        Ok(self
+            .get_pool()?
+            .del(join_keys!(prefix, key))
             .map_err(RedisStorageError::from)?)
     }
 }
@@ -100,7 +114,7 @@ impl StorageIdentityExtension for RedisStorage {
         let identity_emails = identity
             .emails
             .iter()
-            .map(|email| (email.email.as_str(), identity.id.as_str()))
+            .map(|email| (email.0.as_str(), identity.id.as_str()))
             .collect::<Vec<_>>();
 
         redis::pipe()
@@ -122,31 +136,107 @@ impl StorageIdentityExtension for RedisStorage {
     fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
         let identity_bytes = serialize::to_bytes(identity)?;
         let identity_username = identity.username.as_str();
-        let identity_emails = identity
-            .emails
-            .iter()
-            .map(|email| (email.email.as_str(), identity.id.as_str()))
-            .collect::<Vec<_>>();
 
-        todo!()
-    }
+        let existing_identity = self.get_identity_by_id(&identity.id)?;
 
-    fn get_identity(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        todo!()
+        if let Some(existing_identity) = existing_identity {
+            if &existing_identity == identity {
+                return Ok(());
+            }
+
+            let existing_identity_username = existing_identity.username.as_str();
+
+            let mut pool = self.get_pool()?;
+            let mut pipe: &mut redis::Pipeline = &mut redis::pipe();
+            pipe = pipe.atomic();
+
+            if existing_identity_username != identity_username {
+                pipe = pipe
+                    .hdel(IDENTITY_ID_BY_USERNAME, existing_identity_username) // remove the old username index
+                    .zrem(IDENTITY_USERNAME_INDEX, &existing_identity_username) // remove the old username from the index
+                    .hset(IDENTITY_ID_BY_USERNAME, identity_username, &identity.id) // Set the new username index
+                    .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0); //  add the new username to the index
+            }
+
+            // check if the emails have changed
+            if identity.emails != existing_identity.emails {
+                // remove the old email index
+                pipe = pipe.hdel(
+                    IDENTITY_ID_BY_EMAIL,
+                    &existing_identity
+                        .emails
+                        .iter()
+                        .map(|email| email.0.as_str())
+                        .collect::<Vec<_>>(),
+                );
+                // Set the new email index
+                pipe = pipe.hset_multiple(
+                    IDENTITY_ID_BY_EMAIL,
+                    &identity
+                        .emails
+                        .iter()
+                        .map(|email| (email.0.as_str(), identity.id.as_str()))
+                        .collect::<Vec<_>>(),
+                );
+            }
+
+            // Remove the old username index
+            pipe = pipe.hdel(IDENTITY_ID_BY_USERNAME, &existing_identity_username);
+
+            // Set the identity
+            pipe.hset(IDENTITY_BY_ID, &identity.id, identity_bytes)
+                .query(&mut *pool)
+                .map_err(RedisStorageError::from)?;
+
+            Ok(())
+        } else {
+            Err(LogicStorageError::NotFound("identity".to_string()).into())
+        }
     }
 
     fn get_identity_by_username(
         &self,
         username: &str,
     ) -> Result<Option<models::Identity>, StorageError> {
-        todo!()
+        let mut pool = self.get_pool()?;
+
+        let identity_id: Option<String> = pool
+            .hget(IDENTITY_ID_BY_USERNAME, username)
+            .map_err(RedisStorageError::from)?;
+
+        if let Some(identity_id) = identity_id {
+            self.get_identity_by_id(&identity_id)
+        } else {
+            Ok(None)
+        }
     }
 
     fn get_identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
-        todo!()
+        let mut pool = self.get_pool()?;
+
+        let identity_id: Option<String> = pool
+            .hget(IDENTITY_ID_BY_EMAIL, email)
+            .map_err(RedisStorageError::from)?;
+
+        if let Some(identity_id) = identity_id {
+            self.get_identity_by_id(&identity_id)
+        } else {
+            Ok(None)
+        }
     }
 
-    fn get_identity_by_usern(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        todo!()
+    fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
+        let mut pool = self.get_pool()?;
+        let identity_bytes: Option<Vec<u8>> = pool
+            .hget(IDENTITY_BY_ID, id)
+            .map_err(RedisStorageError::from)?;
+
+        if let Some(identity_bytes) = identity_bytes {
+            let identity: models::Identity = serialize::from_bytes(&identity_bytes)?;
+
+            Ok(Some(identity))
+        } else {
+            Ok(None)
+        }
     }
 }

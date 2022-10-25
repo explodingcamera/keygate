@@ -1,12 +1,9 @@
 use downcast_rs::{impl_downcast, Downcast};
 use thiserror::Error;
 
-use self::{memory::InMemoryStorageError, redis::RedisStorageError, rocksdb::RocksDBStorageError};
+use self::{redis::RedisStorageError, rocksdb::RocksDBStorageError};
 
 pub mod constants;
-
-mod memory;
-pub type InMemoryStorage = memory::InMemoryStorage;
 
 mod rocksdb;
 pub type RocksDBStorage = rocksdb::RocksDBStorage;
@@ -19,8 +16,6 @@ pub use traits::*;
 
 #[derive(Error, Debug)]
 pub enum StorageError {
-    #[error(transparent)]
-    InMemoryStorage(#[from] InMemoryStorageError),
     #[error(transparent)]
     RocksDBStorage(#[from] RocksDBStorageError),
     #[error(transparent)]
@@ -47,7 +42,6 @@ pub enum LogicStorageError {
 
 #[derive(Clone, Copy, Debug, serde::Deserialize)]
 pub enum StorageType {
-    InMemory,
     RocksDB,
     Redis,
 }
@@ -72,6 +66,16 @@ pub trait BaseStorage {
     /// Should be avoided if other methods (e.g set_identity) are available, as these
     /// can have side effects (e.g. creating/updating an index or cache).
     fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError>;
+
+    /// Delete a value from the storage. If the key doesn't exist, return an error.
+    /// Should be avoided if other methods (e.g delete_identity) are available, as these
+    /// can have side effects (e.g. creating/updating an index or cache).
+    fn _del(&self, key: &str) -> Result<(), StorageError>;
+
+    /// Delete a value from the storage. If the key doesn't exist, return an error.
+    /// Should be avoided if other methods (e.g delete_identity) are available, as these
+    /// can have side effects (e.g. creating/updating an index or cache).
+    fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError>;
 
     /// Check if a key exists in the storage
     fn exists(&self, key: &str) -> Result<bool, StorageError> {

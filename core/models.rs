@@ -1,25 +1,25 @@
-use std::net::IpAddr;
+use std::{collections::HashMap, net::IpAddr};
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Identity {
     pub id: String,
     pub username: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub emails: Vec<IdentityEmail>,
+    pub emails: HashMap<String, IdentityEmail>,
     pub linked_accounts: Vec<IdentityAccount>,
-    pub sessions: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub struct IdentityEmail {
-    pub email: String,
     pub verified: bool,
+    pub verified_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub struct IdentityAccount {
     pub provider: String,
     pub provider_id: String,

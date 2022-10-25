@@ -3,8 +3,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum IdentityError {
-    #[error("unknown error")]
-    Unknown,
+    #[error("unknown error {0}")]
+    Unknown(String),
 }
 
 pub struct Identity {
@@ -30,7 +30,11 @@ impl Identity {
         let identity = self.get(user_id)?;
         match closure(identity) {
             Some(new_identity) => {
-                self.update(user_id, &new_identity)?;
+                if new_identity.id != user_id {
+                    return Err(IdentityError::Unknown("identity id mismatch".to_string()).into());
+                }
+
+                self.update(&new_identity)?;
                 Ok(Some(new_identity))
             }
             None => Ok(None),
@@ -38,14 +42,14 @@ impl Identity {
     }
 
     pub fn get(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError> {
-        todo!()
+        Ok(self.storage.get_identity_by_id(user_id)?)
     }
 
     pub fn delete(&self, _user_id: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn update(&self, user_id: &str, identity: &models::Identity) -> Result<(), KeygateError> {
+    pub fn update(&self, identity: &models::Identity) -> Result<(), KeygateError> {
         Ok(self.storage.update_identity(identity)?)
     }
 
