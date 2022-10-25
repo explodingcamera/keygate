@@ -1,9 +1,10 @@
-use rocksdb::{DBWithThreadMode, MultiThreaded};
+use rocksdb::{DBWithThreadMode, MultiThreaded, OptimisticTransactionDB};
 use thiserror::Error;
 
 use crate::{
     models::{self, Session},
     storage_constants::*,
+    utils,
 };
 
 use super::{
@@ -13,7 +14,7 @@ use super::{
 
 #[derive(Error, Debug)]
 pub enum RocksDBStorageError {
-    #[error("RocksDB error: {0}")]
+    #[error(transparent)]
     RocksDBError(#[from] rocksdb::Error),
     #[error("RocksDB error: {0}")]
     RocksDBStringError(String),
@@ -21,7 +22,7 @@ pub enum RocksDBStorageError {
     Unknown,
 }
 
-type RocksDB = DBWithThreadMode<MultiThreaded>;
+type RocksDB = OptimisticTransactionDB<MultiThreaded>;
 
 pub struct RocksDBStorage {
     db: RocksDB,
@@ -32,8 +33,8 @@ impl RocksDBStorage {
     pub fn new() -> Result<Self, StorageError> {
         let opts = rocksdb::Options::default();
 
-        let db =
-            RocksDB::open(&opts, "./db").map_err(|e| StorageError::RocksDBStorage(e.into()))?;
+        let db = OptimisticTransactionDB::open(&opts, "./db")
+            .map_err(|e| StorageError::RocksDBStorage(e.into()))?;
 
         Ok(Self {
             db,
@@ -123,12 +124,17 @@ impl StorageIdentityExtension for RocksDBStorage {
             return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
         }
 
+        let tx = self.db.transaction();
+        let username = &identity.username;
+
         // Set the username index
-        self._pset(IDENTITY_ID_BY_USERNAME, &identity.username, &identity.id)?;
+        tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)
+            .map_err(RocksDBStorageError::from)?;
 
         // Set the email index
         for email in &identity.emails {
-            self._pset(IDENTITY_ID_BY_EMAIL, email.0, &identity.id)?;
+            tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)
+                .map_err(RocksDBStorageError::from)?;
         }
 
         // Set the identity
@@ -145,25 +151,36 @@ impl StorageIdentityExtension for RocksDBStorage {
                 return Ok(());
             }
 
+            let tx = self.db.transaction();
+            let username = &identity.username;
+            let existing_username = &existing_identity.username;
+
             // emails have been updated
             if identity.emails != existing_identity.emails {
                 for email in &existing_identity.emails {
-                    self._pdel(IDENTITY_ID_BY_EMAIL, email.0)?;
+                    tx.delete(join_keys!(IDENTITY_ID_BY_EMAIL, email.0))
+                        .map_err(RocksDBStorageError::from)?;
                 }
                 for email in &identity.emails {
-                    self._pset(IDENTITY_ID_BY_EMAIL, email.0, &identity.id)?;
+                    tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)
+                        .map_err(RocksDBStorageError::from)?;
                 }
             }
 
             // username has been updated
-            if identity.username != existing_identity.username {
-                self._pdel(IDENTITY_ID_BY_USERNAME, &existing_identity.username)?;
-                self._pset(IDENTITY_ID_BY_USERNAME, &identity.username, &identity.id)?;
+            if username != existing_username {
+                tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, existing_username))
+                    .map_err(RocksDBStorageError::from)?;
+                tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)
+                    .map_err(RocksDBStorageError::from)?;
             }
 
             // Set the identity
-            self._pset(IDENTITY_BY_ID, &identity.id, identity)?;
+            let identity_bytes = utils::serialize::to_bytes(&identity)?;
+            tx.put(join_keys!(IDENTITY_BY_ID, &identity.id), identity_bytes)
+                .map_err(RocksDBStorageError::from)?;
 
+            tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
             Ok(())
         } else {
             Err(LogicStorageError::NotFound("identity".to_string()).into())
