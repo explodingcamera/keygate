@@ -1,4 +1,4 @@
-use rocksdb::{DBWithThreadMode, MultiThreaded, OptimisticTransactionDB};
+use rocksdb::{MultiThreaded, OptimisticTransactionDB};
 use thiserror::Error;
 
 use crate::{
