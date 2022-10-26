@@ -18,5 +18,4 @@ impl Signup {
     }
 }
 
-pub trait SignupTrait: Send + Sync {}
-impl SignupTrait for Signup {}
+impl Signup {}

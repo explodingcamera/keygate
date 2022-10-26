@@ -18,5 +18,4 @@ impl Registration {
     }
 }
 
-pub trait RegistrationTrait: Send + Sync {}
-impl RegistrationTrait for Registration {}
+impl Registration {}

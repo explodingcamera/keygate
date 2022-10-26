@@ -21,23 +21,23 @@ impl Session {
 }
 
 impl Session {
-    pub fn session_validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
+    pub fn validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
         todo!()
     }
 
-    pub fn session_invalidate(&self, session_token: &str) -> Result<(), KeygateError> {
+    pub fn invalidate(&self, session_token: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn sessions(&self, user_id: &str) -> Result<(), KeygateError> {
+    pub fn all(&self, user_id: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn session_refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError> {
+    pub fn refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn session_refresh(
+    pub fn refresh(
         &self,
         refresh_token: &str,
     ) -> Result<(tokens::SessionToken, tokens::RefreshToken), KeygateError> {

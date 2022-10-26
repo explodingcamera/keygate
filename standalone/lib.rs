@@ -1,9 +1,14 @@
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use keygate_core::{Keygate, KeygateConfig};
 use std::io::Result;
-type KS = web::Data<Keygate>;
+
 mod api;
+mod errors;
+mod schema;
 mod swagger;
+mod utils;
+
+type KG = web::Data<Keygate>;
 
 pub async fn run(config: KeygateConfig) -> Result<()> {
     let keygate_public = web::Data::new(Keygate::new(config.clone()));

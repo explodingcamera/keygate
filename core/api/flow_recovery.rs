@@ -19,15 +19,11 @@ impl Recovery {
 }
 
 impl Recovery {
-    pub fn recovery_initiate(&self) -> Result<(), KeygateError> {
+    pub fn init(&self) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn recovery_complete(&self) -> Result<(), KeygateError> {
-        todo!()
-    }
-
-    pub fn recovery(&self) -> Result<(), KeygateError> {
+    pub fn complete(&self) -> Result<(), KeygateError> {
         todo!()
     }
 }

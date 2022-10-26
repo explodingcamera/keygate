@@ -18,5 +18,4 @@ impl Verification {
     }
 }
 
-pub trait VerificationTrait: Send + Sync {}
-impl VerificationTrait for Verification {}
+impl Verification {}
