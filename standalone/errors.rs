@@ -3,15 +3,20 @@ use std::fmt::{Display, Formatter};
 use actix_web::{http::StatusCode, HttpResponse};
 use keygate_core::KeygateError;
 use serde::Serialize;
+use serde_json::json;
 use thiserror::Error;
 use utoipa::ToSchema;
-
-use crate::schema::KeygateResponse;
 
 #[derive(Error, Debug, ToSchema)]
 pub enum KeygateResponseError {
     #[error("paniced at {0}")]
     Unknown(String),
+
+    #[error("internal server error")]
+    InternalServerError,
+
+    #[error("unauthorized: {0}")]
+    Unauthorized(String),
 
     #[error(transparent)]
     KeygateError(#[from] KeygateError),
@@ -25,6 +30,7 @@ impl KeygateResponseError {
         match *self {
             KeygateResponseError::KeygateError(_) => "Internal Server Error".to_string(), // don't expose internal errors
             KeygateResponseError::IoError(_) => "Internal Server Error".to_string(), // don't expose internal errors
+            KeygateResponseError::InternalServerError => "Internal Server Error".to_string(), // don't expose internal errors
             _ => format!("{}", self),
         }
     }
@@ -40,9 +46,15 @@ impl actix_web::error::ResponseError for KeygateResponseError {
 
     fn error_response(&self) -> HttpResponse {
         let status = self.status_code();
-        HttpResponse::build(status).json(KeygateResponse::<String> {
-            status: "error".to_string(),
-            data: self.to_response_data(),
+        HttpResponse::build(status).json(KeygateErrorResponse {
+            status: status.as_u16(),
+            message: self.to_response_data(),
         })
     }
+}
+
+#[derive(ToSchema, Serialize)]
+pub struct KeygateErrorResponse {
+    pub status: u16,
+    pub message: String,
 }

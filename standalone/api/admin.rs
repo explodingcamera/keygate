@@ -1,5 +1,5 @@
 use crate::KG;
-use actix_web::{get, web, Responder, Scope};
+use actix_web::{get, web, HttpRequest, Responder, Scope};
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
@@ -18,7 +18,7 @@ pub fn get() -> Scope {
     )
 )]
 #[get("/test")]
-async fn test(ks: KG) -> impl Responder {
+async fn test(req: HttpRequest, ks: KG) -> impl Responder {
     ks.identity.get("something").unwrap().unwrap().username;
     "sdf"
 }

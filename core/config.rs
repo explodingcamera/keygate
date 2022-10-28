@@ -4,7 +4,7 @@ fn default_access_token_lifetime() -> u64 {
     30 * 60
 }
 
-fn default_refresh_token_lifetime() -> u64 {
+fn default_refresh_token_lifetime() -> i64 {
     14 * 24 * 3600
 }
 
@@ -48,7 +48,7 @@ impl Default for StorageOptions {
     }
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Environment {
     Development,
@@ -74,9 +74,9 @@ pub struct Configuration {
     #[serde(default = "default_storage_options")]
     pub storage_options: StorageOptions,
 
-    /// what domain to set the refresh token cookie on
-    /// if not set, the cookie will be set on the current domain
-    pub cookie_domain: Option<String>,
+    /// the domain keygate is running on, e.g `accounts.example.com`
+    /// refresh tokens are only valid for this domain
+    pub keygate_domain: String,
 
     /// admin api port
     /// if set to 0, the admin api will not be available
@@ -111,7 +111,7 @@ pub struct Configuration {
 
     /// refresh token lifetime in seconds
     #[serde(default = "default_refresh_token_lifetime")]
-    pub refresh_token_lifetime: u64,
+    pub refresh_token_lifetime: i64,
 
     /// set to true to enable multi domain support
     /// if enabled, `host` needs to equal `cookie_domain`
@@ -129,7 +129,7 @@ impl Default for Configuration {
             public_interface: default_public_interface(),
             storage_type: default_storage_type(),
             storage_options: default_storage_options(),
-            cookie_domain: None,
+            keygate_domain: "auth.localhost".to_string(),
             environment: Environment::Development,
             host: "localhost".to_string(),
             admin_prefix: None,

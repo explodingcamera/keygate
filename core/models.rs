@@ -35,6 +35,8 @@ pub struct Session {
     pub revoked: bool,
 }
 
+// refresh tokens are stored in a separate table, since - while only one refresh token is valid at a time - we want
+// to keep a history of all refresh tokens issued to a session so we can detect if a refresh token has been stolen
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub struct RefreshToken {
     pub id: String,
@@ -47,6 +49,7 @@ pub struct RefreshToken {
     pub access_token: String,
 }
 
+// If a user is authenticated in multiple tabs on the same device, they will have multiple access tokens at the same time.
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub struct AccessToken {
     pub id: String,
