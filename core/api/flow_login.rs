@@ -1,4 +1,4 @@
-use crate::{models::EmailLoginFlow, KeygateConfigInternal, KeygateError, KeygateStorage};
+use crate::{models::EmailLoginProcess, KeygateConfigInternal, KeygateError, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -19,40 +19,40 @@ impl Login {
 }
 
 impl Login {
-    pub fn init_email_flow(&self, device_id: &str) -> Result<EmailLoginFlow, KeygateError> {
+    pub fn init_email_process(&self, device_id: &str) -> Result<EmailLoginProcess, KeygateError> {
         todo!()
     }
 
-    pub fn get_email_flow(
+    pub fn get_email_process(
         &self,
         device_id: &str,
-        email_flow_id: &str,
-    ) -> Result<EmailLoginFlow, KeygateError> {
+        email_process_id: &str,
+    ) -> Result<EmailLoginProcess, KeygateError> {
         todo!()
     }
 
     // pub fn login_submit_password(
     //     &self,
-    //     login_flow_id: &str,
+    //     login_process_id: &str,
     //     password: &str,
-    // ) -> Result<LoginFlow, KeygateError> {
+    // ) -> Result<LoginProcess, KeygateError> {
     //     todo!()
     // }
 
     // pub fn login_submit_magic_link(
     //     &self,
-    //     login_flow_id: &str,
+    //     login_process_id: &str,
     //     password: &str,
-    // ) -> Result<LoginFlow, KeygateError> {
+    // ) -> Result<LoginProcess, KeygateError> {
     //     todo!()
     // }
 
     // pub fn login_submit_otp(
     //     &self,
-    //     login_flow_id: &str,
+    //     login_process_id: &str,
     //     device_id: &str,
     //     magic_link: &str,
-    // ) -> Result<LoginFlow, KeygateError> {
+    // ) -> Result<LoginProcess, KeygateError> {
     //     todo!()
     // }
 }

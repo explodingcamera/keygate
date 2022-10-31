@@ -60,45 +60,45 @@ pub struct AccessToken {
     pub created_at: u64,
 }
 
-pub enum Flows {
-    EmailLoginFlow,
-    EmailSignupFlow,
-    VerificationFlow,
-    RecoveryFlow,
+pub enum Processs {
+    EmailLoginProcess,
+    EmailSignupProcess,
+    VerificationProcess,
+    RecoveryProcess,
 }
 
-pub struct Flow {
+pub struct Process {
     pub id: String,
-    pub flow: Flows,
+    pub process: Processs,
     pub expires_at: u64,
     pub created_at: u64,
 }
 
-pub struct EmailLoginFlow {
+pub struct EmailLoginProcess {
     pub email: Option<String>,
     pub identity_id: String,
     pub device_id: String,
 }
 
-pub struct EmailSignupFlow {
+pub struct EmailSignupProcess {
     pub email: Option<String>,
     pub device_id: String,
 }
 
-pub struct VerificationFlow {
+pub struct VerificationProcess {
     pub device_id: String,
     pub identity_id: String,
     pub verification_token: String,
 }
 
-pub struct RecoveryFlow {
+pub struct RecoveryProcess {
     pub identity_id: String,
 }
 
-pub struct FlowToken {
+pub struct ProcessToken {
     pub id: String,
-    pub flow_id: String,
+    pub process_id: String,
     pub token: String,
-    pub expires_at: u64, // has to be before the flow expires
+    pub expires_at: u64, // has to be before the process expires
     pub created_at: u64,
 }
