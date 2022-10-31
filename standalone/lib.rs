@@ -16,6 +16,12 @@ pub async fn run(config: KeygateConfig) -> Result<()> {
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
+    let json_cfg_public = web::JsonConfig::default()
+        .limit(2048)
+        .error_handler(|err, _| errors::KeygateResponseError::BadRequest(err.to_string()).into());
+
+    let json_cfg_admin = json_cfg_public.clone();
+
     let admin_api = HttpServer::new(move || {
         let api = web::scope("/admin").service(api::admin::get());
 
@@ -25,6 +31,7 @@ pub async fn run(config: KeygateConfig) -> Result<()> {
         };
 
         App::new()
+            .app_data(json_cfg_public.clone())
             .app_data(keygate_admin.clone())
             .service(admin_service)
             .service(swagger::admin_api_docs())
@@ -44,6 +51,7 @@ pub async fn run(config: KeygateConfig) -> Result<()> {
         };
 
         App::new()
+            .app_data(json_cfg_admin.clone())
             .app_data(keygate_public.clone())
             .service(public_service)
             .service(swagger::public_api_docs())

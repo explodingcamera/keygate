@@ -44,13 +44,9 @@ pub enum KeygateError {
     #[error(transparent)]
     Recovery(#[from] api::RecoveryError),
     #[error(transparent)]
-    Registration(#[from] api::RegistrationError),
-    #[error(transparent)]
     Session(#[from] api::SessionError),
     #[error(transparent)]
     Signup(#[from] api::SignupError),
-    #[error(transparent)]
-    Verification(#[from] api::VerificationError),
 
     #[error("unknown error")]
     Unknown,
@@ -70,10 +66,8 @@ pub struct Keygate {
     pub metadata: api::Metadata,
     pub oauth: api::OAuth,
     pub recovery: api::Recovery,
-    pub registration: api::Registration,
     pub session: api::Session,
     pub signup: api::Signup,
-    pub verification: api::Verification,
 }
 
 impl Keygate {
@@ -108,10 +102,8 @@ impl Keygate {
             metadata: api::Metadata::new(config.clone(), storage.clone()),
             oauth: api::OAuth::new(config.clone(), storage.clone()),
             recovery: api::Recovery::new(config.clone(), storage.clone()),
-            registration: api::Registration::new(config.clone(), storage.clone()),
             session: api::Session::new(config.clone(), storage.clone()),
-            signup: api::Signup::new(config.clone(), storage.clone()),
-            verification: api::Verification::new(config, storage),
+            signup: api::Signup::new(config, storage.clone()),
         }
     }
 }

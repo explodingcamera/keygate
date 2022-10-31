@@ -85,12 +85,6 @@ pub struct EmailSignupProcess {
     pub device_id: String,
 }
 
-pub struct VerificationProcess {
-    pub device_id: String,
-    pub identity_id: String,
-    pub verification_token: String,
-}
-
 pub struct RecoveryProcess {
     pub identity_id: String,
 }

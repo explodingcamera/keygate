@@ -1,24 +1,13 @@
-use crate::KG;
-use actix_web::{get, web, HttpRequest, Responder, Scope};
+use actix_web::{web, Scope};
 use utoipa::OpenApi;
 
+mod schema;
+
 #[derive(OpenApi)]
-#[openapi(paths(super::admin::test))]
+#[openapi(paths())]
 pub struct AdminApiDoc;
 
 pub fn get() -> Scope {
-    let identity = web::scope("/admin").service(test);
+    let identity = web::scope("/admin");
     web::scope("/v1").service(identity)
-}
-
-#[utoipa::path(
-    context_path = "/api",
-    responses(
-        (status = 200, body = String)
-    )
-)]
-#[get("/test")]
-async fn test(req: HttpRequest, ks: KG) -> impl Responder {
-    ks.identity.get("something").unwrap().unwrap().username;
-    "sdf"
 }

@@ -1,22 +1,19 @@
-use std::fmt::{Display, Formatter};
-
 use actix_web::{http::StatusCode, HttpResponse};
 use keygate_core::KeygateError;
 use serde::Serialize;
-use serde_json::json;
 use thiserror::Error;
 use utoipa::ToSchema;
 
 #[derive(Error, Debug, ToSchema)]
 pub enum KeygateResponseError {
-    #[error("paniced at {0}")]
-    Unknown(String),
-
     #[error("internal server error")]
     InternalServerError,
 
     #[error("unauthorized: {0}")]
     Unauthorized(String),
+
+    #[error("bad request: {0}")]
+    BadRequest(String),
 
     #[error(transparent)]
     KeygateError(#[from] KeygateError),

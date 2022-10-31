@@ -7,35 +7,34 @@ version = "0.1.0"
 path = "lib.rs"
 
 [dependencies]
+
+# crypto & encoding
 argon2 = "0.4"
 base64 = "0.13"
-chrono = {version = "0.4", features = ["serde"]}
-dashmap = "5"
-downcast-rs = "1.2.0"
 hex = "0.4.3"
-jsonwebtoken = {version = "8", default-features = false, optional = true}
+keygate-jwt = {version = "1.0", features = ["eddsa"]}
 nanoid = "0.4.0"
-oauth2 = {version = "4", optional = true, default-features = false, features = ["rustls-tls"]}
 rand_core = {version = "0.6", features = ["std"]}
-reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]}
-rmp-serde = "1.1"
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 sha1 = "0.10"
+
+chrono = {version = "0.4", features = ["serde"]}
+dashmap = "5"
+downcast-rs = "1.2.0"
+reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]}
+rmp-serde = "1.1"
 thiserror = "1"
 tokio = {version = "1", default-features = false, features = ["macros"]}
 
 r2d2 = {version = "0.8", optional = true}
-redis = {version = "0.21", default-features = false, optional = true, features = ["r2d2"]}
+redis = {version = "0.22", default-features = false, optional = true, features = ["r2d2"]}
 rocksdb = {version = "0.19.0", default-features = false, optional = true, features = ["lz4"]}
 
 no-panic = "0.1"
 
 [features]
-default = ["oauth2", "backend-redis", "backend-rocksdb"]
+default = ["backend-redis", "backend-rocksdb"]
 
 backend-redis = ["dep:redis"]
 backend-rocksdb = ["dep:rocksdb", "r2d2"]
-
-jwt = ["dep:jsonwebtoken"]
-oauth2 = ["dep:oauth2"]
