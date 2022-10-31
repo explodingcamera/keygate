@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use keygate_core::{Keygate, KeygateConfig};
 use std::io::Result;

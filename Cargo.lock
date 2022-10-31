@@ -1053,9 +1053,9 @@ dependencies = [
 
 [[package]]
 name = "keygate-jwt"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f705db18ce70b4c2a55bfc3942abb69d133aff6724614c163b380e363a66156"
+checksum = "ec517c5319fe86e0bd232b2efdccb331b4729cecf993274d50c7c3c463a7891d"
 dependencies = [
  "coarsetime",
  "ct-codecs",

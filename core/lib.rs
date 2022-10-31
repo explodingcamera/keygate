@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::RwLock;
