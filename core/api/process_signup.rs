@@ -13,7 +13,7 @@ pub struct Signup {
 }
 
 impl Signup {
-    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
         Self { config, storage }
     }
 }

@@ -85,7 +85,7 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
         None => return Err(unauthorized!("invalid refresh token")),
     }
 
-    let (session_token, refresh_token) = kg.session.refresh(old_refresh_token.value())?;
+    let (session_token, refresh_token) = kg.session.refresh(old_refresh_token.value()).await?;
     let session_token: String = session_token.try_into()?;
     if refresh_token_lifetime.is_negative() {
         return Err(KeygateResponseError::InternalServerError);

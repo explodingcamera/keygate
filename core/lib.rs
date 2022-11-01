@@ -1,4 +1,6 @@
 #![deny(unsafe_code)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -42,8 +44,6 @@ pub enum KeygateError {
     #[error(transparent)]
     Metadata(#[from] api::MetadataError),
     #[error(transparent)]
-    OAuth(#[from] api::OAuthError),
-    #[error(transparent)]
     Recovery(#[from] api::RecoveryError),
     #[error(transparent)]
     Session(#[from] api::SessionError),
@@ -66,29 +66,28 @@ pub struct Keygate {
     pub identity: api::Identity,
     pub login: api::Login,
     pub metadata: api::Metadata,
-    pub oauth: api::OAuth,
     pub recovery: api::Recovery,
     pub session: api::Session,
     pub signup: api::Signup,
 }
 
 impl Keygate {
-    pub fn new(config: Configuration) -> Result<Keygate, KeygateError> {
+    pub async fn new(config: Configuration) -> Result<Keygate, KeygateError> {
         let res = match config.storage_type {
             StorageType::RocksDB => match RocksDBStorage::new() {
                 Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
                 Err(e) => return Err(e.into()),
             },
-            StorageType::Redis => match RedisStorage::new() {
+            StorageType::Redis => match RedisStorage::new().await {
                 Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
                 Err(e) => return Err(e.into()),
             },
         };
 
-        Ok(res)
+        Ok(res.await)
     }
 
-    pub fn new_with_storage(
+    pub async fn new_with_storage(
         config: Configuration,
         storage: Arc<dyn Storage + Send + Sync>,
     ) -> Keygate {
@@ -99,13 +98,12 @@ impl Keygate {
             storage: storage.clone(),
             health: Arc::new(RwLock::new(Health::Starting)),
 
-            identity: api::Identity::new(config.clone(), storage.clone()),
-            login: api::Login::new(config.clone(), storage.clone()),
-            metadata: api::Metadata::new(config.clone(), storage.clone()),
-            oauth: api::OAuth::new(config.clone(), storage.clone()),
-            recovery: api::Recovery::new(config.clone(), storage.clone()),
-            session: api::Session::new(config.clone(), storage.clone()),
-            signup: api::Signup::new(config, storage.clone()),
+            identity: api::Identity::new(config.clone(), storage.clone()).await,
+            login: api::Login::new(config.clone(), storage.clone()).await,
+            metadata: api::Metadata::new(config.clone(), storage.clone()).await,
+            recovery: api::Recovery::new(config.clone(), storage.clone()).await,
+            session: api::Session::new(config.clone(), storage.clone()).await,
+            signup: api::Signup::new(config, storage.clone()).await,
         }
     }
 }

@@ -13,17 +13,17 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
         Self { config, storage }
     }
 }
 
 impl Metadata {
-    pub fn version(&self) -> &'static str {
+    pub async fn version(&self) -> &'static str {
         env!("CARGO_PKG_VERSION")
     }
 
-    pub fn health(&self) -> Health {
+    pub async fn health(&self) -> Health {
         Health::Healthy
     }
 }

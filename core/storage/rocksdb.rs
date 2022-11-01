@@ -45,37 +45,38 @@ impl RocksDBStorage {
 
 impl Storage for RocksDBStorage {}
 
+#[async_trait::async_trait]
 impl BaseStorage for RocksDBStorage {
-    fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    async fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         let res = self.db.get(key).map_err(RocksDBStorageError::from)?;
         Ok(res)
     }
 
-    fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    async fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.db.put(key, value).map_err(RocksDBStorageError::from)?;
         Ok(())
     }
 
-    fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
+    async fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
         Ok(self
             .db
             .get(join_keys!(prefix, key))
             .map_err(RocksDBStorageError::from)?)
     }
 
-    fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
+    async fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
         self.db
             .put(join_keys!(prefix, key), value)
             .map_err(RocksDBStorageError::from)?;
         Ok(())
     }
 
-    fn _del(&self, key: &str) -> Result<(), StorageError> {
+    async fn _del(&self, key: &str) -> Result<(), StorageError> {
         self.db.delete(key).map_err(RocksDBStorageError::from)?;
         Ok(())
     }
 
-    fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError> {
+    async fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError> {
         self.db
             .delete(join_keys!(prefix, key))
             .map_err(RocksDBStorageError::from)?;
@@ -84,44 +85,56 @@ impl BaseStorage for RocksDBStorage {
 }
 
 impl StorageSerdeExtension for RocksDBStorage {}
+
+#[async_trait::async_trait]
 impl StorageIdentityExtension for RocksDBStorage {
-    fn get_identity_by_username(
+    async fn get_identity_by_username(
         &self,
         username: &str,
     ) -> Result<Option<models::Identity>, StorageError> {
-        let id = self._pget::<String>(IDENTITY_ID_BY_USERNAME, username)?;
+        let id = self
+            ._pget::<String>(IDENTITY_ID_BY_USERNAME, username)
+            .await?;
         if let Some(id) = id {
-            self.get_identity_by_id(id.as_str())
+            self.get_identity_by_id(id.as_str()).await
         } else {
             Ok(None)
         }
     }
 
-    fn get_identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
-        let id = self._pget::<String>(IDENTITY_ID_BY_EMAIL, email)?;
+    async fn get_identity_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<models::Identity>, StorageError> {
+        let id = self._pget::<String>(IDENTITY_ID_BY_EMAIL, email).await?;
         if let Some(id) = id {
-            self.get_identity_by_id(id.as_str())
+            self.get_identity_by_id(id.as_str()).await
         } else {
             Ok(None)
         }
     }
 
-    fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        self._pget::<models::Identity>(IDENTITY_BY_ID, id)
+    async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
+        self._pget::<models::Identity>(IDENTITY_BY_ID, id).await
     }
 
-    fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
+    async fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
         // Check if the username is already taken
-        if self.exists(&join_keys!(IDENTITY_ID_BY_USERNAME, &identity.username))? {
+        if self
+            .exists(&join_keys!(IDENTITY_ID_BY_USERNAME, &identity.username))
+            .await?
+        {
             return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
         }
 
         // Check if the email is already taken
-        if identity.emails.iter().any(|email| {
-            self.exists(&join_keys!(IDENTITY_ID_BY_EMAIL, email.0))
-                .unwrap_or(false)
-        }) {
-            return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
+        for email in &identity.emails {
+            if self
+                .exists(&join_keys!(IDENTITY_ID_BY_EMAIL, email.0))
+                .await?
+            {
+                return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
+            }
         }
 
         let tx = self.db.transaction();
@@ -138,13 +151,13 @@ impl StorageIdentityExtension for RocksDBStorage {
         }
 
         // Set the identity
-        self._pset(IDENTITY_BY_ID, &identity.id, identity)?;
+        self._pset(IDENTITY_BY_ID, &identity.id, identity).await?;
 
         Ok(())
     }
 
-    fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
-        let existing_identity = self.get_identity_by_id(&identity.id)?;
+    async fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
+        let existing_identity = self.get_identity_by_id(&identity.id).await?;
 
         if let Some(existing_identity) = existing_identity {
             if identity == &existing_identity {

@@ -15,29 +15,29 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
         Self { config, storage }
     }
 }
 
 impl Session {
-    pub fn validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
+    pub async fn validate(&self, session_token: &str) -> Result<models::Session, KeygateError> {
         todo!()
     }
 
-    pub fn invalidate(&self, session_token: &str) -> Result<(), KeygateError> {
+    pub async fn invalidate(&self, session_token: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn all(&self, user_id: &str) -> Result<(), KeygateError> {
+    pub async fn all(&self, user_id: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError> {
+    pub async fn refresh_invalidate(&self, refresh_token: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn refresh(
+    pub async fn refresh(
         &self,
         refresh_token: &str,
     ) -> Result<(tokens::SessionToken, tokens::RefreshToken), KeygateError> {

@@ -13,17 +13,20 @@ pub struct Login {
 }
 
 impl Login {
-    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
         Self { config, storage }
     }
 }
 
 impl Login {
-    pub fn init_email_process(&self, device_id: &str) -> Result<EmailLoginProcess, KeygateError> {
+    pub async fn init_email_process(
+        &self,
+        device_id: &str,
+    ) -> Result<EmailLoginProcess, KeygateError> {
         todo!()
     }
 
-    pub fn get_email_process(
+    pub async fn get_email_process(
         &self,
         device_id: &str,
         email_process_id: &str,

@@ -13,17 +13,17 @@ pub struct Recovery {
 }
 
 impl Recovery {
-    pub fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
         Self { config, storage }
     }
 }
 
 impl Recovery {
-    pub fn init(&self) -> Result<(), KeygateError> {
+    pub async fn init(&self) -> Result<(), KeygateError> {
         todo!()
     }
 
-    pub fn complete(&self) -> Result<(), KeygateError> {
+    pub async fn complete(&self) -> Result<(), KeygateError> {
         todo!()
     }
 }

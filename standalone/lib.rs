@@ -1,4 +1,6 @@
 #![deny(unsafe_code)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use keygate_core::{Keygate, KeygateConfig};
