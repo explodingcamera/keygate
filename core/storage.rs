@@ -89,6 +89,9 @@ pub trait BaseStorage: Sync {
     }
 }
 
-pub trait Storage: BaseStorage + traits::StorageIdentityExtension + Downcast {}
+pub trait Storage:
+    BaseStorage + traits::StorageIdentityExtension + traits::StorageProcessExtension + Downcast
+{
+}
 
 impl_downcast!(Storage);

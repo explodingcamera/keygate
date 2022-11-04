@@ -1,4 +1,6 @@
-use crate::{models::EmailLoginProcess, KeygateConfigInternal, KeygateError, KeygateStorage};
+use crate::{
+    models::UsernameEmailLoginProcess, KeygateConfigInternal, KeygateError, KeygateStorage,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -22,7 +24,7 @@ impl Login {
     pub async fn init_email_process(
         &self,
         device_id: &str,
-    ) -> Result<EmailLoginProcess, KeygateError> {
+    ) -> Result<UsernameEmailLoginProcess, KeygateError> {
         todo!()
     }
 
@@ -30,7 +32,7 @@ impl Login {
         &self,
         device_id: &str,
         email_process_id: &str,
-    ) -> Result<EmailLoginProcess, KeygateError> {
+    ) -> Result<UsernameEmailLoginProcess, KeygateError> {
         todo!()
     }
 

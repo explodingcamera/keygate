@@ -60,39 +60,50 @@ pub struct AccessToken {
     pub created_at: u64,
 }
 
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub enum Processs {
-    EmailLoginProcess,
-    EmailSignupProcess,
-    VerificationProcess,
-    RecoveryProcess,
+    UsernameEmailLogin(BaseProcess<UsernameEmailLoginProcess>),
+    UsernameEmailSignup(BaseProcess<UsernameEmailSignupProcess>),
+    Verification(BaseProcess<VerificationProcess>),
+    Recovery(BaseProcess<RecoveryProcess>),
 }
 
-pub struct Process {
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
+pub struct BaseProcess<T> {
     pub id: String,
-    pub process: Processs,
+    pub process: T,
     pub expires_at: u64,
     pub created_at: u64,
 }
 
-pub struct EmailLoginProcess {
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
+pub struct UsernameEmailLoginProcess {
     pub email: Option<String>,
     pub identity_id: String,
     pub device_id: String,
 }
 
-pub struct EmailSignupProcess {
-    pub email: Option<String>,
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
+pub struct UsernameEmailSignupProcess {
     pub device_id: String,
+    pub email: Option<String>,
+    pub username: Option<String>,
 }
 
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
+pub struct VerificationProcess {
+    pub identity_id: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub struct RecoveryProcess {
     pub identity_id: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub struct ProcessToken {
     pub id: String,
     pub process_id: String,
-    pub token: String,
     pub expires_at: u64, // has to be before the process expires
     pub created_at: u64,
 }

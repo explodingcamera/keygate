@@ -4,3 +4,4 @@ pub mod random;
 pub mod serialize;
 pub mod sha1;
 pub mod tokens;
+pub mod validate;

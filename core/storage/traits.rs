@@ -1,4 +1,5 @@
 mod identity_extension;
+mod process_extension;
 mod serde_extension;
 
 // storage backends can implement this trait instead of implementing the Storage Extension traits
@@ -6,6 +7,7 @@ mod serde_extension;
 pub trait GenericKV: BaseStorage + StorageSerdeExtension + Send + Sync {}
 
 pub use identity_extension::StorageIdentityExtension;
+pub use process_extension::StorageProcessExtension;
 pub use serde_extension::StorageSerdeExtension;
 
 use super::BaseStorage;

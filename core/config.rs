@@ -66,6 +66,8 @@ pub struct IdentityConfig {
     pub multiple_emails: bool,
 
     pub require_email_verification: bool,
+
+    pub signup_process_lifetime: u64,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -173,6 +175,7 @@ impl Default for Configuration {
                 require_email: true,
                 multiple_emails: false,
                 require_email_verification: false,
+                signup_process_lifetime: 10 * 60,
             },
         }
     }
