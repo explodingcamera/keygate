@@ -5,6 +5,18 @@ use thiserror::Error;
 pub enum SignupError {
     #[error("unknown error")]
     Unknown,
+
+    #[error("invalid email")]
+    InvalidEmail,
+
+    #[error("invalid password")]
+    InvalidPassword,
+
+    #[error("invalid username")]
+    InvalidUsername,
+
+    #[error("this user already exists")]
+    UserAlreadyExists,
 }
 
 pub struct Signup {
@@ -18,4 +30,11 @@ impl Signup {
     }
 }
 
-impl Signup {}
+impl Signup {
+    pub async fn create_process_email(&self, email: String) -> Result<(), SignupError> {
+        match self.storage.get_identity_by_email(&email).await {
+            Ok(_) => Err(SignupError::Unknown),
+            Err(_) => Ok(()),
+        }
+    }
+}

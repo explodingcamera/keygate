@@ -56,24 +56,40 @@ pub enum Environment {
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
+pub struct IdentityConfig {
+    pub enable_usernames: bool,
+    pub require_username: bool,
+
+    pub enable_emails: bool,
+    pub require_email: bool,
+
+    pub multiple_emails: bool,
+
+    pub require_email_verification: bool,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
 pub struct StorageOptions {
     #[serde(default = "default_storage_path")]
     pub storage_path: String,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
-pub struct Configuration {
-    #[serde(default = "default_environment")]
-    pub environment: Environment,
+pub struct TokenConfig {
+    /// Sign JWT tokens
+    pub sign_jwt: bool,
 
-    /// What storage backend to use
-    #[serde(default = "default_storage_type")]
-    pub storage_type: StorageType,
+    /// access token lifetime in seconds
+    #[serde(default = "default_access_token_lifetime")]
+    pub access_token_lifetime: u64,
 
-    /// Options for the storage backend
-    #[serde(default = "default_storage_options")]
-    pub storage_options: StorageOptions,
+    /// refresh token lifetime in seconds
+    #[serde(default = "default_refresh_token_lifetime")]
+    pub refresh_token_lifetime: i64,
+}
 
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct ServerConfig {
     /// the domain keygate is running on, e.g `accounts.example.com`
     /// refresh tokens are only valid for this domain
     pub keygate_domain: String,
@@ -104,37 +120,60 @@ pub struct Configuration {
 
     /// the host keygate should listen on
     pub host: String,
+}
 
-    /// access token lifetime in seconds
-    #[serde(default = "default_access_token_lifetime")]
-    pub access_token_lifetime: u64,
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct Configuration {
+    #[serde(default = "default_environment")]
+    pub environment: Environment,
 
-    /// refresh token lifetime in seconds
-    #[serde(default = "default_refresh_token_lifetime")]
-    pub refresh_token_lifetime: i64,
+    /// What storage backend to use
+    #[serde(default = "default_storage_type")]
+    pub storage_type: StorageType,
 
-    /// set to true to enable multi domain support
-    /// if enabled, `host` needs to equal `cookie_domain`
-    pub multi_domain: bool,
+    /// Options for the storage backend
+    #[serde(default = "default_storage_options")]
+    pub storage_options: StorageOptions,
+
+    /// server configuration
+    pub server: ServerConfig,
+
+    /// token configuration
+    pub token: TokenConfig,
+
+    /// identity configuration
+    pub identity: IdentityConfig,
 }
 
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            access_token_lifetime: default_access_token_lifetime(),
-            refresh_token_lifetime: default_refresh_token_lifetime(),
-            admin_port: default_admin_port(),
-            admin_interface: default_admin_interface(),
-            public_port: default_public_port(),
-            public_interface: default_public_interface(),
             storage_type: default_storage_type(),
             storage_options: default_storage_options(),
-            keygate_domain: "auth.localhost".to_string(),
             environment: Environment::Development,
-            host: "localhost".to_string(),
-            admin_prefix: None,
-            public_prefix: None,
-            multi_domain: false,
+            server: ServerConfig {
+                admin_port: default_admin_port(),
+                admin_interface: default_admin_interface(),
+                public_port: default_public_port(),
+                public_interface: default_public_interface(),
+                keygate_domain: "auth.localhost".to_string(),
+                host: "localhost".to_string(),
+                admin_prefix: None,
+                public_prefix: None,
+            },
+            token: TokenConfig {
+                sign_jwt: false,
+                access_token_lifetime: default_access_token_lifetime(),
+                refresh_token_lifetime: default_refresh_token_lifetime(),
+            },
+            identity: IdentityConfig {
+                enable_usernames: true,
+                require_username: true,
+                enable_emails: true,
+                require_email: true,
+                multiple_emails: false,
+                require_email_verification: false,
+            },
         }
     }
 }

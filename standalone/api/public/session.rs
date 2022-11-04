@@ -53,10 +53,10 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
             .read()
             .map_err(|_| KeygateResponseError::InternalServerError)?;
         (
-            config.keygate_domain.clone(),
-            config.public_prefix.clone().unwrap_or_default(),
+            config.server.keygate_domain.clone(),
+            config.server.public_prefix.clone().unwrap_or_default(),
             config.environment.clone(),
-            config.refresh_token_lifetime,
+            config.token.refresh_token_lifetime,
         )
     };
 
@@ -86,7 +86,7 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
     }
 
     let (session_token, refresh_token) = kg.session.refresh(old_refresh_token.value()).await?;
-    let session_token: String = session_token.try_into()?;
+    let session_token: String = session_token.to_string();
     if refresh_token_lifetime.is_negative() {
         return Err(KeygateResponseError::InternalServerError);
     }
