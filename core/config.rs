@@ -57,17 +57,18 @@ pub enum Environment {
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct IdentityConfig {
-    pub enable_usernames: bool,
-    pub require_username: bool,
-
-    pub enable_emails: bool,
-    pub require_email: bool,
-
-    pub multiple_emails: bool,
-
-    pub require_email_verification: bool,
-
+    pub signup_with_email: bool,
+    pub signup_with_username: bool,
+    pub signup_require_username: bool,
+    pub signup_require_email: bool,
+    pub signup_require_email_verification: bool,
     pub signup_process_lifetime: u64,
+
+    pub login_with_username: bool,
+    pub login_with_email: bool,
+    pub login_process_lifetime: u64,
+
+    pub allow_multiple_emails: bool,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -169,13 +170,16 @@ impl Default for Configuration {
                 refresh_token_lifetime: default_refresh_token_lifetime(),
             },
             identity: IdentityConfig {
-                enable_usernames: true,
-                require_username: true,
-                enable_emails: true,
-                require_email: true,
-                multiple_emails: false,
-                require_email_verification: false,
-                signup_process_lifetime: 10 * 60,
+                allow_multiple_emails: false,
+                signup_with_email: false,
+                signup_with_username: true,
+                signup_require_username: true,
+                signup_require_email: false,
+                signup_require_email_verification: false,
+                signup_process_lifetime: 60 * 60,
+                login_with_email: true,
+                login_with_username: true,
+                login_process_lifetime: 60 * 60,
             },
         }
     }

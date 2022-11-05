@@ -45,47 +45,39 @@ impl Signup {
 impl Signup {
     pub async fn init_signup_process(
         &self,
-        username_or_email: String,
+        username: Option<String>,
+        email: Option<String>,
         device_id: String,
     ) -> Result<BaseProcess<UsernameEmailSignupProcess>, SignupError> {
+        let config = self.get_config()?;
+
         if !utils::validate::is_valid_device_id(&device_id) {
             return Err(SignupError::Unknown);
         }
 
-        let config = self.get_config()?;
-
-        if config.identity.enable_usernames {
-            match self.storage.get_identity_by_email(&username_or_email).await {
-                Err(_) => return Err(SignupError::Unknown),
-                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
-                Ok(None) => {}
-            };
-        }
-
-        let is_email = if username_or_email.contains('@') {
-            if !username_or_email.contains('.') {
-                return Err(SignupError::InvalidEmail);
-            }
-
-            if config.identity.enable_emails {
-                match self.storage.get_identity_by_email(&username_or_email).await {
+        if config.identity.signup_with_email {
+            if let Some(email) = email.clone() {
+                match self.storage.get_identity_by_email(&email).await {
                     Err(_) => return Err(SignupError::Unknown),
                     Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
                     Ok(None) => {}
                 };
+            } else if config.identity.signup_require_email {
+                return Err(SignupError::InvalidEmail);
             }
-            true
-        } else {
-            if username_or_email.len() < 3 {
+        }
+
+        if config.identity.signup_require_username {
+            if let Some(username) = username.clone() {
+                match self.storage.get_identity_by_username(&username).await {
+                    Err(_) => return Err(SignupError::Unknown),
+                    Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
+                    Ok(None) => {}
+                };
+            } else if config.identity.signup_require_username {
                 return Err(SignupError::InvalidUsername);
             }
-            false
-        };
-
-        let (username, email) = match is_email {
-            true => (None, Some(username_or_email)),
-            false => (Some(username_or_email), None),
-        };
+        }
 
         let process = models::BaseProcess {
             process: models::UsernameEmailSignupProcess {
@@ -95,12 +87,15 @@ impl Signup {
             },
             id: utils::random::secure_random_id(),
             created_at: chrono::Utc::now().timestamp().unsigned_abs(),
-            expires_at: chrono::Utc::now().timestamp().unsigned_abs()
-                + config.identity.signup_process_lifetime,
+            expires_at: chrono::Utc::now()
+                .timestamp()
+                .unsigned_abs()
+                .checked_add(config.identity.signup_process_lifetime)
+                .ok_or(SignupError::Unknown)?,
         };
 
         self.storage
-            .create_process(&models::Processs::UsernameEmailSignup(process.clone()))
+            .create_process(&models::Process::UsernameEmailSignup(process.clone()))
             .await
             .map_err(|_| SignupError::Unknown)?;
 

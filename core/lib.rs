@@ -50,6 +50,9 @@ pub enum KeygateError {
     #[error(transparent)]
     Signup(#[from] api::SignupError),
 
+    #[error("validation error")]
+    ValidationError(String),
+
     #[error("unknown error")]
     Unknown,
 }

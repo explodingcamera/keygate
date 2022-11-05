@@ -1,7 +1,7 @@
 use nanoid::nanoid;
 
 pub fn secure_random_id() -> String {
-    nanoid!(21)
+    nanoid!(21, &nanoid::alphabet::SAFE)
 }
 
 #[cfg(test)]

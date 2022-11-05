@@ -5,7 +5,10 @@ use utoipa::ToSchema;
 use crate::{utils::JsonResult, KG};
 
 #[derive(Deserialize, ToSchema)]
-pub struct LoginProcessRequest {}
+pub struct LoginProcessRequest {
+    username_or_email: String,
+    device_id: String,
+}
 
 #[derive(Serialize, ToSchema)]
 pub struct LoginProcessResponse {}
@@ -23,5 +26,10 @@ async fn create_login_process(
     req: Json<LoginProcessRequest>,
     kg: KG,
 ) -> JsonResult<LoginProcessResponse> {
+    let res = kg
+        .login
+        .init_login_process(&req.username_or_email, &req.device_id)
+        .await?;
+
     todo!()
 }

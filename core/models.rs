@@ -61,7 +61,7 @@ pub struct AccessToken {
 }
 
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
-pub enum Processs {
+pub enum Process {
     UsernameEmailLogin(BaseProcess<UsernameEmailLoginProcess>),
     UsernameEmailSignup(BaseProcess<UsernameEmailSignupProcess>),
     Verification(BaseProcess<VerificationProcess>),
@@ -78,7 +78,6 @@ pub struct BaseProcess<T> {
 
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub struct UsernameEmailLoginProcess {
-    pub email: Option<String>,
     pub identity_id: String,
     pub device_id: String,
 }

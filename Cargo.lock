@@ -1295,6 +1295,7 @@ dependencies = [
  "no-panic",
  "rand_core",
  "redis",
+ "regex",
  "reqwest",
  "rmp-serde",
  "rocksdb",

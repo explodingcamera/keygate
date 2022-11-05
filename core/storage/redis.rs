@@ -276,17 +276,17 @@ impl StorageIdentityExtension for RedisStorage {
 
 #[async_trait::async_trait]
 impl StorageProcessExtension for RedisStorage {
-    async fn create_process(&self, process: &models::Processs) -> Result<(), StorageError> {
+    async fn create_process(&self, process: &models::Process) -> Result<(), StorageError> {
         todo!()
     }
     async fn create_process_token(&self, token: &models::ProcessToken) -> Result<(), StorageError> {
         todo!()
     }
 
-    async fn update_process(&self, updated_process: &models::Processs) -> Result<(), StorageError> {
+    async fn update_process(&self, updated_process: &models::Process) -> Result<(), StorageError> {
         todo!()
     }
-    async fn process_by_id(&self, id: &str) -> Result<Option<models::Processs>, StorageError> {
+    async fn process_by_id(&self, id: &str) -> Result<Option<models::Process>, StorageError> {
         todo!()
     }
     async fn process_token_by_id(

@@ -1,19 +1,3 @@
-macro_rules! join_keys {
-  ($($args:expr),*) => {{
-      let result = String::new();
-      $(
-          let result = result + ":" + $args;
-      )*
-      result
-  }}
-}
-
-pub(crate) use join_keys;
-
-pub const PREFIX: &str = "kg";
-pub const IDENTITY_PREFIX: &str = "kg:id";
-pub const SESSION_PREFIX: &str = "kg:sn";
-
 pub const IDENTITY_BY_ID: &str = "kg:id:id"; // maps id to identity
 pub const IDENTITY_USERNAME_INDEX: &str = "kg:id:i_un"; // a list of all usernames
 pub const IDENTITY_ID_BY_USERNAME: &str = "kg:id:by_un"; // maps username to identity id
@@ -26,3 +10,28 @@ pub const ACCESS_TOKEN_BY_ID: &str = "kg:sn:at"; // maps access token id to acce
 
 pub const PROCESS_BY_ID: &str = "kg:pr:id"; // maps process id to process
 pub const PROCESS_TOKEN_BY_ID: &str = "kg:pr:by_tk"; // maps tokens (e.g otp + device_id, magic link token) to process id
+
+macro_rules! join_keys {
+  ($($args:expr),*) => {{
+    let separator = ":";
+
+    let mut result = String::new();
+    $(
+      if !result.is_empty() {
+        result.push_str(separator);
+      }
+      result.push_str($args);
+    )*
+
+    result
+  }}
+}
+
+pub(crate) use join_keys;
+
+#[test]
+fn test_join_keys() {
+    assert_eq!(join_keys!("a", "b", "c"), "a:b:c");
+    assert_eq!(join_keys!("a", "b", "c", "d"), "a:b:c:d");
+    assert_eq!(join_keys!("a", "b", "c", "d", "e"), "a:b:c:d:e");
+}
