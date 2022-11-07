@@ -11,6 +11,9 @@ pub const ACCESS_TOKEN_BY_ID: &str = "kg:sn:at"; // maps access token id to acce
 pub const PROCESS_BY_ID: &str = "kg:pr:id"; // maps process id to process
 pub const PROCESS_TOKEN_BY_ID: &str = "kg:pr:by_tk"; // maps tokens (e.g otp + device_id, magic link token) to process id
 
+pub const ACTOR_ROLES: &str = "kg:ac:roles"; // maps actor id to a list of roles
+pub const RESOURCE_ACTORS_BY_ROLE: &str = "kg:ac:res_acs"; // maps resource id to a list of actor ids
+
 macro_rules! join_keys {
   ($($args:expr),*) => {{
     let separator = ":";

@@ -1,6 +1,6 @@
 # MIT License
 
-This license applies to all contributions made by authors who are not part of the Keygate organization
+This license applies to all contributions made by authors who are not part of the Keygate organization on GitHub and to binaries of the Community Edition.
 
 Copyright (c) 2022 Keygate Contributors
 
