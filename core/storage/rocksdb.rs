@@ -9,7 +9,7 @@ use crate::{
 
 use super::{
     BaseStorage, LogicStorageError, Storage, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension,
+    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension,
 };
 
 #[derive(Error, Debug)]
@@ -44,6 +44,9 @@ impl RocksDBStorage {
 }
 
 impl Storage for RocksDBStorage {}
+impl StorageSerdeExtension for RocksDBStorage {}
+impl StorageProcessExtension for RocksDBStorage {}
+impl StorageSessionExtension for RocksDBStorage {}
 
 #[async_trait::async_trait]
 impl BaseStorage for RocksDBStorage {
@@ -83,8 +86,6 @@ impl BaseStorage for RocksDBStorage {
         Ok(())
     }
 }
-
-impl StorageSerdeExtension for RocksDBStorage {}
 
 #[async_trait::async_trait]
 impl StorageIdentityExtension for RocksDBStorage {
@@ -198,28 +199,5 @@ impl StorageIdentityExtension for RocksDBStorage {
         } else {
             Err(LogicStorageError::NotFound("identity".to_string()).into())
         }
-    }
-}
-
-#[async_trait::async_trait]
-impl StorageProcessExtension for RocksDBStorage {
-    async fn create_process(&self, process: &models::Process) -> Result<(), StorageError> {
-        todo!()
-    }
-    async fn create_process_token(&self, token: &models::ProcessToken) -> Result<(), StorageError> {
-        todo!()
-    }
-
-    async fn update_process(&self, updated_process: &models::Process) -> Result<(), StorageError> {
-        todo!()
-    }
-    async fn process_by_id(&self, id: &str) -> Result<Option<models::Process>, StorageError> {
-        todo!()
-    }
-    async fn process_token_by_id(
-        &self,
-        id: &str,
-    ) -> Result<Option<models::ProcessToken>, StorageError> {
-        todo!()
     }
 }

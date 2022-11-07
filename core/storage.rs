@@ -90,7 +90,11 @@ pub trait BaseStorage: Sync {
 }
 
 pub trait Storage:
-    BaseStorage + traits::StorageIdentityExtension + traits::StorageProcessExtension + Downcast
+    BaseStorage
+    + traits::StorageIdentityExtension
+    + traits::StorageProcessExtension
+    + traits::StorageSessionExtension
+    + Downcast
 {
 }
 

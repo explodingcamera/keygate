@@ -1,6 +1,6 @@
 use super::{
     constants::*, BaseStorage, LogicStorageError, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension,
+    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension,
 };
 use crate::{models, utils::serialize, Storage};
 use deadpool_redis::{Connection, Pool, PoolError};
@@ -33,23 +33,11 @@ impl RedisStorage {
     async fn get_pool(&self) -> Result<Connection, RedisStorageError> {
         Ok(self.pool.get().await?)
     }
-
-    // pub async fn hget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-    //     Ok(self
-    //         .get_pool()
-    //         .hget(prefix, key)
-    //         .map_err(RedisStorageError::from)?)
-    // }
-
-    // pub async fn hset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
-    //     Ok(self
-    //         .get_pool()
-    //         .hset(prefix, key, value)
-    //         .map_err(RedisStorageError::from)?)
-    // }
 }
 
 impl Storage for RedisStorage {}
+impl StorageProcessExtension for RedisStorage {}
+impl StorageSessionExtension for RedisStorage {}
 
 #[async_trait::async_trait]
 impl BaseStorage for RedisStorage {
@@ -271,28 +259,5 @@ impl StorageIdentityExtension for RedisStorage {
         } else {
             Ok(None)
         }
-    }
-}
-
-#[async_trait::async_trait]
-impl StorageProcessExtension for RedisStorage {
-    async fn create_process(&self, process: &models::Process) -> Result<(), StorageError> {
-        todo!()
-    }
-    async fn create_process_token(&self, token: &models::ProcessToken) -> Result<(), StorageError> {
-        todo!()
-    }
-
-    async fn update_process(&self, updated_process: &models::Process) -> Result<(), StorageError> {
-        todo!()
-    }
-    async fn process_by_id(&self, id: &str) -> Result<Option<models::Process>, StorageError> {
-        todo!()
-    }
-    async fn process_token_by_id(
-        &self,
-        id: &str,
-    ) -> Result<Option<models::ProcessToken>, StorageError> {
-        todo!()
     }
 }

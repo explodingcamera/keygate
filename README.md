@@ -24,7 +24,7 @@ Keygate is currently in a very early stage of development. It is not ready for p
 - **Minimal features**
   Focusing on the core features of user identity management and authentication.
 - **Secure**
-  Keygate should be secure by default. It should be easy to use and hard to misuse.
+  Keygate should be secure by default. It should be easy to use and hard to misuse. Insecure login methods like SMS are not supported.
 - **Flexibility**
   It should be easy to build your own solution on top of keygate. Keygate should be flexible enough to be used in a variety of use cases, but not too flexible to be misused. It is not the goal to build a general purpose authentication and authorization solution for all possible use cases.
 
