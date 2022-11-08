@@ -37,7 +37,24 @@ impl RedisStorage {
 
 impl Storage for RedisStorage {}
 impl StorageProcessExtension for RedisStorage {}
-impl StorageSessionExtension for RedisStorage {}
+
+#[async_trait::async_trait]
+impl StorageSessionExtension for RedisStorage {
+    async fn add_session(&self, session: &models::Session) -> Result<(), StorageError> {
+        todo!()
+    }
+
+    async fn refresh_token(
+        &self,
+        refresh_token: &models::RefreshToken,
+    ) -> Result<(), StorageError> {
+        todo!()
+    }
+
+    async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
+        todo!()
+    }
+}
 
 #[async_trait::async_trait]
 impl BaseStorage for RedisStorage {
@@ -59,38 +76,11 @@ impl BaseStorage for RedisStorage {
             .map_err(RedisStorageError::from)?)
     }
 
-    async fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        Ok(self
-            .get_pool()
-            .await?
-            .get(join_keys!(prefix, key))
-            .await
-            .map_err(RedisStorageError::from)?)
-    }
-
-    async fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        Ok(self
-            .get_pool()
-            .await?
-            .set(join_keys!(prefix, key), value)
-            .await
-            .map_err(RedisStorageError::from)?)
-    }
-
     async fn exists(&self, key: &str) -> Result<bool, StorageError> {
         Ok(self
             .get_pool()
             .await?
             .exists(key)
-            .await
-            .map_err(RedisStorageError::from)?)
-    }
-
-    async fn pexists(&self, prefix: &str, key: &str) -> Result<bool, StorageError> {
-        Ok(self
-            .get_pool()
-            .await?
-            .exists(join_keys!(prefix, key))
             .await
             .map_err(RedisStorageError::from)?)
     }
@@ -104,11 +94,11 @@ impl BaseStorage for RedisStorage {
             .map_err(RedisStorageError::from)?)
     }
 
-    async fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError> {
+    async fn _create_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
         Ok(self
             .get_pool()
             .await?
-            .del(join_keys!(prefix, key))
+            .set_nx(key, value)
             .await
             .map_err(RedisStorageError::from)?)
     }

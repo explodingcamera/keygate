@@ -1,4 +1,23 @@
-use crate::storage::{BaseStorage, StorageError};
+use crate::{
+    storage::{BaseStorage, StorageError},
+    utils::serialize,
+};
+
+pub async fn deserialize<T>(bytes: Option<Vec<u8>>) -> Result<Option<T>, StorageError>
+where
+    T: serde::de::DeserializeOwned,
+{
+    if let Some(data) = bytes {
+        if data.is_empty() {
+            return Ok(None);
+        }
+
+        let res = serialize::from_bytes(data.as_slice())?;
+        return Ok(Some(res));
+    }
+
+    Ok(None)
+}
 
 #[async_trait::async_trait]
 pub trait StorageSerdeExtension: BaseStorage + Sync {
@@ -8,17 +27,7 @@ pub trait StorageSerdeExtension: BaseStorage + Sync {
         Self: Sized,
     {
         let bytes = self._get_u8(key).await?;
-
-        if let Some(data) = bytes {
-            if data.is_empty() {
-                return Ok(None);
-            }
-
-            let res = rmp_serde::from_slice(data.as_slice())?;
-            return Ok(Some(res));
-        }
-
-        Ok(None)
+        deserialize(bytes).await
     }
 
     async fn _set<T>(&self, key: &str, value: &T) -> Result<(), StorageError>
@@ -26,35 +35,7 @@ pub trait StorageSerdeExtension: BaseStorage + Sync {
         T: serde::Serialize + ?Sized + Sync,
         Self: Sized,
     {
-        let val = rmp_serde::to_vec(value)?;
+        let val = serialize::to_bytes(&value)?;
         self._set_u8(key, &val).await
-    }
-
-    async fn _pget<T>(&self, prefix: &str, key: &str) -> Result<Option<T>, StorageError>
-    where
-        T: serde::de::DeserializeOwned + Sync,
-        Self: Sized,
-    {
-        let bytes = self._pget_u8(prefix, key).await?;
-
-        if let Some(data) = bytes {
-            if data.is_empty() {
-                return Ok(None);
-            }
-
-            let res = rmp_serde::from_slice(data.as_slice())?;
-            return Ok(Some(res));
-        }
-
-        Ok(None)
-    }
-
-    async fn _pset<T>(&self, prefix: &str, key: &str, value: &T) -> Result<(), StorageError>
-    where
-        T: serde::Serialize + ?Sized + Sync,
-        Self: Sized,
-    {
-        let val = rmp_serde::to_vec(value)?;
-        self._pset_u8(prefix, key, &val).await
     }
 }

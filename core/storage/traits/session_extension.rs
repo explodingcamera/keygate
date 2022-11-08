@@ -1,69 +1,71 @@
-use super::StorageSerdeExtension;
+use super::{serde_extension::deserialize, StorageIdentityExtension, StorageSerdeExtension};
 
 use crate::{
-    models,
+    models::{self, AccessToken, RefreshToken, Session},
     storage::{BaseStorage, StorageError},
+    storage_constants::*,
+    utils,
 };
 #[async_trait::async_trait]
-pub trait StorageSessionExtension: BaseStorage + StorageSerdeExtension + Send + Sync {
-    async fn get_access_token_by_id(
+pub trait StorageSessionExtension:
+    BaseStorage + StorageSerdeExtension + StorageIdentityExtension + Send + Sync
+{
+    async fn access_token_by_id(
         &self,
         id: &str,
     ) -> Result<Option<models::AccessToken>, StorageError> {
-        todo!()
+        let bytes = self._get_u8(&join_keys!(ACCESS_TOKEN_BY_ID, id)).await?;
+        Ok(deserialize::<AccessToken>(bytes).await?)
     }
 
-    async fn get_refresh_token_by_id(
+    async fn refresh_token_by_id(
         &self,
         id: &str,
     ) -> Result<Option<models::RefreshToken>, StorageError> {
-        todo!()
+        let bytes = self._get_u8(&join_keys!(REFRESH_TOKEN_BY_ID, id)).await?;
+        Ok(deserialize::<RefreshToken>(bytes).await?)
     }
 
-    async fn get_session_by_id(&self, id: &str) -> Result<Option<models::Session>, StorageError> {
-        todo!()
+    async fn session_by_id(&self, id: &str) -> Result<Option<models::Session>, StorageError> {
+        let bytes = self._get_u8(&join_keys!(SESSION_BY_ID, id)).await?;
+        Ok(deserialize::<Session>(bytes).await?)
     }
 
     async fn get_identity_sessions(
         &self,
         identity_id: &str,
     ) -> Result<Option<Vec<models::Session>>, StorageError> {
-        todo!()
+        let bytes = self
+            ._get_u8(&join_keys!(IDENTITY_SESSIONS, identity_id))
+            .await?;
+
+        Ok(deserialize::<Vec<Session>>(bytes).await?)
     }
 
-    async fn create_session(&self, session: &models::Session) -> Result<(), StorageError> {
-        todo!()
-    }
+    async fn add_session(&self, session: &models::Session) -> Result<(), StorageError>; // this requires a transaction
 
     async fn create_access_token(
         &self,
         access_token: &models::AccessToken,
     ) -> Result<(), StorageError> {
-        todo!()
+        let bytes = utils::serialize::to_bytes(&access_token)?;
+        self._create_u8(&join_keys!(ACCESS_TOKEN_BY_ID, &access_token.id), &bytes)
+            .await?;
+        Ok(())
     }
 
     async fn create_refresh_token(
         &self,
         refresh_token: &models::RefreshToken,
     ) -> Result<(), StorageError> {
-        todo!()
+        let bytes = utils::serialize::to_bytes(&refresh_token)?;
+        self._create_u8(&join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id), &bytes)
+            .await?;
+        Ok(())
     }
 
-    async fn update_session(&self, session: &models::Session) -> Result<(), StorageError> {
-        todo!()
-    }
+    async fn refresh_token(&self, refresh_token: &models::RefreshToken)
+        -> Result<(), StorageError>; // this requires a transaction
 
-    async fn update_refresh_token(
-        &self,
-        refresh_token: &models::RefreshToken,
-    ) -> Result<(), StorageError> {
-        todo!()
-    }
-
-    async fn update_access_token(
-        &self,
-        access_token: &models::AccessToken,
-    ) -> Result<(), StorageError> {
-        todo!()
-    }
+    async fn revoke_access_token(&self, id: &str) -> Result<(), StorageError>; // requires a transaction
 }

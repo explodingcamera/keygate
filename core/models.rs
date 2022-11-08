@@ -24,7 +24,7 @@ pub struct IdentityAccount {
     pub provider_id: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub struct Session {
     pub id: String,
     pub ip: Option<IpAddr>,

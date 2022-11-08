@@ -53,39 +53,24 @@ pub trait BaseStorage: Sync {
     /// can have side effects (e.g. creating/updating an index or cache).
     async fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
 
-    /// Get a value from the storage, if it exists. If it doesn't exist, return None.
-    /// Should be avoided if other methods (e.g get_identity) are available, as these
-    /// can have side effects (e.g. creating/updating an index or cache).
-    async fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError>;
-
     /// Set a value in the storage. If the key already exists, overwrite it.
     /// Should be avoided if other methods (e.g set_identity) are available, as these
     /// can have side effects (e.g. creating/updating an index or cache).
     async fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError>;
 
-    /// Set a value in the storage. If the key already exists, overwrite it.
+    /// Set a value in the storage. If the key already exists, return an error.
     /// Should be avoided if other methods (e.g set_identity) are available, as these
     /// can have side effects (e.g. creating/updating an index or cache).
-    async fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError>;
+    async fn _create_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError>;
 
     /// Delete a value from the storage. If the key doesn't exist, return an error.
     /// Should be avoided if other methods (e.g delete_identity) are available, as these
     /// can have side effects (e.g. creating/updating an index or cache).
     async fn _del(&self, key: &str) -> Result<(), StorageError>;
 
-    /// Delete a value from the storage. If the key doesn't exist, return an error.
-    /// Should be avoided if other methods (e.g delete_identity) are available, as these
-    /// can have side effects (e.g. creating/updating an index or cache).
-    async fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError>;
-
     /// Check if a key exists in the storage
     async fn exists(&self, key: &str) -> Result<bool, StorageError> {
         Ok(self._get_u8(key).await?.is_some())
-    }
-
-    /// Check if a key exists in the storage
-    async fn pexists(&self, prefix: &str, key: &str) -> Result<bool, StorageError> {
-        Ok(self._pget_u8(prefix, key).await?.is_some())
     }
 }
 

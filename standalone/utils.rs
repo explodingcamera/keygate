@@ -11,12 +11,6 @@ macro_rules! response {
     };
 }
 
-macro_rules! unknown_error {
-    ($msg:literal $(,)?) => {
-        crate::errors::KeygateResponseError::Unknown($msg.to_string())
-    };
-}
-
 macro_rules! unauthorized {
     ($msg:literal $(,)?) => {
         crate::errors::KeygateResponseError::Unauthorized($msg.to_string())
@@ -25,4 +19,3 @@ macro_rules! unauthorized {
 
 pub(crate) use response;
 pub(crate) use unauthorized;
-pub(crate) use unknown_error;

@@ -1,5 +1,4 @@
 use rocksdb::{MultiThreaded, OptimisticTransactionDB};
-use sha1::digest::typenum::private::IsGreaterPrivate;
 use thiserror::Error;
 
 use crate::{
@@ -47,7 +46,24 @@ impl RocksDBStorage {
 impl Storage for RocksDBStorage {}
 impl StorageSerdeExtension for RocksDBStorage {}
 impl StorageProcessExtension for RocksDBStorage {}
-impl StorageSessionExtension for RocksDBStorage {}
+
+#[async_trait::async_trait]
+impl StorageSessionExtension for RocksDBStorage {
+    async fn add_session(&self, session: &models::Session) -> Result<(), StorageError> {
+        todo!()
+    }
+
+    async fn refresh_token(
+        &self,
+        refresh_token: &models::RefreshToken,
+    ) -> Result<(), StorageError> {
+        todo!()
+    }
+
+    async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
+        todo!()
+    }
+}
 
 #[async_trait::async_trait]
 impl BaseStorage for RocksDBStorage {
@@ -61,30 +77,20 @@ impl BaseStorage for RocksDBStorage {
         Ok(())
     }
 
-    async fn _pget_u8(&self, prefix: &str, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        Ok(self
-            .db
-            .get(join_keys!(prefix, key))
-            .map_err(RocksDBStorageError::from)?)
-    }
-
-    async fn _pset_u8(&self, prefix: &str, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        self.db
-            .put(join_keys!(prefix, key), value)
-            .map_err(RocksDBStorageError::from)?;
-        Ok(())
-    }
-
     async fn _del(&self, key: &str) -> Result<(), StorageError> {
         self.db.delete(key).map_err(RocksDBStorageError::from)?;
         Ok(())
     }
 
-    async fn _pdel(&self, prefix: &str, key: &str) -> Result<(), StorageError> {
+    async fn _create_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
+        if self.exists(key).await? {
+            return Err(LogicStorageError::AlreadyExists(key.to_string()).into());
+        }
+
         self.db
-            .delete(join_keys!(prefix, key))
-            .map_err(RocksDBStorageError::from)?;
-        Ok(())
+            .put(key, value)
+            .map_err(RocksDBStorageError::from)
+            .map_err(StorageError::from)
     }
 }
 
@@ -95,7 +101,7 @@ impl StorageIdentityExtension for RocksDBStorage {
         username: &str,
     ) -> Result<Option<models::Identity>, StorageError> {
         let id = self
-            ._pget::<String>(IDENTITY_ID_BY_USERNAME, username)
+            ._get::<String>(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
             .await?;
         if let Some(id) = id {
             self.get_identity_by_id(id.as_str()).await
@@ -108,7 +114,9 @@ impl StorageIdentityExtension for RocksDBStorage {
         &self,
         email: &str,
     ) -> Result<Option<models::Identity>, StorageError> {
-        let id = self._pget::<String>(IDENTITY_ID_BY_EMAIL, email).await?;
+        let id = self
+            ._get::<String>(&join_keys!(IDENTITY_ID_BY_EMAIL, email))
+            .await?;
         if let Some(id) = id {
             self.get_identity_by_id(id.as_str()).await
         } else {
@@ -117,7 +125,8 @@ impl StorageIdentityExtension for RocksDBStorage {
     }
 
     async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        self._pget::<models::Identity>(IDENTITY_BY_ID, id).await
+        self._get::<models::Identity>(&join_keys!(IDENTITY_BY_ID, id))
+            .await
     }
 
     async fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
@@ -153,7 +162,8 @@ impl StorageIdentityExtension for RocksDBStorage {
         }
 
         // Set the identity
-        self._pset(IDENTITY_BY_ID, &identity.id, identity).await?;
+        self._set(&join_keys!(IDENTITY_BY_ID, &identity.id), identity)
+            .await?;
 
         Ok(())
     }
