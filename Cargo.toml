@@ -1,5 +1,5 @@
 [workspace]
-members = ["core", "standalone"]
+members = ["crates/core", "crates/standalone"]
 
 [profile.release]
 # codegen-units = 1 
