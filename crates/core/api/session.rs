@@ -40,7 +40,7 @@ impl Session {
     pub async fn refresh(
         &self,
         refresh_token: &str,
-    ) -> Result<(tokens::SessionToken, tokens::RefreshToken), KeygateError> {
+    ) -> Result<(tokens::AccessToken, tokens::RefreshToken), KeygateError> {
         todo!()
     }
 }

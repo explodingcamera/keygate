@@ -3,6 +3,7 @@ use super::{
     StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension,
 };
 use crate::{models, utils::serialize, Storage};
+use chrono::{DateTime, Utc};
 use deadpool_redis::{Connection, Pool, PoolError};
 use redis::AsyncCommands;
 use thiserror::Error;
@@ -46,12 +47,21 @@ impl StorageSessionExtension for RedisStorage {
 
     async fn refresh_token(
         &self,
-        refresh_token: &models::RefreshToken,
-    ) -> Result<(), StorageError> {
+        refresh_token_id: &str,
+        refresh_expires_at: DateTime<Utc>,
+        access_expires_at: DateTime<Utc>,
+    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
         todo!()
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
+        todo!()
+    }
+
+    async fn reuse_detected(
+        &self,
+        refresh_token: &models::RefreshToken,
+    ) -> Result<(), StorageError> {
         todo!()
     }
 }

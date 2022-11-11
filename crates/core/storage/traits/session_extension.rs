@@ -1,3 +1,5 @@
+use chrono::{DateTime, Utc};
+
 use super::{serde_extension::deserialize, StorageIdentityExtension, StorageSerdeExtension};
 
 use crate::{
@@ -64,8 +66,17 @@ pub trait StorageSessionExtension:
         Ok(())
     }
 
-    async fn refresh_token(&self, refresh_token: &models::RefreshToken)
-        -> Result<(), StorageError>; // this requires a transaction
+    async fn refresh_token(
+        &self,
+        refresh_token_id: &str,
+        refresh_expires_at: DateTime<Utc>,
+        access_expires_at: DateTime<Utc>,
+    ) -> Result<(models::RefreshToken, models::Session), StorageError>; // requires a transaction
 
     async fn revoke_access_token(&self, id: &str) -> Result<(), StorageError>; // requires a transaction
+
+    async fn reuse_detected(
+        &self,
+        refresh_token: &models::RefreshToken,
+    ) -> Result<(), StorageError>;
 }

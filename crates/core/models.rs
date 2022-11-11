@@ -32,7 +32,7 @@ pub struct Session {
     pub created_at: u64,
     pub updated_at: u64,
     pub current_refresh_token: String,
-    pub revoked: bool,
+    pub revoked_at: Option<u64>,
 }
 
 // refresh tokens are stored in a separate table, since - while only one refresh token is valid at a time - we want
@@ -44,9 +44,11 @@ pub struct RefreshToken {
     pub prev: Option<String>,
     pub expires_at: u64,
     pub created_at: u64,
+    pub revoked_at: Option<u64>,
 
     pub session_id: String,
-    pub access_token: String,
+    pub identity_id: String,
+    pub access_token_id: String,
 }
 
 // If a user is authenticated in multiple tabs on the same device, they will have multiple access tokens at the same time.

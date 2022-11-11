@@ -1,10 +1,15 @@
+use chrono::{DateTime, Utc};
 use rocksdb::{MultiThreaded, OptimisticTransactionDB};
 use thiserror::Error;
 
 use crate::{
     models::{self, Session},
     storage_constants::*,
-    utils,
+    utils::{
+        self,
+        session::rotate_refresh_token,
+        validate::{can_refresh_session, RefreshTokenError},
+    },
 };
 
 use super::{
@@ -50,17 +55,100 @@ impl StorageProcessExtension for RocksDBStorage {}
 #[async_trait::async_trait]
 impl StorageSessionExtension for RocksDBStorage {
     async fn add_session(&self, session: &models::Session) -> Result<(), StorageError> {
-        todo!()
+        let tx = self.db.transaction();
+
+        let sessions = tx
+            .get(&join_keys!(IDENTITY_SESSIONS, &session.identity_id))
+            .map_err(RocksDBStorageError::from)?
+            .unwrap_or_default();
+
+        let mut sessions: Vec<String> =
+            utils::serialize::from_bytes(&sessions).map_err(StorageError::from)?;
+
+        if sessions.contains(&session.id) {
+            return Err(LogicStorageError::AlreadyExists(format!(
+                "session with id {} already exists",
+                session.id
+            ))
+            .into());
+        }
+
+        sessions.push(session.id.clone());
+
+        tx.put(
+            &join_keys!(IDENTITY_SESSIONS, &session.identity_id),
+            &utils::serialize::to_bytes(&sessions).map_err(StorageError::from)?,
+        )
+        .map_err(RocksDBStorageError::from)?;
+
+        tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
+        Ok(())
     }
 
     async fn refresh_token(
         &self,
-        refresh_token: &models::RefreshToken,
-    ) -> Result<(), StorageError> {
-        todo!()
+        refresh_token_id: &str,
+        refresh_expires_at: DateTime<Utc>,
+        access_expires_at: DateTime<Utc>,
+    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
+        let tx = self.db.transaction();
+
+        let refresh_token: models::RefreshToken = tx
+            .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
+            .map_err(RocksDBStorageError::from)?
+            .ok_or_else(|| {
+                LogicStorageError::NotFound(format!(
+                    "refresh token with id {} not found",
+                    refresh_token_id
+                ))
+            })
+            .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
+            .map_err(StorageError::from)?;
+
+        let session: models::Session = tx
+            .get(&join_keys!(SESSION_BY_ID, &refresh_token.session_id))
+            .map_err(RocksDBStorageError::from)?
+            .ok_or_else(|| {
+                LogicStorageError::NotFound(format!(
+                    "session with id {} not found",
+                    refresh_token.session_id
+                ))
+            })
+            .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
+            .map_err(StorageError::from)?;
+
+        match utils::validate::can_refresh(&refresh_token) {
+            Ok(_) => (),
+            Err(RefreshTokenError::ReuseError(e)) => {
+                self.reuse_detected(&refresh_token).await?;
+                return Err(RefreshTokenError::ReuseError(e).into());
+            }
+            Err(e) => return Err(e.into()),
+        }
+
+        if !can_refresh_session(&session) {
+            self.reuse_detected(&refresh_token).await?;
+            return Err(StorageError::Session("revoked".to_string()));
+        }
+
+        let res = rotate_refresh_token(
+            refresh_token,
+            session,
+            refresh_expires_at,
+            access_expires_at,
+        );
+
+        todo!("update refresh token and session in db");
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
+        todo!()
+    }
+
+    async fn reuse_detected(
+        &self,
+        refresh_token: &models::RefreshToken,
+    ) -> Result<(), StorageError> {
         todo!()
     }
 }

@@ -1,6 +1,8 @@
 use downcast_rs::{impl_downcast, Downcast};
 use thiserror::Error;
 
+use crate::utils::validate::RefreshTokenError;
+
 use self::{redis::RedisStorageError, rocksdb::RocksDBStorageError};
 
 pub mod constants;
@@ -20,6 +22,10 @@ pub enum StorageError {
     RocksDBStorage(#[from] RocksDBStorageError),
     #[error(transparent)]
     RedisStorage(#[from] RedisStorageError),
+    #[error(transparent)]
+    RefreshToken(#[from] RefreshTokenError),
+    #[error("invalid session: {0}")]
+    Session(String),
     #[error("decoding error")]
     Decoding(#[from] rmp_serde::decode::Error),
     #[error("encoding error")]

@@ -6,19 +6,26 @@ use keygate_jwt::{
     JWTError,
 };
 
+pub fn generate_access_token_id() -> String {
+    random::secure_random_id()
+}
+
+pub fn generate_refresh_token_id() -> String {
+    random::secure_random_id()
+}
 use super::random;
 pub struct RefreshToken(String);
 
-pub enum SessionToken {
-    Signed(SignedSessionToken),
-    Unsigned(UnsignedSessionToken),
+pub enum AccessToken {
+    Signed(SignedAccessToken),
+    Unsigned(UnsignedAccessToken),
 }
 
-impl ToString for SessionToken {
+impl ToString for AccessToken {
     fn to_string(&self) -> String {
         match self {
-            SessionToken::Signed(token) => token.0.clone(),
-            SessionToken::Unsigned(token) => token.0.clone(),
+            AccessToken::Signed(token) => token.0.clone(),
+            AccessToken::Unsigned(token) => token.0.clone(),
         }
     }
 }
@@ -65,9 +72,9 @@ impl TryInto<KeygateClaims> for JWTClaims<NoCustomClaims> {
     }
 }
 
-pub struct SignedSessionToken(String);
+pub struct SignedAccessToken(String);
 
-impl SignedSessionToken {
+impl SignedAccessToken {
     pub fn new(token: String) -> Self {
         Self(token)
     }
@@ -91,16 +98,16 @@ impl SignedSessionToken {
             .with_issuer("keygate")
             .with_audience(audience)
             .with_subject(user_id)
-            .with_jwt_id(random::secure_random_id());
+            .with_jwt_id(generate_access_token_id());
 
         let token = key_pair.sign(claims)?;
-        Ok(SignedSessionToken(token))
+        Ok(SignedAccessToken(token))
     }
 }
 
-pub struct UnsignedSessionToken(String);
+pub struct UnsignedAccessToken(String);
 
-impl UnsignedSessionToken {
+impl UnsignedAccessToken {
     pub fn new(token: String) -> Self {
         Self(token)
     }
@@ -126,19 +133,18 @@ impl UnsignedSessionToken {
             .with_issuer("keygate")
             .with_audience(audience)
             .with_subject(user_id)
-            .with_jwt_id(random::secure_random_id());
+            .with_jwt_id(generate_access_token_id());
 
         #[allow(unsafe_code)]
         let token = unsafe { none.create(claims) }?;
 
-        Ok(UnsignedSessionToken(token))
+        Ok(UnsignedAccessToken(token))
     }
 }
 
 impl RefreshToken {
     pub fn new() -> Self {
-        let token = random::secure_random_id();
-        RefreshToken(token)
+        RefreshToken(generate_refresh_token_id())
     }
 }
 
@@ -174,7 +180,7 @@ mod tests {
 
     #[test]
     fn test_unsigned_session_token() {
-        let token = UnsignedSessionToken::generate("user_id", "audience", 3600).unwrap();
+        let token = UnsignedAccessToken::generate("user_id", "audience", 3600).unwrap();
         assert_eq!(token.0.len(), 212);
         let claims = token.parse().unwrap();
         assert_eq!(claims.issuer, "keygate");
@@ -189,7 +195,7 @@ mod tests {
     fn test_signed_session_token() {
         let key_pair = Ed25519KeyPair::generate();
         let token =
-            SignedSessionToken::generate("user_id", "audience", 3600, key_pair.clone()).unwrap();
+            SignedAccessToken::generate("user_id", "audience", 3600, key_pair.clone()).unwrap();
         assert_eq!(token.0.len(), 299);
         let claims = token.verify(&key_pair).unwrap();
         assert_eq!(claims.issuer, "keygate");
