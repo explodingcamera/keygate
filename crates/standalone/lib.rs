@@ -4,7 +4,6 @@
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use keygate_core::{Keygate, KeygateConfig};
-use std::io::Result;
 
 mod api;
 mod errors;
@@ -13,9 +12,8 @@ mod swagger;
 mod utils;
 
 type KG = web::Data<Keygate>;
-
-pub async fn run(config: KeygateConfig) -> Result<()> {
-    let keygate_public = web::Data::new(Keygate::new(config.clone()));
+pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
+    let keygate_public = web::Data::new(Keygate::new(config.clone()).await?);
     let keygate_admin = keygate_public.clone();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));

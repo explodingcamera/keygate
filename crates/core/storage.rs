@@ -1,3 +1,5 @@
+use std::sync::PoisonError;
+
 use downcast_rs::{impl_downcast, Downcast};
 use thiserror::Error;
 
@@ -34,6 +36,14 @@ pub enum StorageError {
     Storage(#[from] LogicStorageError),
     #[error("paniced at {0}")]
     Panic(String),
+    #[error("config poisoned")]
+    ConfigPoisoned,
+}
+
+impl<T> From<PoisonError<T>> for StorageError {
+    fn from(err: PoisonError<T>) -> Self {
+        Self::ConfigPoisoned
+    }
 }
 
 #[derive(Error, Debug)]
@@ -80,7 +90,7 @@ pub trait BaseStorage: Sync {
     }
 }
 
-pub trait StorageWithConfig {
+pub trait StorageWithConfig: Send + Sync {
     fn get_config(&self) -> &crate::KeygateConfigInternal;
 }
 

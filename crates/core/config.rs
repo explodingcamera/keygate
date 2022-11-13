@@ -43,6 +43,7 @@ fn default_storage_options() -> StorageOptions {
 impl Default for StorageOptions {
     fn default() -> Self {
         StorageOptions {
+            redis_url: "redis://127.0.0.1/".to_string(),
             storage_path: default_storage_path(),
         }
     }
@@ -75,6 +76,8 @@ pub struct IdentityConfig {
 pub struct StorageOptions {
     #[serde(default = "default_storage_path")]
     pub storage_path: String,
+    #[serde(default = "default_storage_path")]
+    pub redis_url: String,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]

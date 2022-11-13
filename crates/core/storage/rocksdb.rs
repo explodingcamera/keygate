@@ -7,6 +7,7 @@ use crate::{
     storage_constants::*,
     utils::{
         self,
+        serialize::to_bytes,
         session::rotate_refresh_token,
         validate::{can_refresh_session, RefreshTokenError},
     },
@@ -114,14 +115,13 @@ impl StorageSessionExtension for RocksDBStorage {
             .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
             .map_err(StorageError::from)?;
 
+        let session_id = refresh_token.session_id.clone();
+
         let session: models::Session = tx
-            .get(&join_keys!(SESSION_BY_ID, &refresh_token.session_id))
+            .get(&join_keys!(SESSION_BY_ID, &session_id))
             .map_err(RocksDBStorageError::from)?
             .ok_or_else(|| {
-                LogicStorageError::NotFound(format!(
-                    "session with id {} not found",
-                    refresh_token.session_id
-                ))
+                LogicStorageError::NotFound(format!("session with id {} not found", session_id))
             })
             .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
             .map_err(StorageError::from)?;
@@ -147,7 +147,27 @@ impl StorageSessionExtension for RocksDBStorage {
             access_expires_at,
         );
 
-        todo!("update refresh token and session in db");
+        tx.put(
+            res.new_access_token.id.clone(),
+            to_bytes(&res.new_access_token)?,
+        )
+        .map_err(RocksDBStorageError::from)?;
+
+        tx.put(
+            res.new_refresh_token.id.clone(),
+            to_bytes(&res.new_refresh_token)?,
+        )
+        .map_err(RocksDBStorageError::from)?;
+
+        tx.put(session_id, to_bytes(&res.updated_session)?)
+            .map_err(RocksDBStorageError::from)?;
+
+        tx.put(refresh_token_id, to_bytes(&res.old_refresh_token)?)
+            .map_err(RocksDBStorageError::from)?;
+
+        tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
+
+        Ok((res.new_refresh_token, res.updated_session))
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
