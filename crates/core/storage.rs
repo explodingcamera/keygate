@@ -80,8 +80,13 @@ pub trait BaseStorage: Sync {
     }
 }
 
+pub trait StorageWithConfig {
+    fn get_config(&self) -> &crate::KeygateConfigInternal;
+}
+
 pub trait Storage:
     BaseStorage
+    + StorageWithConfig
     + traits::StorageIdentityExtension
     + traits::StorageProcessExtension
     + traits::StorageSessionExtension

@@ -10,11 +10,12 @@ use crate::{
         session::rotate_refresh_token,
         validate::{can_refresh_session, RefreshTokenError},
     },
+    KeygateConfigInternal,
 };
 
 use super::{
     BaseStorage, LogicStorageError, Storage, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension,
+    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
 };
 
 #[derive(Error, Debug)]
@@ -32,19 +33,27 @@ type RocksDB = OptimisticTransactionDB<MultiThreaded>;
 pub struct RocksDBStorage {
     db: RocksDB,
     session_cache: dashmap::DashMap<String, Session>,
+    config: KeygateConfigInternal,
 }
 
 impl RocksDBStorage {
-    pub fn new() -> Result<Self, StorageError> {
+    pub fn new(config: KeygateConfigInternal) -> Result<Self, StorageError> {
         let opts = rocksdb::Options::default();
 
         let db = OptimisticTransactionDB::open(&opts, "./db")
             .map_err(|e| StorageError::RocksDBStorage(e.into()))?;
 
         Ok(Self {
+            config,
             db,
             session_cache: dashmap::DashMap::new(),
         })
+    }
+}
+
+impl StorageWithConfig for RocksDBStorage {
+    fn get_config(&self) -> &KeygateConfigInternal {
+        &self.config
     }
 }
 

@@ -1,8 +1,9 @@
 use super::{
     constants::*, BaseStorage, LogicStorageError, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension,
+    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
 };
-use crate::{models, utils::serialize, Storage};
+
+use crate::{models, utils::serialize, KeygateConfigInternal, Storage};
 use chrono::{DateTime, Utc};
 use deadpool_redis::{Connection, Pool, PoolError};
 use redis::AsyncCommands;
@@ -20,19 +21,26 @@ pub enum RedisStorageError {
 
 pub struct RedisStorage {
     pool: Pool,
+    config: KeygateConfigInternal,
 }
 
 impl RedisStorage {
-    pub async fn new() -> Result<Self, StorageError> {
+    pub async fn new(config: KeygateConfigInternal) -> Result<Self, StorageError> {
         let pool = deadpool_redis::Config::from_url("redis://127.0.0.1/")
             .create_pool(Some(deadpool::Runtime::Tokio1))
             .map_err(RedisStorageError::from)?;
 
-        Ok(Self { pool })
+        Ok(Self { pool, config })
     }
 
     async fn get_pool(&self) -> Result<Connection, RedisStorageError> {
         Ok(self.pool.get().await?)
+    }
+}
+
+impl StorageWithConfig for RedisStorage {
+    fn get_config(&self) -> &KeygateConfigInternal {
+        &self.config
     }
 }
 

@@ -76,13 +76,15 @@ pub struct Keygate {
 
 impl Keygate {
     pub async fn new(config: Configuration) -> Result<Keygate, KeygateError> {
-        let res = match config.storage_type {
-            StorageType::RocksDB => match RocksDBStorage::new() {
-                Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
+        let storage_type = config.storage_type;
+        let config = Arc::new(RwLock::new(config));
+        let res = match storage_type {
+            StorageType::RocksDB => match RocksDBStorage::new(config.clone()) {
+                Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage)),
                 Err(e) => return Err(e.into()),
             },
-            StorageType::Redis => match RedisStorage::new().await {
-                Ok(storage) => Keygate::new_with_storage(config, Arc::new(storage)),
+            StorageType::Redis => match RedisStorage::new(config.clone()).await {
+                Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage)),
                 Err(e) => return Err(e.into()),
             },
         };
@@ -91,11 +93,9 @@ impl Keygate {
     }
 
     pub async fn new_with_storage(
-        config: Configuration,
+        config: KeygateConfigInternal,
         storage: Arc<dyn Storage + Send + Sync>,
     ) -> Keygate {
-        let config = Arc::new(RwLock::new(config));
-
         Keygate {
             config: config.clone(),
             storage: storage.clone(),
