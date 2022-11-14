@@ -13,28 +13,3 @@ pub const PROCESS_TOKEN_BY_ID: &str = "kg:pr:by_tk"; // maps tokens (e.g otp + d
 
 pub const ACTOR_ROLES: &str = "kg:ac:roles"; // maps actor id to a list of roles
 pub const RESOURCE_ACTORS_BY_ROLE: &str = "kg:ac:res_acs"; // maps resource id to a list of actor ids
-
-macro_rules! join_keys {
-  ($($args:expr),*) => {{
-    let separator = ":";
-
-    let mut result = String::new();
-    $(
-      if !result.is_empty() {
-        result.push_str(separator);
-      }
-      result.push_str($args);
-    )*
-
-    result
-  }}
-}
-
-pub(crate) use join_keys;
-
-#[test]
-fn test_join_keys() {
-    assert_eq!(join_keys!("a", "b", "c"), "a:b:c");
-    assert_eq!(join_keys!("a", "b", "c", "d"), "a:b:c:d");
-    assert_eq!(join_keys!("a", "b", "c", "d", "e"), "a:b:c:d:e");
-}

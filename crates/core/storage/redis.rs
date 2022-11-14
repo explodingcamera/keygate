@@ -1,9 +1,17 @@
 use super::{
-    constants::*, BaseStorage, LogicStorageError, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
+    constants::*, BaseStorage, LogicStorageError, RedisExtensions, StorageError,
+    StorageIdentityExtension, StorageProcessExtension, StorageSerdeExtension,
+    StorageSessionExtension, StorageWithConfig,
 };
 
-use crate::{models, utils::serialize, KeygateConfigInternal, Storage};
+use crate::utils::{
+    self,
+    macros::{async_transaction, join_keys},
+    serialize::{self, to_bytes},
+    session::rotate_refresh_token,
+    validate::{can_refresh_session, RefreshTokenError},
+};
+use crate::{models, KeygateConfigInternal, Storage};
 use chrono::{DateTime, Utc};
 use redis::{aio::ConnectionManager, AsyncCommands};
 
@@ -21,6 +29,10 @@ impl RedisStorage {
         let pool = redis.get_tokio_connection_manager().await?;
 
         Ok(Self { pool, config })
+    }
+
+    pub fn pool(&self) -> ConnectionManager {
+        self.pool.clone()
     }
 }
 
@@ -44,84 +56,77 @@ impl StorageSessionExtension for RedisStorage {
         refresh_token_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
+    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
         let old_refresh_token_key = &join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id);
-        // let session_key = &join_keys!(SESSION_BY_ID, &session_id);
 
-        todo!();
+        let mut conn = self.pool();
+        let (refresh_token, access_token, session): (
+            models::RefreshToken,
+            models::AccessToken,
+            models::Session,
+        ) = async_transaction!(&mut conn, &[old_refresh_token_key], {
+            let refresh_token: models::RefreshToken = conn
+                .get_and_deserialize(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
+                .await?
+                .ok_or_else(|| {
+                    LogicStorageError::NotFound(format!(
+                        "refresh token with id {refresh_token_id} not found"
+                    ))
+                })?;
 
-        // redis::transaction(&mut self.pool, &[old_refresh_token_key], |con, pipe| {
-        //     let old_val: isize = con.get(key)?;
-        // });
-        // todo!();
+            let session_id = refresh_token.session_id.clone();
 
-        // let tx = self.db.transaction();
+            let session: models::Session = conn
+                .get_and_deserialize(&join_keys!(SESSION_BY_ID, &session_id))
+                .await?
+                .ok_or_else(|| {
+                    LogicStorageError::NotFound(format!("session with id {session_id} not found"))
+                })?;
 
-        // let refresh_token: models::RefreshToken = tx
-        //     .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
-        //     .map_err(RocksDBStorageError::from)?
-        //     .ok_or_else(|| {
-        //         LogicStorageError::NotFound(format!(
-        //             "refresh token with id {} not found",
-        //             refresh_token_id
-        //         ))
-        //     })
-        //     .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
-        //     .map_err(StorageError::from)?;
+            match utils::validate::can_refresh(&refresh_token) {
+                Ok(_) => (),
+                Err(RefreshTokenError::ReuseError(e)) => {
+                    self.reuse_detected(&refresh_token).await?;
+                    return Err(RefreshTokenError::ReuseError(e).into());
+                }
+                Err(e) => return Err(e.into()),
+            }
 
-        // let session_id = refresh_token.session_id.clone();
+            if !can_refresh_session(&session) {
+                self.reuse_detected(&refresh_token).await?;
+                return Err(StorageError::Session("revoked".to_string()));
+            }
 
-        // let session: models::Session = tx
-        //     .get(&join_keys!(SESSION_BY_ID, &session_id))
-        //     .map_err(RocksDBStorageError::from)?
-        //     .ok_or_else(|| {
-        //         LogicStorageError::NotFound(format!("session with id {} not found", session_id))
-        //     })
-        //     .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
-        //     .map_err(StorageError::from)?;
+            let res = rotate_refresh_token(
+                refresh_token,
+                session,
+                refresh_expires_at,
+                access_expires_at,
+            );
 
-        // match utils::validate::can_refresh(&refresh_token) {
-        //     Ok(_) => (),
-        //     Err(RefreshTokenError::ReuseError(e)) => {
-        //         self.reuse_detected(&refresh_token).await?;
-        //         return Err(RefreshTokenError::ReuseError(e).into());
-        //     }
-        //     Err(e) => return Err(e.into()),
-        // }
+            let (new_access_token_id, new_refresh_token_id, old_refresh_token_id) = (
+                res.new_access_token.id.clone(),
+                res.new_refresh_token.id.clone(),
+                res.old_refresh_token.id.clone(),
+            );
 
-        // if !can_refresh_session(&session) {
-        //     self.reuse_detected(&refresh_token).await?;
-        //     return Err(StorageError::Session("revoked".to_string()));
-        // }
+            redis::pipe()
+                .atomic()
+                .set(new_access_token_id, to_bytes(&res.new_access_token)?)
+                .set(new_refresh_token_id, to_bytes(&res.new_refresh_token)?)
+                .set(session_id, to_bytes(&res.updated_session)?)
+                .set(old_refresh_token_id, to_bytes(&res.old_refresh_token)?)
+                .query_async(&mut conn)
+                .await?;
 
-        // let res = rotate_refresh_token(
-        //     refresh_token,
-        //     session,
-        //     refresh_expires_at,
-        //     access_expires_at,
-        // );
+            Some((
+                res.new_refresh_token,
+                res.new_access_token,
+                res.updated_session,
+            ))
+        });
 
-        // tx.put(
-        //     res.new_access_token.id.clone(),
-        //     to_bytes(&res.new_access_token)?,
-        // )
-        // .map_err(RocksDBStorageError::from)?;
-
-        // tx.put(
-        //     res.new_refresh_token.id.clone(),
-        //     to_bytes(&res.new_refresh_token)?,
-        // )
-        // .map_err(RocksDBStorageError::from)?;
-
-        // tx.put(session_id, to_bytes(&res.updated_session)?)
-        //     .map_err(RocksDBStorageError::from)?;
-
-        // tx.put(refresh_token_id, to_bytes(&res.old_refresh_token)?)
-        //     .map_err(RocksDBStorageError::from)?;
-
-        // tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
-
-        // Ok((res.new_refresh_token, res.updated_session))
+        Ok((refresh_token, access_token, session))
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
@@ -139,48 +144,23 @@ impl StorageSessionExtension for RedisStorage {
 #[async_trait::async_trait]
 impl BaseStorage for RedisStorage {
     async fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        Ok(self
-            .pool
-            .clone()
-            .get(key)
-            .await
-            .map_err(RedisStorageError::from)?)
+        Ok(self.pool().get(key).await?)
     }
 
     async fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        Ok(self
-            .pool
-            .clone()
-            .set(key, value)
-            .await
-            .map_err(RedisStorageError::from)?)
+        Ok(self.pool().set(key, value).await?)
     }
 
     async fn exists(&self, key: &str) -> Result<bool, StorageError> {
-        Ok(self
-            .pool
-            .clone()
-            .exists(key)
-            .await
-            .map_err(RedisStorageError::from)?)
+        Ok(self.pool().exists(key).await?)
     }
 
     async fn _del(&self, key: &str) -> Result<(), StorageError> {
-        Ok(self
-            .pool
-            .clone()
-            .del(key)
-            .await
-            .map_err(RedisStorageError::from)?)
+        Ok(self.pool().del(key).await?)
     }
 
     async fn _create_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        Ok(self
-            .pool
-            .clone()
-            .set_nx(key, value)
-            .await
-            .map_err(RedisStorageError::from)?)
+        Ok(self.pool().set_nx(key, value).await?)
     }
 }
 
@@ -195,85 +175,137 @@ impl StorageIdentityExtension for RedisStorage {
         let identity_emails = identity
             .emails
             .iter()
-            .map(|email| (email.0.as_str(), identity.id.as_str()))
+            .map(|email| {
+                (
+                    join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()),
+                    identity.id.as_str(),
+                )
+            })
             .collect::<Vec<_>>();
 
-        redis::pipe()
-            .atomic()
-            // Set the identity
-            .hset(IDENTITY_BY_ID, &identity.id, identity_bytes)
-            // Set the email index
-            .hset_multiple(IDENTITY_ID_BY_EMAIL, &identity_emails)
-            // Set the username index
-            .hset(IDENTITY_ID_BY_USERNAME, &identity_username, &identity.id)
-            // set the username secondary index (lexicographically sorted)
-            .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0)
-            .query_async(&mut self.pool.clone())
-            .await
-            .map_err(RedisStorageError::from)?;
+        let mut conn = self.pool();
+        let identity_key = join_keys!(IDENTITY_BY_ID, &identity.id);
+        async_transaction!(&mut conn, &[identity_key.clone()], {
+            if conn.exists(identity_key.clone()).await? {
+                return Err(LogicStorageError::AlreadyExists("already exists".to_string()).into());
+            }
+
+            for (email_key, identity_id) in identity_emails.clone() {
+                if conn.exists(email_key.clone()).await? {
+                    return Err(LogicStorageError::AlreadyExists(format!(
+                        "email already exists: {email_key}"
+                    ))
+                    .into());
+                }
+            }
+
+            redis::pipe()
+                .atomic()
+                // Set the identity
+                .set(
+                    join_keys!(IDENTITY_BY_ID, &identity.id),
+                    identity_bytes.clone(),
+                )
+                // Set the email index
+                .set_multiple(&identity_emails)
+                // Set the username index
+                .set(
+                    join_keys!(IDENTITY_ID_BY_USERNAME, identity_username),
+                    &identity.id,
+                )
+                // set the username secondary index (lexicographically sorted)
+                .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0)
+                .query_async(&mut self.pool())
+                .await?;
+
+            Some(())
+        });
 
         Ok(())
     }
 
     async fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
-        let identity_bytes = serialize::to_bytes(identity)?;
+        let mut conn = self.pool();
+
+        let identity_key = &join_keys!(IDENTITY_BY_ID, &identity.id);
         let identity_username = identity.username.as_str();
 
-        let existing_identity = self.get_identity_by_id(&identity.id).await?;
+        async_transaction!(&mut conn, &[identity_key], {
+            let existing_identity: models::Identity = conn
+                .get_and_deserialize(identity_key)
+                .await?
+                .ok_or_else(|| {
+                    LogicStorageError::NotFound(format!(
+                        "identity with id {identity_key} not found"
+                    ))
+                })?;
 
-        if let Some(existing_identity) = existing_identity {
             if &existing_identity == identity {
                 return Ok(());
             }
 
             let existing_identity_username = existing_identity.username.as_str();
-
             let mut pipe: &mut redis::Pipeline = &mut redis::pipe();
             pipe = pipe.atomic();
 
             if existing_identity_username != identity_username {
                 pipe = pipe
-                    .hdel(IDENTITY_ID_BY_USERNAME, existing_identity_username) // remove the old username index
-                    .zrem(IDENTITY_USERNAME_INDEX, &existing_identity_username) // remove the old username from the index
-                    .hset(IDENTITY_ID_BY_USERNAME, identity_username, &identity.id) // Set the new username index
+                    .del(join_keys!(
+                        IDENTITY_ID_BY_USERNAME,
+                        existing_identity_username
+                    )) // remove the old username index
+                    .zrem(IDENTITY_USERNAME_INDEX, existing_identity_username) // remove the old username from the index
+                    .set(
+                        join_keys!(IDENTITY_ID_BY_USERNAME, identity_username),
+                        &identity.id,
+                    ) // Set the new username index
                     .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0); //  add the new username to the index
             }
 
             // check if the emails have changed
             if identity.emails != existing_identity.emails {
                 // remove the old email index
-                pipe = pipe.hdel(
-                    IDENTITY_ID_BY_EMAIL,
+                pipe = pipe.del(
                     &existing_identity
                         .emails
                         .iter()
-                        .map(|email| email.0.as_str())
+                        .map(|email| join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()))
                         .collect::<Vec<_>>(),
                 );
                 // Set the new email index
-                pipe = pipe.hset_multiple(
-                    IDENTITY_ID_BY_EMAIL,
+                pipe = pipe.set_multiple(
                     &identity
                         .emails
                         .iter()
-                        .map(|email| (email.0.as_str(), identity.id.as_str()))
+                        .map(|email| {
+                            (
+                                join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()),
+                                identity.id.as_str(),
+                            )
+                        })
                         .collect::<Vec<_>>(),
                 );
             }
 
             // Remove the old username index
-            pipe = pipe.hdel(IDENTITY_ID_BY_USERNAME, &existing_identity_username);
+            pipe = pipe.del(join_keys!(
+                IDENTITY_ID_BY_USERNAME,
+                existing_identity_username
+            ));
 
             // Set the identity
-            pipe.hset(IDENTITY_BY_ID, &identity.id, identity_bytes)
-                .query_async(&mut self.pool.clone())
-                .await
-                .map_err(RedisStorageError::from)?;
+            let x = pipe
+                .set(
+                    join_keys!(IDENTITY_BY_ID, &identity.id),
+                    serialize::to_bytes(identity)?,
+                )
+                .query_async(&mut self.pool())
+                .await?;
 
-            Ok(())
-        } else {
-            Err(LogicStorageError::NotFound("identity".to_string()).into())
-        }
+            Some(())
+        });
+
+        Ok(())
     }
 
     async fn get_identity_by_username(
@@ -281,11 +313,9 @@ impl StorageIdentityExtension for RedisStorage {
         username: &str,
     ) -> Result<Option<models::Identity>, StorageError> {
         let identity_id: Option<String> = self
-            .pool
-            .clone()
-            .hget(IDENTITY_ID_BY_USERNAME, username)
-            .await
-            .map_err(RedisStorageError::from)?;
+            .pool()
+            .get(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
+            .await?;
 
         if let Some(identity_id) = identity_id {
             self.get_identity_by_id(&identity_id).await
@@ -299,11 +329,9 @@ impl StorageIdentityExtension for RedisStorage {
         email: &str,
     ) -> Result<Option<models::Identity>, StorageError> {
         let identity_id: Option<String> = self
-            .pool
-            .clone()
-            .hget(IDENTITY_ID_BY_EMAIL, email)
-            .await
-            .map_err(RedisStorageError::from)?;
+            .pool()
+            .get(&join_keys!(IDENTITY_ID_BY_EMAIL, email))
+            .await?;
 
         if let Some(identity_id) = identity_id {
             self.get_identity_by_id(&identity_id).await
@@ -313,12 +341,8 @@ impl StorageIdentityExtension for RedisStorage {
     }
 
     async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        let identity_bytes: Option<Vec<u8>> = self
-            .pool
-            .clone()
-            .hget(IDENTITY_BY_ID, id)
-            .await
-            .map_err(RedisStorageError::from)?;
+        let identity_bytes: Option<Vec<u8>> =
+            self.pool().get(&join_keys!(IDENTITY_BY_ID, id)).await?;
 
         if let Some(identity_bytes) = identity_bytes {
             let identity: models::Identity = serialize::from_bytes(&identity_bytes)?;

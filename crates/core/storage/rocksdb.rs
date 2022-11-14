@@ -7,6 +7,7 @@ use crate::{
     storage_constants::*,
     utils::{
         self,
+        macros::join_keys,
         serialize::to_bytes,
         session::rotate_refresh_token,
         validate::{can_refresh_session, RefreshTokenError},
@@ -100,7 +101,7 @@ impl StorageSessionExtension for RocksDBStorage {
         refresh_token_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
+    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
         let tx = self.db.transaction();
 
         let refresh_token: models::RefreshToken = tx
@@ -167,7 +168,11 @@ impl StorageSessionExtension for RocksDBStorage {
 
         tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
 
-        Ok((res.new_refresh_token, res.updated_session))
+        Ok((
+            res.new_refresh_token,
+            res.new_access_token,
+            res.updated_session,
+        ))
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {

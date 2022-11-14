@@ -6,7 +6,7 @@ use crate::{
     models::{self, AccessToken, RefreshToken, Session},
     storage::{BaseStorage, StorageError},
     storage_constants::*,
-    utils,
+    utils::{self, macros::join_keys},
 };
 #[async_trait::async_trait]
 pub trait StorageSessionExtension:
@@ -71,7 +71,7 @@ pub trait StorageSessionExtension:
         refresh_token_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::Session), StorageError>; // requires a transaction
+    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError>;
 
     async fn revoke_access_token(&self, id: &str) -> Result<(), StorageError>; // requires a transaction
 
