@@ -142,29 +142,4 @@ impl Login {
 
         Ok(process)
     }
-
-    // pub fn login_submit_password(
-    //     &self,
-    //     login_process_id: &str,
-    //     password: &str,
-    // ) -> Result<LoginProcess, KeygateError> {
-    //     todo!()
-    // }
-
-    // pub fn login_submit_magic_link(
-    //     &self,
-    //     login_process_id: &str,
-    //     password: &str,
-    // ) -> Result<LoginProcess, KeygateError> {
-    //     todo!()
-    // }
-
-    // pub fn login_submit_otp(
-    //     &self,
-    //     login_process_id: &str,
-    //     device_id: &str,
-    //     magic_link: &str,
-    // ) -> Result<LoginProcess, KeygateError> {
-    //     todo!()
-    // }
 }

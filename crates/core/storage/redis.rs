@@ -8,7 +8,7 @@ use crate::utils::{
     self,
     macros::{async_transaction, join_keys},
     serialize::{self, to_bytes},
-    session::rotate_refresh_token,
+    session::{create_initial_session, rotate_refresh_token},
     validate::{can_refresh_session, RefreshTokenError},
 };
 use crate::{models, KeygateConfigInternal, Storage};
@@ -47,8 +47,53 @@ impl StorageProcessExtension for RedisStorage {}
 
 #[async_trait::async_trait]
 impl StorageSessionExtension for RedisStorage {
-    async fn add_session(&self, session: &models::Session) -> Result<(), StorageError> {
-        todo!()
+    async fn create_session(
+        &self,
+        identity_id: &str,
+        refresh_expires_at: DateTime<Utc>,
+        access_expires_at: DateTime<Utc>,
+    ) -> Result<(models::Session, models::AccessToken, models::RefreshToken), StorageError> {
+        let Some (identity) = self.get_identity_by_id(identity_id).await? else {
+            return Err(LogicStorageError::NotFound(format!("no identity with id {identity_id}")).into());
+        };
+
+        let (session, access_token, refresh_token) =
+            create_initial_session(identity_id, refresh_expires_at, access_expires_at);
+
+        let mut conn = self.pool();
+        let sessions_key = join_keys!(IDENTITY_SESSIONS, identity_id);
+        async_transaction!(&mut conn, &[sessions_key.clone()], {
+            let mut sessions: Vec<String> = conn
+                .get_and_deserialize(&sessions_key)
+                .await?
+                .unwrap_or_default();
+            sessions.push(session.id.clone());
+
+            redis::pipe()
+                .atomic()
+                .set(
+                    join_keys!(IDENTITY_SESSIONS, identity_id),
+                    to_bytes(&sessions)?,
+                )
+                .set(
+                    join_keys!(SESSION_BY_ID, &session.id.clone()),
+                    to_bytes(&session)?,
+                )
+                .set(
+                    join_keys!(ACCESS_TOKEN_BY_ID, &access_token.id.clone()),
+                    to_bytes(&access_token)?,
+                )
+                .set(
+                    join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id.clone()),
+                    to_bytes(&refresh_token)?,
+                )
+                .query_async(&mut conn)
+                .await?;
+
+            Some(())
+        });
+
+        Ok((session, access_token, refresh_token))
     }
 
     async fn refresh_token(

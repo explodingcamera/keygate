@@ -6,6 +6,10 @@ use keygate_jwt::{
     JWTError,
 };
 
+pub fn generate_session_id() -> String {
+    random::secure_random_id()
+}
+
 pub fn generate_access_token_id() -> String {
     random::secure_random_id()
 }

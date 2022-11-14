@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use rocksdb::{MultiThreaded, OptimisticTransactionDB};
-use thiserror::Error;
 
 use crate::{
     models::{self, Session},
@@ -8,8 +7,8 @@ use crate::{
     utils::{
         self,
         macros::join_keys,
-        serialize::to_bytes,
-        session::rotate_refresh_token,
+        serialize::{from_bytes, to_bytes},
+        session::{create_initial_session, rotate_refresh_token},
         validate::{can_refresh_session, RefreshTokenError},
     },
     KeygateConfigInternal,
@@ -20,16 +19,7 @@ use super::{
     StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
 };
 
-#[derive(Error, Debug)]
-pub enum RocksDBStorageError {
-    #[error(transparent)]
-    RocksDBError(#[from] rocksdb::Error),
-    #[error("RocksDB error: {0}")]
-    RocksDBStringError(String),
-    #[error("unknown data store error")]
-    Unknown,
-}
-
+pub type RocksDBStorageError = rocksdb::Error;
 type RocksDB = OptimisticTransactionDB<MultiThreaded>;
 
 pub struct RocksDBStorage {
@@ -42,8 +32,7 @@ impl RocksDBStorage {
     pub fn new(config: KeygateConfigInternal) -> Result<Self, StorageError> {
         let opts = rocksdb::Options::default();
 
-        let db = OptimisticTransactionDB::open(&opts, "./db")
-            .map_err(|e| StorageError::RocksDBStorage(e.into()))?;
+        let db = OptimisticTransactionDB::open(&opts, "./db")?;
 
         Ok(Self {
             config,
@@ -65,35 +54,49 @@ impl StorageProcessExtension for RocksDBStorage {}
 
 #[async_trait::async_trait]
 impl StorageSessionExtension for RocksDBStorage {
-    async fn add_session(&self, session: &models::Session) -> Result<(), StorageError> {
-        let tx = self.db.transaction();
+    async fn create_session(
+        &self,
+        identity_id: &str,
+        refresh_expires_at: DateTime<Utc>,
+        access_expires_at: DateTime<Utc>,
+    ) -> Result<(models::Session, models::AccessToken, models::RefreshToken), StorageError> {
+        let Some (identity) = self.get_identity_by_id(identity_id).await? else {
+            return Err(LogicStorageError::NotFound(format!("no identity with id {identity_id}")).into());
+        };
 
+        let (session, access_token, refresh_token) =
+            create_initial_session(identity_id, refresh_expires_at, access_expires_at);
+
+        let tx = self.db.transaction();
         let sessions = tx
-            .get(&join_keys!(IDENTITY_SESSIONS, &session.identity_id))
-            .map_err(RocksDBStorageError::from)?
+            .get(&join_keys!(IDENTITY_SESSIONS, &session.identity_id))?
             .unwrap_or_default();
 
-        let mut sessions: Vec<String> =
-            utils::serialize::from_bytes(&sessions).map_err(StorageError::from)?;
-
-        if sessions.contains(&session.id) {
-            return Err(LogicStorageError::AlreadyExists(format!(
-                "session with id {} already exists",
-                session.id
-            ))
-            .into());
-        }
-
+        let mut sessions: Vec<String> = from_bytes(&sessions)?;
         sessions.push(session.id.clone());
 
         tx.put(
             &join_keys!(IDENTITY_SESSIONS, &session.identity_id),
-            &utils::serialize::to_bytes(&sessions).map_err(StorageError::from)?,
-        )
-        .map_err(RocksDBStorageError::from)?;
+            &to_bytes(&sessions)?,
+        )?;
 
-        tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
-        Ok(())
+        tx.put(
+            &join_keys!(SESSION_BY_ID, &session.id),
+            &to_bytes(&session)?,
+        )?;
+
+        tx.put(
+            &join_keys!(ACCESS_TOKEN_BY_ID, &access_token.id),
+            &to_bytes(&access_token)?,
+        )?;
+
+        tx.put(
+            &join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id),
+            &to_bytes(&refresh_token)?,
+        )?;
+
+        tx.commit()?;
+        Ok((session, access_token, refresh_token))
     }
 
     async fn refresh_token(
@@ -105,27 +108,23 @@ impl StorageSessionExtension for RocksDBStorage {
         let tx = self.db.transaction();
 
         let refresh_token: models::RefreshToken = tx
-            .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
-            .map_err(RocksDBStorageError::from)?
+            .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))?
             .ok_or_else(|| {
                 LogicStorageError::NotFound(format!(
                     "refresh token with id {} not found",
                     refresh_token_id
                 ))
             })
-            .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
-            .map_err(StorageError::from)?;
+            .map(|t| utils::serialize::from_bytes(&t))??;
 
         let session_id = refresh_token.session_id.clone();
 
         let session: models::Session = tx
-            .get(&join_keys!(SESSION_BY_ID, &session_id))
-            .map_err(RocksDBStorageError::from)?
+            .get(&join_keys!(SESSION_BY_ID, &session_id))?
             .ok_or_else(|| {
                 LogicStorageError::NotFound(format!("session with id {} not found", session_id))
             })
-            .map(|t| utils::serialize::from_bytes(&t).map_err(StorageError::from))?
-            .map_err(StorageError::from)?;
+            .map(|t| utils::serialize::from_bytes(&t))??;
 
         match utils::validate::can_refresh(&refresh_token) {
             Ok(_) => (),
@@ -151,22 +150,18 @@ impl StorageSessionExtension for RocksDBStorage {
         tx.put(
             res.new_access_token.id.clone(),
             to_bytes(&res.new_access_token)?,
-        )
-        .map_err(RocksDBStorageError::from)?;
+        )?;
 
         tx.put(
             res.new_refresh_token.id.clone(),
             to_bytes(&res.new_refresh_token)?,
-        )
-        .map_err(RocksDBStorageError::from)?;
+        )?;
 
-        tx.put(session_id, to_bytes(&res.updated_session)?)
-            .map_err(RocksDBStorageError::from)?;
+        tx.put(session_id, to_bytes(&res.updated_session)?)?;
 
-        tx.put(refresh_token_id, to_bytes(&res.old_refresh_token)?)
-            .map_err(RocksDBStorageError::from)?;
+        tx.put(refresh_token_id, to_bytes(&res.old_refresh_token)?)?;
 
-        tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
+        tx.commit()?;
 
         Ok((
             res.new_refresh_token,
@@ -190,17 +185,17 @@ impl StorageSessionExtension for RocksDBStorage {
 #[async_trait::async_trait]
 impl BaseStorage for RocksDBStorage {
     async fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        let res = self.db.get(key).map_err(RocksDBStorageError::from)?;
+        let res = self.db.get(key)?;
         Ok(res)
     }
 
     async fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        self.db.put(key, value).map_err(RocksDBStorageError::from)?;
+        self.db.put(key, value)?;
         Ok(())
     }
 
     async fn _del(&self, key: &str) -> Result<(), StorageError> {
-        self.db.delete(key).map_err(RocksDBStorageError::from)?;
+        self.db.delete(key)?;
         Ok(())
     }
 
@@ -209,10 +204,7 @@ impl BaseStorage for RocksDBStorage {
             return Err(LogicStorageError::AlreadyExists(key.to_string()).into());
         }
 
-        self.db
-            .put(key, value)
-            .map_err(RocksDBStorageError::from)
-            .map_err(StorageError::from)
+        Ok(self.db.put(key, value)?)
     }
 }
 
@@ -274,13 +266,11 @@ impl StorageIdentityExtension for RocksDBStorage {
         let username = &identity.username;
 
         // Set the username index
-        tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)
-            .map_err(RocksDBStorageError::from)?;
+        tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
 
         // Set the email index
         for email in &identity.emails {
-            tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)
-                .map_err(RocksDBStorageError::from)?;
+            tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)?;
         }
 
         // Set the identity
@@ -305,29 +295,24 @@ impl StorageIdentityExtension for RocksDBStorage {
             // emails have been updated
             if identity.emails != existing_identity.emails {
                 for email in &existing_identity.emails {
-                    tx.delete(join_keys!(IDENTITY_ID_BY_EMAIL, email.0))
-                        .map_err(RocksDBStorageError::from)?;
+                    tx.delete(join_keys!(IDENTITY_ID_BY_EMAIL, email.0))?;
                 }
                 for email in &identity.emails {
-                    tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)
-                        .map_err(RocksDBStorageError::from)?;
+                    tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)?;
                 }
             }
 
             // username has been updated
             if username != existing_username {
-                tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, existing_username))
-                    .map_err(RocksDBStorageError::from)?;
-                tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)
-                    .map_err(RocksDBStorageError::from)?;
+                tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, existing_username))?;
+                tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
             }
 
             // Set the identity
             let identity_bytes = utils::serialize::to_bytes(&identity)?;
-            tx.put(join_keys!(IDENTITY_BY_ID, &identity.id), identity_bytes)
-                .map_err(RocksDBStorageError::from)?;
+            tx.put(join_keys!(IDENTITY_BY_ID, &identity.id), identity_bytes)?;
 
-            tx.commit().map_err(RocksDBStorageError::RocksDBError)?;
+            tx.commit()?;
             Ok(())
         } else {
             Err(LogicStorageError::NotFound("identity".to_string()).into())

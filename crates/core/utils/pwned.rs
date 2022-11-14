@@ -13,7 +13,7 @@ static PWNED_URL: &str = "https://api.pwnedpasswords.com/range/";
 
 pub async fn pwned_check(password: &str) -> Result<(), PwnedError> {
     let pw_hash = hash(password);
-    let pw_str = hex::encode_upper(&pw_hash);
+    let pw_str = hex::encode_upper(pw_hash);
     println!("pw_str: {}", pw_str);
 
     let (prefix, suffex) = pw_str.split_at(5);

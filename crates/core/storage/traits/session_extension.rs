@@ -44,7 +44,12 @@ pub trait StorageSessionExtension:
         Ok(deserialize::<Vec<Session>>(bytes).await?)
     }
 
-    async fn add_session(&self, session: &models::Session) -> Result<(), StorageError>; // this requires a transaction
+    async fn create_session(
+        &self,
+        identity_id: &str,
+        refresh_expires_at: DateTime<Utc>,
+        access_expires_at: DateTime<Utc>,
+    ) -> Result<(models::Session, models::AccessToken, models::RefreshToken), StorageError>;
 
     async fn create_access_token(
         &self,

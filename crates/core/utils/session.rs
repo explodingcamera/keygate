@@ -11,10 +11,53 @@ pub struct Rotation {
     pub updated_session: models::Session,
 }
 
+pub fn create_initial_session(
+    identity_id: &str,
+    refresh_expires_at: DateTime<Utc>,
+    access_expires_at: DateTime<Utc>,
+) -> (models::Session, models::AccessToken, models::RefreshToken) {
+    let new_session_id = generate_refresh_token_id();
+    let new_refresh_token_id = generate_refresh_token_id();
+    let new_access_token_id = generate_access_token_id();
+    let now = chrono::Utc::now().timestamp().unsigned_abs();
+
+    let session = models::Session {
+        id: new_session_id,
+        identity_id: identity_id.to_string(),
+        created_at: now,
+        updated_at: now,
+        current_refresh_token: new_refresh_token_id.clone(),
+        ip: None,
+        revoked_at: None,
+    };
+
+    let refresh_token = models::RefreshToken {
+        prev: None,
+        next: None,
+        session_id: session.id.clone(),
+        access_token_id: new_access_token_id.clone(),
+        id: new_refresh_token_id.clone(),
+        identity_id: session.identity_id.clone(),
+        created_at: chrono::Utc::now().timestamp().unsigned_abs(),
+        expires_at: refresh_expires_at.timestamp().unsigned_abs(),
+        revoked_at: None,
+    };
+
+    let new_access_token = models::AccessToken {
+        id: new_access_token_id,
+        identity_id: session.identity_id.clone(),
+        refresh_token_id: new_refresh_token_id,
+        created_at: chrono::Utc::now().timestamp().unsigned_abs(),
+        expires_at: access_expires_at.timestamp().unsigned_abs(),
+        revoked_at: None,
+    };
+
+    (session, new_access_token, refresh_token)
+}
+
 pub fn rotate_refresh_token(
     old_refresh_token: models::RefreshToken,
     session: models::Session,
-
     refresh_expires_at: DateTime<Utc>,
     access_expires_at: DateTime<Utc>,
 ) -> Rotation {
