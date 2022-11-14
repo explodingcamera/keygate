@@ -290,7 +290,7 @@ impl StorageIdentityExtension for RedisStorage {
             }
 
             let existing_identity_username = existing_identity.username.as_str();
-            let mut pipe: &mut redis::Pipeline = &mut redis::pipe();
+            let mut pipe = &mut redis::pipe();
             pipe = pipe.atomic();
 
             if existing_identity_username != identity_username {
