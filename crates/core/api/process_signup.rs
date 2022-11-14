@@ -56,26 +56,26 @@ impl Signup {
         }
 
         if config.identity.signup_with_email {
-            if let Some(email) = email.clone() {
-                match self.storage.get_identity_by_email(&email).await {
-                    Err(_) => return Err(SignupError::Unknown),
-                    Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
-                    Ok(None) => {}
-                };
-            } else if config.identity.signup_require_email {
+            let Some(email) = email.clone() else {
                 return Err(SignupError::InvalidEmail);
+            };
+
+            match self.storage.get_identity_by_email(&email).await {
+                Err(_) => return Err(SignupError::Unknown),
+                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
+                Ok(None) => {}
             }
         }
 
         if config.identity.signup_require_username {
-            if let Some(username) = username.clone() {
-                match self.storage.get_identity_by_username(&username).await {
-                    Err(_) => return Err(SignupError::Unknown),
-                    Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
-                    Ok(None) => {}
-                };
-            } else if config.identity.signup_require_username {
+            let Some(username) = username.clone() else {
                 return Err(SignupError::InvalidUsername);
+            };
+
+            match self.storage.get_identity_by_username(&username).await {
+                Err(_) => return Err(SignupError::Unknown),
+                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
+                Ok(None) => {}
             }
         }
 

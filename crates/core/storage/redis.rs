@@ -362,11 +362,11 @@ impl StorageIdentityExtension for RedisStorage {
             .get(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
             .await?;
 
-        if let Some(identity_id) = identity_id {
-            self.get_identity_by_id(&identity_id).await
-        } else {
-            Ok(None)
-        }
+        let Some(identity_id) = identity_id else {
+            return Ok(None)
+        };
+
+        self.get_identity_by_id(&identity_id).await
     }
 
     async fn get_identity_by_email(
@@ -378,23 +378,22 @@ impl StorageIdentityExtension for RedisStorage {
             .get(&join_keys!(IDENTITY_ID_BY_EMAIL, email))
             .await?;
 
-        if let Some(identity_id) = identity_id {
-            self.get_identity_by_id(&identity_id).await
-        } else {
-            Ok(None)
-        }
+        let Some(identity_id) = identity_id else {
+            return Ok(None)
+        };
+
+        self.get_identity_by_id(&identity_id).await
     }
 
     async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
         let identity_bytes: Option<Vec<u8>> =
             self.pool().get(&join_keys!(IDENTITY_BY_ID, id)).await?;
 
-        if let Some(identity_bytes) = identity_bytes {
-            let identity: models::Identity = serialize::from_bytes(&identity_bytes)?;
+        let Some(identity_bytes) = identity_bytes else {
+            return Ok(None);
+        };
 
-            Ok(Some(identity))
-        } else {
-            Ok(None)
-        }
+        let identity: models::Identity = serialize::from_bytes(&identity_bytes)?;
+        Ok(Some(identity))
     }
 }

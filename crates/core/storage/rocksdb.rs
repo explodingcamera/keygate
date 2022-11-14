@@ -217,11 +217,12 @@ impl StorageIdentityExtension for RocksDBStorage {
         let id = self
             ._get::<String>(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
             .await?;
-        if let Some(id) = id {
-            self.get_identity_by_id(id.as_str()).await
-        } else {
-            Ok(None)
-        }
+
+        let Some(id) = id else {
+            return Ok(None)
+        };
+
+        self.get_identity_by_id(id.as_str()).await
     }
 
     async fn get_identity_by_email(
@@ -231,11 +232,12 @@ impl StorageIdentityExtension for RocksDBStorage {
         let id = self
             ._get::<String>(&join_keys!(IDENTITY_ID_BY_EMAIL, email))
             .await?;
-        if let Some(id) = id {
-            self.get_identity_by_id(id.as_str()).await
-        } else {
-            Ok(None)
-        }
+
+        let Some(id) = id else {
+            return Ok(None)
+        };
+
+        self.get_identity_by_id(id.as_str()).await
     }
 
     async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
@@ -283,39 +285,39 @@ impl StorageIdentityExtension for RocksDBStorage {
     async fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
         let existing_identity = self.get_identity_by_id(&identity.id).await?;
 
-        if let Some(existing_identity) = existing_identity {
-            if identity == &existing_identity {
-                return Ok(());
-            }
+        let Some(existing_identity) = existing_identity else {
+           return Err(LogicStorageError::NotFound("identity".to_string()).into())
+        };
 
-            let tx = self.db.transaction();
-            let username = &identity.username;
-            let existing_username = &existing_identity.username;
-
-            // emails have been updated
-            if identity.emails != existing_identity.emails {
-                for email in &existing_identity.emails {
-                    tx.delete(join_keys!(IDENTITY_ID_BY_EMAIL, email.0))?;
-                }
-                for email in &identity.emails {
-                    tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)?;
-                }
-            }
-
-            // username has been updated
-            if username != existing_username {
-                tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, existing_username))?;
-                tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
-            }
-
-            // Set the identity
-            let identity_bytes = utils::serialize::to_bytes(&identity)?;
-            tx.put(join_keys!(IDENTITY_BY_ID, &identity.id), identity_bytes)?;
-
-            tx.commit()?;
-            Ok(())
-        } else {
-            Err(LogicStorageError::NotFound("identity".to_string()).into())
+        if identity == &existing_identity {
+            return Ok(());
         }
+
+        let tx = self.db.transaction();
+        let username = &identity.username;
+        let existing_username = &existing_identity.username;
+
+        // emails have been updated
+        if identity.emails != existing_identity.emails {
+            for email in &existing_identity.emails {
+                tx.delete(join_keys!(IDENTITY_ID_BY_EMAIL, email.0))?;
+            }
+            for email in &identity.emails {
+                tx.put(join_keys!(IDENTITY_ID_BY_EMAIL, email.0), &identity.id)?;
+            }
+        }
+
+        // username has been updated
+        if username != existing_username {
+            tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, existing_username))?;
+            tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
+        }
+
+        // Set the identity
+        let identity_bytes = utils::serialize::to_bytes(&identity)?;
+        tx.put(join_keys!(IDENTITY_BY_ID, &identity.id), identity_bytes)?;
+
+        tx.commit()?;
+        Ok(())
     }
 }

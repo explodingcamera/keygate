@@ -7,16 +7,16 @@ pub async fn deserialize<T>(bytes: Option<Vec<u8>>) -> Result<Option<T>, Storage
 where
     T: serde::de::DeserializeOwned,
 {
-    if let Some(data) = bytes {
-        if data.is_empty() {
-            return Ok(None);
-        }
+    let Some(data) = bytes else {
+       return Ok(None)
+    };
 
-        let res = serialize::from_bytes(data.as_slice())?;
-        return Ok(Some(res));
+    if data.is_empty() {
+        return Ok(None);
     }
 
-    Ok(None)
+    let res = serialize::from_bytes(data.as_slice())?;
+    Ok(Some(res))
 }
 
 #[async_trait::async_trait]
