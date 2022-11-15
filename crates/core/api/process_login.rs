@@ -88,6 +88,7 @@ impl Login {
         };
 
         let process = BaseProcess {
+            completed_at: None,
             id: utils::random::secure_random_id(),
             process,
             created_at: chrono::Utc::now().timestamp().unsigned_abs(),

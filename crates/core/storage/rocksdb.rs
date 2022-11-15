@@ -250,12 +250,23 @@ impl StorageIdentityExtension for RocksDBStorage {
     }
 
     async fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
-        // Check if the username is already taken
-        if self
-            .exists(&join_keys!(IDENTITY_ID_BY_USERNAME, &identity.username))
-            .await?
-        {
-            return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
+        let tx = self.db.transaction();
+        let username = &identity.username;
+
+        if let Some(username) = username {
+            // Check if the username is already taken
+            if self
+                .exists(&join_keys!(
+                    IDENTITY_ID_BY_USERNAME,
+                    &identity.username.clone().unwrap()
+                ))
+                .await?
+            {
+                return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
+            }
+
+            // Set the username index
+            tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
         }
 
         // Check if the email is already taken
@@ -267,12 +278,6 @@ impl StorageIdentityExtension for RocksDBStorage {
                 return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
             }
         }
-
-        let tx = self.db.transaction();
-        let username = &identity.username;
-
-        // Set the username index
-        tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
 
         // Set the email index
         for email in &identity.emails {
@@ -312,9 +317,18 @@ impl StorageIdentityExtension for RocksDBStorage {
         }
 
         // username has been updated
-        if username != existing_username {
-            tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, existing_username))?;
-            tx.put(join_keys!(IDENTITY_ID_BY_USERNAME, username), &identity.id)?;
+        if existing_username.is_some() && (username.is_none() || username != existing_username) {
+            tx.delete(join_keys!(
+                IDENTITY_ID_BY_USERNAME,
+                &existing_username.clone().unwrap()
+            ))?;
+        }
+
+        if username.is_some() && username != existing_username {
+            tx.put(
+                join_keys!(IDENTITY_ID_BY_USERNAME, &username.clone().unwrap()),
+                &identity.id,
+            )?;
         }
 
         // Set the identity

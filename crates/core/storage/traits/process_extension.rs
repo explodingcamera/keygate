@@ -17,7 +17,7 @@ pub trait StorageProcessExtension: BaseStorage + StorageSerdeExtension + Send + 
         todo!()
     }
     async fn process_by_id(&self, id: &str) -> Result<Option<models::Process>, StorageError> {
-        todo!()
+        self.process_by_id(id).await
     }
     async fn process_token_by_id(
         &self,

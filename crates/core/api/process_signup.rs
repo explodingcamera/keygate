@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use crate::{
     config,
-    models::{self, BaseProcess, UsernameEmailSignupProcess},
-    utils, KeygateConfigInternal, KeygateStorage,
+    models::{self, BaseProcess, IdentityEmail, Process, UsernameEmailSignupProcess},
+    utils::{self},
+    KeygateConfigInternal, KeygateStorage,
 };
 use thiserror::Error;
 
@@ -9,6 +12,18 @@ use thiserror::Error;
 pub enum SignupError {
     #[error("unknown error")]
     Unknown,
+
+    #[error("process not found")]
+    ProcessNotFound,
+
+    #[error("process expired")]
+    ProcessExpired,
+
+    #[error("process already completed")]
+    ProcessAlreadyCompleted,
+
+    #[error("invalid device id")]
+    InvalidDeviceId,
 
     #[error("invalid email")]
     InvalidEmail,
@@ -79,7 +94,18 @@ impl Signup {
             }
         }
 
+        let email = email.map(|email| {
+            (
+                email,
+                IdentityEmail {
+                    verified: false,
+                    verified_at: None,
+                },
+            )
+        });
+
         let process = models::BaseProcess {
+            completed_at: None,
             process: models::UsernameEmailSignupProcess {
                 device_id,
                 username,
@@ -100,6 +126,59 @@ impl Signup {
             .map_err(|_| SignupError::Unknown)?;
 
         Ok(process)
+    }
+
+    pub async fn finish_signup_process(
+        &self,
+        password: &str,
+        process_id: &str,
+        device_id: &str,
+    ) -> Result<models::Identity, SignupError> {
+        let Some(signup_process) = self.storage.process_by_id(process_id).await.map_err(|_| SignupError::Unknown)? else {
+            return Err(SignupError::ProcessNotFound);
+        };
+
+        let Process::UsernameEmailSignup(signup_process) = signup_process else {
+            return Err(SignupError::ProcessNotFound);
+        };
+
+        if signup_process.process.device_id != device_id {
+            return Err(SignupError::InvalidDeviceId);
+        }
+
+        if signup_process.expires_at < chrono::Utc::now().timestamp().unsigned_abs() {
+            return Err(SignupError::ProcessExpired);
+        }
+
+        if signup_process.completed_at.is_some() {
+            return Err(SignupError::ProcessAlreadyCompleted);
+        }
+
+        let emails = if let Some(email) = signup_process.process.email.clone() {
+            HashMap::from_iter(vec![(email.0, email.1)])
+        } else {
+            HashMap::new()
+        };
+
+        let password_hash = utils::hash::password(password).map_err(|_| SignupError::Unknown)?;
+
+        let new_identity = models::Identity {
+            first_name: None,
+            last_name: None,
+            username: signup_process.process.username,
+            emails,
+            linked_accounts: HashMap::new(),
+            password_hash: Some(password_hash),
+            id: utils::random::secure_random_id(),
+            created_at: chrono::Utc::now().timestamp().unsigned_abs(),
+            updated_at: chrono::Utc::now().timestamp().unsigned_abs(),
+        };
+
+        if self.storage.create_identity(&new_identity).await.is_err() {
+            return Err(SignupError::Unknown);
+        };
+
+        Ok(new_identity)
     }
 
     pub async fn init_oidc_signup_process(&self, email: String) -> Result<(), SignupError> {

@@ -2,18 +2,24 @@ use std::{collections::HashMap, net::IpAddr};
 
 use serde::{Deserialize, Serialize};
 
+type ProviderID = String;
+type Email = String;
+
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub struct Identity {
     pub id: String,
-    pub username: String,
+    pub username: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub emails: HashMap<String, IdentityEmail>,
-    pub linked_accounts: Vec<IdentityAccount>,
+    pub emails: HashMap<Email, IdentityEmail>,
+    pub linked_accounts: HashMap<ProviderID, IdentityAccount>,
     pub password_hash: Option<String>,
+
+    pub created_at: u64,
+    pub updated_at: u64,
 }
 
-#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub struct IdentityEmail {
     pub verified: bool,
     pub verified_at: Option<u64>,
@@ -21,7 +27,6 @@ pub struct IdentityEmail {
 
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
 pub struct IdentityAccount {
-    pub provider: String,
     pub provider_id: String,
 }
 
@@ -75,6 +80,7 @@ pub enum Process {
 pub struct BaseProcess<T> {
     pub id: String,
     pub process: T,
+    pub completed_at: Option<u64>,
     pub expires_at: u64,
     pub created_at: u64,
 }
@@ -88,7 +94,7 @@ pub struct UsernameEmailLoginProcess {
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub struct UsernameEmailSignupProcess {
     pub device_id: String,
-    pub email: Option<String>,
+    pub email: Option<(String, IdentityEmail)>,
     pub username: Option<String>,
 }
 

@@ -220,7 +220,7 @@ impl StorageIdentityExtension for RedisStorage {
     async fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
         let identity_bytes = serialize::to_bytes(identity)?;
 
-        let identity_username = identity.username.as_str();
+        let identity_username = identity.username.clone();
         let identity_emails = identity
             .emails
             .iter()
@@ -248,24 +248,27 @@ impl StorageIdentityExtension for RedisStorage {
                 }
             }
 
-            redis::pipe()
-                .atomic()
+            let mut pipe = &mut redis::pipe();
+            pipe = pipe.atomic();
+
+            pipe = pipe
                 // Set the identity
                 .set(
                     join_keys!(IDENTITY_BY_ID, &identity.id),
                     identity_bytes.clone(),
                 )
                 // Set the email index
-                .set_multiple(&identity_emails)
+                .set_multiple(&identity_emails);
+
+            if let Some(username) = identity_username.clone() {
                 // Set the username index
-                .set(
-                    join_keys!(IDENTITY_ID_BY_USERNAME, identity_username),
-                    &identity.id,
-                )
-                // set the username secondary index (lexicographically sorted)
-                .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0)
-                .query_async(&mut self.pool())
-                .await?;
+                pipe = pipe
+                    .set(join_keys!(IDENTITY_ID_BY_USERNAME, &username), &identity.id)
+                    // set the username secondary index (lexicographically sorted)
+                    .zadd(IDENTITY_USERNAME_INDEX, username, 0)
+            }
+
+            pipe.query_async(&mut self.pool()).await?;
 
             Some(())
         });
@@ -277,7 +280,7 @@ impl StorageIdentityExtension for RedisStorage {
         let mut conn = self.pool();
 
         let identity_key = &join_keys!(IDENTITY_BY_ID, &identity.id);
-        let identity_username = identity.username.as_str();
+        let identity_username = identity.username.clone();
 
         async_transaction!(&mut conn, &[identity_key], {
             let existing_identity: models::Identity = conn
@@ -293,22 +296,38 @@ impl StorageIdentityExtension for RedisStorage {
                 return Ok(());
             }
 
-            let existing_identity_username = existing_identity.username.as_str();
+            let existing_identity_username = existing_identity.username.clone();
+
             let mut pipe = &mut redis::pipe();
             pipe = pipe.atomic();
 
-            if existing_identity_username != identity_username {
+            if existing_identity.username.is_some()
+                && (identity_username.is_none() || existing_identity_username != identity_username)
+            {
                 pipe = pipe
                     .del(join_keys!(
                         IDENTITY_ID_BY_USERNAME,
-                        existing_identity_username
+                        &existing_identity_username.clone().unwrap()
                     )) // remove the old username index
-                    .zrem(IDENTITY_USERNAME_INDEX, existing_identity_username) // remove the old username from the index
+                    .zrem(
+                        IDENTITY_USERNAME_INDEX,
+                        existing_identity_username.clone().unwrap(),
+                    );
+                // remove the old username from the index
+            }
+
+            if identity_username.is_some() && existing_identity_username != identity_username {
+                pipe = pipe
                     .set(
-                        join_keys!(IDENTITY_ID_BY_USERNAME, identity_username),
+                        join_keys!(IDENTITY_ID_BY_USERNAME, &identity_username.clone().unwrap()),
                         &identity.id,
                     ) // Set the new username index
-                    .zadd(IDENTITY_USERNAME_INDEX, identity_username, 0); //  add the new username to the index
+                    .zadd(
+                        IDENTITY_USERNAME_INDEX,
+                        &identity_username.clone().unwrap(),
+                        0,
+                    );
+                //  add the new username to the index
             }
 
             // check if the emails have changed
@@ -336,11 +355,11 @@ impl StorageIdentityExtension for RedisStorage {
                 );
             }
 
-            // Remove the old username index
-            pipe = pipe.del(join_keys!(
-                IDENTITY_ID_BY_USERNAME,
-                existing_identity_username
-            ));
+            if let Some(existing_identity_username) = existing_identity_username {
+                if identity_username.is_none() {
+                    pipe = pipe.zrem(IDENTITY_USERNAME_INDEX, existing_identity_username);
+                }
+            }
 
             // Set the identity
             let x = pipe
