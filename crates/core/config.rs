@@ -1,6 +1,6 @@
 use crate::StorageType;
 
-fn default_access_token_lifetime() -> u64 {
+fn default_access_token_lifetime() -> i64 {
     30 * 60
 }
 
@@ -87,7 +87,7 @@ pub struct TokenConfig {
 
     /// access token lifetime in seconds
     #[serde(default = "default_access_token_lifetime")]
-    pub access_token_lifetime: u64,
+    pub access_token_lifetime: i64,
 
     /// refresh token lifetime in seconds
     #[serde(default = "default_refresh_token_lifetime")]

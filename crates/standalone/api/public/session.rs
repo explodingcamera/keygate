@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Serialize, ToSchema)]
 pub struct RefreshResponse {
-    session_token: String,
+    access_token: String,
 }
 
 #[utoipa::path(
@@ -85,8 +85,8 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
         None => return Err(unauthorized!("invalid refresh token")),
     }
 
-    let (session_token, refresh_token) = kg.session.refresh(old_refresh_token.value()).await?;
-    let session_token: String = session_token.to_string();
+    let (access_token, refresh_token) = kg.session.refresh(old_refresh_token.value()).await?;
+    let access_token: String = access_token.to_string();
     if refresh_token_lifetime.is_negative() {
         return Err(KeygateResponseError::InternalServerError);
     }
@@ -103,5 +103,5 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
 
     Ok(HttpResponse::Ok()
         .cookie(cookie)
-        .json(response!(RefreshResponse { session_token })))
+        .json(response!(RefreshResponse { access_token })))
 }

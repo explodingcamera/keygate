@@ -80,6 +80,8 @@ pub trait StorageSessionExtension:
 
     async fn revoke_access_token(&self, id: &str) -> Result<(), StorageError>; // requires a transaction
 
+    async fn revoke_refresh_token(&self, id: &str) -> Result<(), StorageError>; // requires a transaction
+
     async fn reuse_detected(
         &self,
         refresh_token: &models::RefreshToken,

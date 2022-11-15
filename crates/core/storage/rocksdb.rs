@@ -174,6 +174,10 @@ impl StorageSessionExtension for RocksDBStorage {
         todo!()
     }
 
+    async fn revoke_refresh_token(&self, refresh_token_id: &str) -> Result<(), StorageError> {
+        todo!()
+    }
+
     async fn reuse_detected(
         &self,
         refresh_token: &models::RefreshToken,

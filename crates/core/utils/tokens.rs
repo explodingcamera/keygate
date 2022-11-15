@@ -76,6 +76,18 @@ impl TryInto<KeygateClaims> for JWTClaims<NoCustomClaims> {
     }
 }
 
+impl From<UnsignedAccessToken> for AccessToken {
+    fn from(token: UnsignedAccessToken) -> Self {
+        AccessToken::Unsigned(token)
+    }
+}
+
+impl From<SignedAccessToken> for AccessToken {
+    fn from(token: SignedAccessToken) -> Self {
+        AccessToken::Signed(token)
+    }
+}
+
 pub struct SignedAccessToken(String);
 
 impl SignedAccessToken {
@@ -112,8 +124,8 @@ impl SignedAccessToken {
 pub struct UnsignedAccessToken(String);
 
 impl UnsignedAccessToken {
-    pub fn new(token: String) -> Self {
-        Self(token)
+    pub fn new(access_token_id: &str) -> Self {
+        Self(access_token_id.to_string())
     }
 
     pub fn parse(&self) -> Result<KeygateClaims, JWTError> {
@@ -147,14 +159,8 @@ impl UnsignedAccessToken {
 }
 
 impl RefreshToken {
-    pub fn new() -> Self {
-        RefreshToken(generate_refresh_token_id())
-    }
-}
-
-impl Default for RefreshToken {
-    fn default() -> Self {
-        RefreshToken::new()
+    pub fn new(refresh_token_id: &str) -> Self {
+        Self(refresh_token_id.to_string())
     }
 }
 
@@ -170,6 +176,17 @@ impl From<String> for RefreshToken {
     }
 }
 
+impl From<String> for SignedAccessToken {
+    fn from(token: String) -> Self {
+        SignedAccessToken(token)
+    }
+}
+impl From<String> for UnsignedAccessToken {
+    fn from(token: String) -> Self {
+        UnsignedAccessToken(token)
+    }
+}
+
 // test this
 #[cfg(test)]
 mod tests {
@@ -178,12 +195,12 @@ mod tests {
 
     #[test]
     fn test_refresh_token() {
-        let token = RefreshToken::new();
+        let token = RefreshToken::new(&generate_refresh_token_id());
         assert_eq!(token.0.len(), 21);
     }
 
     #[test]
-    fn test_unsigned_session_token() {
+    fn test_unsigned_access_token() {
         let token = UnsignedAccessToken::generate("user_id", "audience", 3600).unwrap();
         assert_eq!(token.0.len(), 212);
         let claims = token.parse().unwrap();
@@ -196,7 +213,7 @@ mod tests {
     }
 
     #[test]
-    fn test_signed_session_token() {
+    fn test_signed_access_token() {
         let key_pair = Ed25519KeyPair::generate();
         let token =
             SignedAccessToken::generate("user_id", "audience", 3600, key_pair.clone()).unwrap();

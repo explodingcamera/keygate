@@ -36,6 +36,8 @@ pub enum Health {
 pub enum KeygateError {
     #[error(transparent)]
     Storage(#[from] StorageError),
+    #[error(transparent)]
+    JWTError(#[from] keygate_jwt::JWTError),
 
     #[error(transparent)]
     Identity(#[from] api::IdentityError),

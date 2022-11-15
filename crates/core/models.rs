@@ -10,6 +10,7 @@ pub struct Identity {
     pub last_name: Option<String>,
     pub emails: HashMap<String, IdentityEmail>,
     pub linked_accounts: Vec<IdentityAccount>,
+    pub password_hash: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
