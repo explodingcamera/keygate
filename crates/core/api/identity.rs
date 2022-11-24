@@ -27,7 +27,7 @@ impl Identity {
     where
         F: FnOnce(Option<models::Identity>) -> Option<models::Identity>,
     {
-        let identity = self.get(user_id).await?;
+        let identity = self.get_id(user_id).await?;
         match closure(identity) {
             Some(new_identity) => {
                 if new_identity.id != user_id {
@@ -41,8 +41,19 @@ impl Identity {
         }
     }
 
-    pub async fn get(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError> {
+    pub async fn get_id(&self, user_id: &str) -> Result<Option<models::Identity>, KeygateError> {
         Ok(self.storage.get_identity_by_id(user_id).await?)
+    }
+
+    pub async fn get_email(&self, email: &str) -> Result<Option<models::Identity>, KeygateError> {
+        Ok(self.storage.get_identity_by_email(email).await?)
+    }
+
+    pub async fn get_username(
+        &self,
+        username: &str,
+    ) -> Result<Option<models::Identity>, KeygateError> {
+        Ok(self.storage.get_identity_by_username(username).await?)
     }
 
     pub async fn delete(&self, _user_id: &str) -> Result<(), KeygateError> {

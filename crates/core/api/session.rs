@@ -4,6 +4,7 @@ use crate::{
     utils::tokens::{self, KeygateClaims, UnsignedAccessToken},
     KeygateConfigInternal, KeygateError, KeygateStorage,
 };
+use chrono::{DateTime, Utc};
 use keygate_jwt::JWTError;
 use thiserror::Error;
 
@@ -26,7 +27,38 @@ impl Session {
     }
 }
 
+type RefreshTokenExpiration = DateTime<Utc>;
+type AccessTokenExpiration = DateTime<Utc>;
+fn get_expiration_times(
+    config: KeygateConfigInternal,
+) -> Result<(RefreshTokenExpiration, AccessTokenExpiration), StorageError> {
+    let token_config = config.read().map_err(StorageError::from)?.token.clone();
+
+    let now = chrono::Utc::now();
+    let refresh_expires_at = now + chrono::Duration::seconds(token_config.refresh_token_lifetime);
+    let access_expires_at = now + chrono::Duration::seconds(token_config.access_token_lifetime);
+
+    Ok((refresh_expires_at, access_expires_at))
+}
+
 impl Session {
+    pub async fn create(
+        &self,
+        identity_id: &str,
+    ) -> Result<(tokens::RefreshToken, tokens::AccessToken), KeygateError> {
+        let (refresh_expires_at, access_expires_at) = get_expiration_times(self.config.clone())?;
+        let (access_token, refresh_token, _) = self
+            .storage
+            .create_session(identity_id, refresh_expires_at, access_expires_at)
+            .await?;
+
+        let access_token: tokens::AccessToken =
+            tokens::UnsignedAccessToken::new(&access_token.id).into();
+        let refresh_token = tokens::RefreshToken::new(&refresh_token.id);
+
+        Ok((refresh_token, access_token))
+    }
+
     pub async fn validate(&self, access_token: &str) -> Result<models::Session, KeygateError> {
         let claims = self.access_token_claims(access_token).await?;
 
@@ -39,7 +71,7 @@ impl Session {
             return Err(JWTError::OldTokenReused.into());
         }
 
-        if token.expires_at < chrono::Utc::now().timestamp().unsigned_abs() {
+        if token.expires_at < chrono::Utc::now().timestamp() {
             return Err(JWTError::TokenHasExpired.into());
         }
 
@@ -93,22 +125,7 @@ impl Session {
         &self,
         refresh_token_id: &str,
     ) -> Result<(tokens::AccessToken, tokens::RefreshToken), KeygateError> {
-        let (refresh_expires_at, access_expires_at) = {
-            let token_config = self
-                .config
-                .read()
-                .map_err(StorageError::from)?
-                .token
-                .clone();
-
-            let now = chrono::Utc::now();
-            let refresh_expires_at =
-                now + chrono::Duration::seconds(token_config.refresh_token_lifetime);
-            let access_expires_at =
-                now + chrono::Duration::seconds(token_config.access_token_lifetime);
-
-            (refresh_expires_at, access_expires_at)
-        };
+        let (refresh_expires_at, access_expires_at) = get_expiration_times(self.config.clone())?;
 
         let (refresh_token, access_token, _) = self
             .storage

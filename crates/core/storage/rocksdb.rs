@@ -59,7 +59,7 @@ impl StorageSessionExtension for RocksDBStorage {
         identity_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::Session, models::AccessToken, models::RefreshToken), StorageError> {
+    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
         let Some (identity) = self.get_identity_by_id(identity_id).await? else {
             return Err(LogicStorageError::NotFound(format!("no identity with id {identity_id}")).into());
         };
@@ -96,7 +96,7 @@ impl StorageSessionExtension for RocksDBStorage {
         )?;
 
         tx.commit()?;
-        Ok((session, access_token, refresh_token))
+        Ok((refresh_token, access_token, session))
     }
 
     async fn refresh_token(

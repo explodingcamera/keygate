@@ -1,7 +1,8 @@
 use crate::{
     config,
     models::{self, BaseProcess, UsernameEmailLoginProcess},
-    utils, KeygateConfigInternal, KeygateError, KeygateStorage,
+    utils::{self, hash},
+    KeygateConfigInternal, KeygateError, KeygateStorage,
 };
 use thiserror::Error;
 
@@ -18,6 +19,12 @@ pub enum LoginError {
 
     #[error("invalid username")]
     InvalidUsername,
+
+    #[error("no password set")]
+    NoPassword,
+
+    #[error("wrong password")]
+    WrongPassword,
 }
 
 pub struct Login {
@@ -91,10 +98,9 @@ impl Login {
             completed_at: None,
             id: utils::random::secure_random_id(),
             process,
-            created_at: chrono::Utc::now().timestamp().unsigned_abs(),
+            created_at: chrono::Utc::now().timestamp(),
             expires_at: chrono::Utc::now()
                 .timestamp()
-                .unsigned_abs()
                 .checked_add(config.identity.login_process_lifetime)
                 .ok_or(LoginError::Unknown)?,
         };
@@ -142,5 +148,33 @@ impl Login {
         }
 
         Ok(process)
+    }
+
+    pub fn validate_password(
+        &self,
+        password: &str,
+        identity: &models::Identity,
+    ) -> Result<(), LoginError> {
+        let config = self.get_config()?;
+
+        if !utils::validate::is_valid_password(password) {
+            return Err(LoginError::InvalidPassword);
+        }
+
+        let Some(password_hash) = &identity.password_hash else {
+            return Err(LoginError::NoPassword);
+        };
+
+        if !hash::verify(password, password_hash).map_err(|_| LoginError::WrongPassword)? {
+            return Err(LoginError::InvalidPassword);
+        }
+
+        if config.identity.password_min_length > 0
+            && password.len() < config.identity.password_min_length
+        {
+            return Err(LoginError::InvalidPassword);
+        }
+
+        Ok(())
     }
 }

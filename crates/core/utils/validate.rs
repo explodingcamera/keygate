@@ -2,6 +2,10 @@ use chrono::Utc;
 
 use crate::models::RefreshToken;
 
+pub fn is_valid_password(password: &str) -> bool {
+    password.len() >= 8
+}
+
 pub fn is_valid_device_id(device_id: &str) -> bool {
     device_id.len() == 16
 }
@@ -53,11 +57,11 @@ pub fn can_refresh(refresh_token: &RefreshToken) -> Result<(), RefreshTokenError
     }
 
     let now = Utc::now();
-    if refresh_token.expires_at < now.timestamp().unsigned_abs() {
+    if refresh_token.expires_at < now.timestamp() {
         return Err(RefreshTokenError::Expired);
     }
 
-    if refresh_token.created_at > now.timestamp().unsigned_abs() {
+    if refresh_token.created_at > now.timestamp() {
         return Err(RefreshTokenError::Invalid);
     }
 

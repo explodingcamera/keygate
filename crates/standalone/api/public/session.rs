@@ -8,7 +8,10 @@ use utoipa::ToSchema;
 
 use crate::{
     errors::KeygateResponseError,
-    utils::{response, unauthorized, HttpResult},
+    utils::{
+        create_refresh_token_cookie, get_refresh_token_cookie_config, response, unauthorized,
+        HttpResult, RefreshTokenCookieOptions,
+    },
     KG,
 };
 
@@ -47,20 +50,9 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
         None => return Err(unauthorized!("invalid refresh token")),
     }
 
-    let (keygate_domain, public_prefix, environment, refresh_token_lifetime) = {
-        let config = kg
-            .config
-            .read()
-            .map_err(|_| KeygateResponseError::InternalServerError)?;
-        (
-            config.server.keygate_domain.clone(),
-            config.server.public_prefix.clone().unwrap_or_default(),
-            config.environment.clone(),
-            config.token.refresh_token_lifetime,
-        )
-    };
+    let refresh_token_cookie_config = get_refresh_token_cookie_config(kg.config.clone())?;
 
-    if environment == Environment::Production {
+    if refresh_token_cookie_config.environment == Environment::Production {
         old_refresh_token
             .secure()
             .ok_or_else(|| unauthorized!("invalid refresh token"))?;
@@ -68,17 +60,16 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
 
     match old_refresh_token.domain() {
         Some(domain) => {
-            if domain != keygate_domain {
+            if domain != refresh_token_cookie_config.keygate_domain {
                 return Err(unauthorized!("invalid refresh token"));
             }
         }
         None => return Err(unauthorized!("invalid refresh token")),
     }
 
-    let refresh_api_path = format!("/{public_prefix}api/v1/session/refresh");
     match old_refresh_token.path() {
         Some(path) => {
-            if path != refresh_api_path {
+            if path != refresh_token_cookie_config.refresh_api_path {
                 return Err(unauthorized!("invalid refresh token"));
             }
         }
@@ -87,19 +78,7 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
 
     let (access_token, refresh_token) = kg.session.refresh(old_refresh_token.value()).await?;
     let access_token: String = access_token.to_string();
-    if refresh_token_lifetime.is_negative() {
-        return Err(KeygateResponseError::InternalServerError);
-    }
-
-    let refresh_token_lifetime = Duration::seconds(refresh_token_lifetime);
-    let cookie: Cookie = Cookie::build::<&str, String>("kg_refresh_token", refresh_token.into())
-        .domain(keygate_domain)
-        .path(refresh_api_path)
-        .secure(Environment::Production == environment)
-        .same_site(SameSite::None)
-        .http_only(true)
-        .max_age(refresh_token_lifetime)
-        .finish();
+    let cookie = create_refresh_token_cookie(refresh_token, refresh_token_cookie_config)?;
 
     Ok(HttpResponse::Ok()
         .cookie(cookie)

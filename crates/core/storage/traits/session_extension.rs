@@ -49,7 +49,7 @@ pub trait StorageSessionExtension:
         identity_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::Session, models::AccessToken, models::RefreshToken), StorageError>;
+    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError>;
 
     async fn create_access_token(
         &self,

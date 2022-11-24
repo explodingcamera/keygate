@@ -63,13 +63,16 @@ pub struct IdentityConfig {
     pub signup_require_username: bool,
     pub signup_require_email: bool,
     pub signup_require_email_verification: bool,
-    pub signup_process_lifetime: u64,
+    pub signup_process_lifetime: i64,
 
     pub login_with_username: bool,
     pub login_with_email: bool,
-    pub login_process_lifetime: u64,
+    pub login_process_lifetime: i64,
 
     pub allow_multiple_emails: bool,
+
+    pub password_min_length: usize,
+    pub check_leaked_passwords: bool,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -183,6 +186,8 @@ impl Default for Configuration {
                 login_with_email: true,
                 login_with_username: true,
                 login_process_lifetime: 60 * 60,
+                check_leaked_passwords: true,
+                password_min_length: 8,
             },
         }
     }

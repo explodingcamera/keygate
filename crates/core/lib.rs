@@ -60,7 +60,7 @@ pub enum KeygateError {
 }
 
 pub type KeygateResult<T> = Result<T, KeygateError>;
-type KeygateConfigInternal = Arc<RwLock<Configuration>>;
+pub type KeygateConfigInternal = Arc<RwLock<Configuration>>;
 type KeygateStorage = Arc<dyn Storage + Send + Sync>;
 
 pub struct Keygate {

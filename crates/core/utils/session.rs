@@ -19,7 +19,7 @@ pub fn create_initial_session(
     let new_session_id = generate_refresh_token_id();
     let new_refresh_token_id = generate_refresh_token_id();
     let new_access_token_id = generate_access_token_id();
-    let now = chrono::Utc::now().timestamp().unsigned_abs();
+    let now = chrono::Utc::now().timestamp();
 
     let session = models::Session {
         id: new_session_id,
@@ -38,8 +38,8 @@ pub fn create_initial_session(
         access_token_id: new_access_token_id.clone(),
         id: new_refresh_token_id.clone(),
         identity_id: session.identity_id.clone(),
-        created_at: chrono::Utc::now().timestamp().unsigned_abs(),
-        expires_at: refresh_expires_at.timestamp().unsigned_abs(),
+        created_at: chrono::Utc::now().timestamp(),
+        expires_at: refresh_expires_at.timestamp(),
         revoked_at: None,
     };
 
@@ -47,8 +47,8 @@ pub fn create_initial_session(
         id: new_access_token_id,
         identity_id: session.identity_id.clone(),
         refresh_token_id: new_refresh_token_id,
-        created_at: chrono::Utc::now().timestamp().unsigned_abs(),
-        expires_at: access_expires_at.timestamp().unsigned_abs(),
+        created_at: chrono::Utc::now().timestamp(),
+        expires_at: access_expires_at.timestamp(),
         revoked_at: None,
     };
 
@@ -78,8 +78,8 @@ pub fn rotate_refresh_token(
         access_token_id: new_access_token_id.clone(),
         id: new_refresh_token_id.clone(),
         identity_id: old_refresh_token.identity_id.clone(),
-        created_at: chrono::Utc::now().timestamp().unsigned_abs(),
-        expires_at: refresh_expires_at.timestamp().unsigned_abs(),
+        created_at: chrono::Utc::now().timestamp(),
+        expires_at: refresh_expires_at.timestamp(),
         revoked_at: None,
     };
 
@@ -87,8 +87,8 @@ pub fn rotate_refresh_token(
         id: new_access_token_id,
         identity_id: old_refresh_token.identity_id.clone(),
         refresh_token_id: new_refresh_token_id.clone(),
-        created_at: chrono::Utc::now().timestamp().unsigned_abs(),
-        expires_at: access_expires_at.timestamp().unsigned_abs(),
+        created_at: chrono::Utc::now().timestamp(),
+        expires_at: access_expires_at.timestamp(),
         revoked_at: None,
     };
 

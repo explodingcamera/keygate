@@ -112,10 +112,9 @@ impl Signup {
                 email,
             },
             id: utils::random::secure_random_id(),
-            created_at: chrono::Utc::now().timestamp().unsigned_abs(),
+            created_at: chrono::Utc::now().timestamp(),
             expires_at: chrono::Utc::now()
                 .timestamp()
-                .unsigned_abs()
                 .checked_add(config.identity.signup_process_lifetime)
                 .ok_or(SignupError::Unknown)?,
         };
@@ -146,7 +145,7 @@ impl Signup {
             return Err(SignupError::InvalidDeviceId);
         }
 
-        if signup_process.expires_at < chrono::Utc::now().timestamp().unsigned_abs() {
+        if signup_process.expires_at < chrono::Utc::now().timestamp() {
             return Err(SignupError::ProcessExpired);
         }
 
@@ -170,8 +169,8 @@ impl Signup {
             linked_accounts: HashMap::new(),
             password_hash: Some(password_hash),
             id: utils::random::secure_random_id(),
-            created_at: chrono::Utc::now().timestamp().unsigned_abs(),
-            updated_at: chrono::Utc::now().timestamp().unsigned_abs(),
+            created_at: chrono::Utc::now().timestamp(),
+            updated_at: chrono::Utc::now().timestamp(),
         };
 
         if self.storage.create_identity(&new_identity).await.is_err() {
