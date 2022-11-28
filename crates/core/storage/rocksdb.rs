@@ -15,8 +15,8 @@ use crate::{
 };
 
 use super::{
-    BaseStorage, LogicStorageError, Storage, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
+    BaseStorage, LogicStorageError, Storage, StorageError, StorageIdentityExtension, StorageProcessExtension,
+    StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
 };
 
 pub type RocksDBStorageError = rocksdb::Error;
@@ -58,14 +58,12 @@ impl StorageSessionExtension for RocksDBStorage {
         &self,
         identity_id: &str,
         refresh_expires_at: DateTime<Utc>,
-        access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
+    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
         let Some (identity) = self.get_identity_by_id(identity_id).await? else {
             return Err(LogicStorageError::NotFound(format!("no identity with id {identity_id}")).into());
         };
 
-        let (session, access_token, refresh_token) =
-            create_initial_session(identity_id, refresh_expires_at, access_expires_at);
+        let (session, refresh_token) = create_initial_session(identity_id, refresh_expires_at);
 
         let tx = self.db.transaction();
         let sessions = tx
@@ -80,15 +78,7 @@ impl StorageSessionExtension for RocksDBStorage {
             &to_bytes(&sessions)?,
         )?;
 
-        tx.put(
-            &join_keys!(SESSION_BY_ID, &session.id),
-            &to_bytes(&session)?,
-        )?;
-
-        tx.put(
-            &join_keys!(ACCESS_TOKEN_BY_ID, &access_token.id),
-            &to_bytes(&access_token)?,
-        )?;
+        tx.put(&join_keys!(SESSION_BY_ID, &session.id), &to_bytes(&session)?)?;
 
         tx.put(
             &join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id),
@@ -96,7 +86,7 @@ impl StorageSessionExtension for RocksDBStorage {
         )?;
 
         tx.commit()?;
-        Ok((refresh_token, access_token, session))
+        Ok((refresh_token, session))
     }
 
     async fn refresh_token(
@@ -104,26 +94,19 @@ impl StorageSessionExtension for RocksDBStorage {
         refresh_token_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
+    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
         let tx = self.db.transaction();
 
         let refresh_token: models::RefreshToken = tx
             .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))?
-            .ok_or_else(|| {
-                LogicStorageError::NotFound(format!(
-                    "refresh token with id {} not found",
-                    refresh_token_id
-                ))
-            })
+            .ok_or_else(|| LogicStorageError::NotFound(format!("refresh token with id {} not found", refresh_token_id)))
             .map(|t| utils::serialize::from_bytes(&t))??;
 
         let session_id = refresh_token.session_id.clone();
 
         let session: models::Session = tx
             .get(&join_keys!(SESSION_BY_ID, &session_id))?
-            .ok_or_else(|| {
-                LogicStorageError::NotFound(format!("session with id {} not found", session_id))
-            })
+            .ok_or_else(|| LogicStorageError::NotFound(format!("session with id {} not found", session_id)))
             .map(|t| utils::serialize::from_bytes(&t))??;
 
         match utils::validate::can_refresh(&refresh_token) {
@@ -140,34 +123,14 @@ impl StorageSessionExtension for RocksDBStorage {
             return Err(StorageError::Session("revoked".to_string()));
         }
 
-        let res = rotate_refresh_token(
-            refresh_token,
-            session,
-            refresh_expires_at,
-            access_expires_at,
-        );
+        let res = rotate_refresh_token(refresh_token, session, refresh_expires_at, access_expires_at);
 
-        tx.put(
-            res.new_access_token.id.clone(),
-            to_bytes(&res.new_access_token)?,
-        )?;
-
-        tx.put(
-            res.new_refresh_token.id.clone(),
-            to_bytes(&res.new_refresh_token)?,
-        )?;
-
+        tx.put(res.new_refresh_token.id.clone(), to_bytes(&res.new_refresh_token)?)?;
         tx.put(session_id, to_bytes(&res.updated_session)?)?;
-
         tx.put(refresh_token_id, to_bytes(&res.old_refresh_token)?)?;
-
         tx.commit()?;
 
-        Ok((
-            res.new_refresh_token,
-            res.new_access_token,
-            res.updated_session,
-        ))
+        Ok((res.new_refresh_token, res.updated_session))
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
@@ -178,10 +141,7 @@ impl StorageSessionExtension for RocksDBStorage {
         todo!()
     }
 
-    async fn reuse_detected(
-        &self,
-        refresh_token: &models::RefreshToken,
-    ) -> Result<(), StorageError> {
+    async fn reuse_detected(&self, refresh_token: &models::RefreshToken) -> Result<(), StorageError> {
         todo!()
     }
 }
@@ -214,10 +174,7 @@ impl BaseStorage for RocksDBStorage {
 
 #[async_trait::async_trait]
 impl StorageIdentityExtension for RocksDBStorage {
-    async fn get_identity_by_username(
-        &self,
-        username: &str,
-    ) -> Result<Option<models::Identity>, StorageError> {
+    async fn get_identity_by_username(&self, username: &str) -> Result<Option<models::Identity>, StorageError> {
         let id = self
             ._get::<String>(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
             .await?;
@@ -229,13 +186,8 @@ impl StorageIdentityExtension for RocksDBStorage {
         self.get_identity_by_id(id.as_str()).await
     }
 
-    async fn get_identity_by_email(
-        &self,
-        email: &str,
-    ) -> Result<Option<models::Identity>, StorageError> {
-        let id = self
-            ._get::<String>(&join_keys!(IDENTITY_ID_BY_EMAIL, email))
-            .await?;
+    async fn get_identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
+        let id = self._get::<String>(&join_keys!(IDENTITY_ID_BY_EMAIL, email)).await?;
 
         let Some(id) = id else {
             return Ok(None)
@@ -245,8 +197,7 @@ impl StorageIdentityExtension for RocksDBStorage {
     }
 
     async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        self._get::<models::Identity>(&join_keys!(IDENTITY_BY_ID, id))
-            .await
+        self._get::<models::Identity>(&join_keys!(IDENTITY_BY_ID, id)).await
     }
 
     async fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
@@ -271,10 +222,7 @@ impl StorageIdentityExtension for RocksDBStorage {
 
         // Check if the email is already taken
         for email in &identity.emails {
-            if self
-                .exists(&join_keys!(IDENTITY_ID_BY_EMAIL, email.0))
-                .await?
-            {
+            if self.exists(&join_keys!(IDENTITY_ID_BY_EMAIL, email.0)).await? {
                 return Err(LogicStorageError::AlreadyExists("identity".to_string()).into());
             }
         }
@@ -285,8 +233,7 @@ impl StorageIdentityExtension for RocksDBStorage {
         }
 
         // Set the identity
-        self._set(&join_keys!(IDENTITY_BY_ID, &identity.id), identity)
-            .await?;
+        self._set(&join_keys!(IDENTITY_BY_ID, &identity.id), identity).await?;
 
         Ok(())
     }
@@ -318,10 +265,7 @@ impl StorageIdentityExtension for RocksDBStorage {
 
         // username has been updated
         if existing_username.is_some() && (username.is_none() || username != existing_username) {
-            tx.delete(join_keys!(
-                IDENTITY_ID_BY_USERNAME,
-                &existing_username.clone().unwrap()
-            ))?;
+            tx.delete(join_keys!(IDENTITY_ID_BY_USERNAME, &existing_username.clone().unwrap()))?;
         }
 
         if username.is_some() && username != existing_username {

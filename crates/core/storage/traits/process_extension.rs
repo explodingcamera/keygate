@@ -19,17 +19,11 @@ pub trait StorageProcessExtension: BaseStorage + StorageSerdeExtension + Send + 
     async fn process_by_id(&self, id: &str) -> Result<Option<models::Process>, StorageError> {
         self.process_by_id(id).await
     }
-    async fn process_token_by_id(
-        &self,
-        id: &str,
-    ) -> Result<Option<models::ProcessToken>, StorageError> {
+    async fn process_token_by_id(&self, id: &str) -> Result<Option<models::ProcessToken>, StorageError> {
         todo!()
     }
 
-    async fn process_by_token(
-        &self,
-        token_id: &str,
-    ) -> Result<Option<models::Process>, StorageError> {
+    async fn process_by_token(&self, token_id: &str) -> Result<Option<models::Process>, StorageError> {
         let token = self.process_token_by_id(token_id).await?;
         match token {
             Some(token) => self.process_by_id(&token.process_id).await,

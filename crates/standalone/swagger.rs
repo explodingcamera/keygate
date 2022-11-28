@@ -8,8 +8,7 @@ use utoipa::{
 use utoipa_swagger_ui::{SwaggerUi, Url};
 
 pub fn public_api_docs() -> utoipa_swagger_ui::SwaggerUi {
-    let refresh_token_scheme =
-        SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("refresh_token")));
+    let refresh_token_scheme = SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("refresh_token")));
 
     let access_token_scheme = SecurityScheme::Http(
         HttpBuilder::new()

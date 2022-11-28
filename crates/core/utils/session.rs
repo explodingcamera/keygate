@@ -1,21 +1,15 @@
 use chrono::{DateTime, Utc};
 
-use crate::models;
-
 use super::tokens::{generate_access_token_id, generate_refresh_token_id};
+use crate::models::{self, RefreshToken};
 
 pub struct Rotation {
     pub old_refresh_token: models::RefreshToken,
     pub new_refresh_token: models::RefreshToken,
-    pub new_access_token: models::AccessToken,
     pub updated_session: models::Session,
 }
 
-pub fn create_initial_session(
-    identity_id: &str,
-    refresh_expires_at: DateTime<Utc>,
-    access_expires_at: DateTime<Utc>,
-) -> (models::Session, models::AccessToken, models::RefreshToken) {
+pub fn create_initial_session(identity_id: &str, refresh_expires_at: DateTime<Utc>) -> (models::Session, RefreshToken) {
     let new_session_id = generate_refresh_token_id();
     let new_refresh_token_id = generate_refresh_token_id();
     let new_access_token_id = generate_access_token_id();
@@ -35,24 +29,15 @@ pub fn create_initial_session(
         prev: None,
         next: None,
         session_id: session.id.clone(),
-        access_token_id: new_access_token_id.clone(),
-        id: new_refresh_token_id.clone(),
+        access_token_id: new_access_token_id,
+        id: new_refresh_token_id,
         identity_id: session.identity_id.clone(),
         created_at: chrono::Utc::now().timestamp(),
         expires_at: refresh_expires_at.timestamp(),
         revoked_at: None,
     };
 
-    let new_access_token = models::AccessToken {
-        id: new_access_token_id,
-        identity_id: session.identity_id.clone(),
-        refresh_token_id: new_refresh_token_id,
-        created_at: chrono::Utc::now().timestamp(),
-        expires_at: access_expires_at.timestamp(),
-        revoked_at: None,
-    };
-
-    (session, new_access_token, refresh_token)
+    (session, refresh_token)
 }
 
 pub fn rotate_refresh_token(
@@ -75,20 +60,11 @@ pub fn rotate_refresh_token(
         prev: Some(old_refresh_token.id.clone()),
         next: None,
         session_id: old_refresh_token.session_id.clone(),
-        access_token_id: new_access_token_id.clone(),
+        access_token_id: new_access_token_id,
         id: new_refresh_token_id.clone(),
         identity_id: old_refresh_token.identity_id.clone(),
         created_at: chrono::Utc::now().timestamp(),
         expires_at: refresh_expires_at.timestamp(),
-        revoked_at: None,
-    };
-
-    let new_access_token = models::AccessToken {
-        id: new_access_token_id,
-        identity_id: old_refresh_token.identity_id.clone(),
-        refresh_token_id: new_refresh_token_id.clone(),
-        created_at: chrono::Utc::now().timestamp(),
-        expires_at: access_expires_at.timestamp(),
         revoked_at: None,
     };
 
@@ -98,7 +74,6 @@ pub fn rotate_refresh_token(
     Rotation {
         old_refresh_token,
         new_refresh_token,
-        new_access_token,
         updated_session,
     }
 }

@@ -50,7 +50,7 @@ pub fn get_refresh_token_cookie_config(
         refresh_token_lifetime,
         keygate_domain: config.server.keygate_domain.clone(),
         refresh_api_path,
-        environment: config.environment.clone(),
+        environment: config.environment,
     })
 }
 

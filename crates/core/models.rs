@@ -57,17 +57,6 @@ pub struct RefreshToken {
     pub access_token_id: String,
 }
 
-// If a user is authenticated in multiple tabs on the same device, they will have multiple access tokens at the same time.
-#[derive(Deserialize, Serialize, Debug, Eq, PartialEq)]
-pub struct AccessToken {
-    pub id: String,
-    pub identity_id: String,
-    pub refresh_token_id: String,
-    pub revoked_at: Option<i64>,
-    pub expires_at: i64,
-    pub created_at: i64,
-}
-
 #[derive(Deserialize, Serialize, Debug, Eq, PartialEq, Clone)]
 pub enum Process {
     UsernameEmailLogin(BaseProcess<UsernameEmailLoginProcess>),

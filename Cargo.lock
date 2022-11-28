@@ -392,7 +392,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
- "time 0.1.44",
+ "time 0.1.45",
  "wasm-bindgen",
  "winapi",
 ]
@@ -734,9 +734,9 @@ dependencies = [
 
 [[package]]
 name = "flate2"
-version = "1.0.24"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f82b0f4c27ad9f8bfd1f3208d882da2b09c301bc1c828fd3a00d0216d2fbbff6"
+checksum = "a8a2db397cb1c8772f31494cb8917e48cd1e64f0fa7efac59fbd741a0a8ce841"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
@@ -1141,9 +1141,9 @@ dependencies = [
 
 [[package]]
 name = "keygate-jwt"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec517c5319fe86e0bd232b2efdccb331b4729cecf993274d50c7c3c463a7891d"
+checksum = "11648a52c11922dcb14c5655430be83a415bd9c519dd4780b717524f77a837d2"
 dependencies = [
  "coarsetime",
  "ct-codecs",
@@ -1309,9 +1309,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "miniz_oxide"
-version = "0.5.4"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96590ba8f175222643a85693f33d26e9c8a015f599c216509b1a6894af675d34"
+checksum = "b275950c28b37e794e8c55d88aeb5e139d0ce23fdbbeda68f8d7174abdf9e8fa"
 dependencies = [
  "adler",
 ]
@@ -1739,9 +1739,9 @@ dependencies = [
 
 [[package]]
 name = "rust-embed"
-version = "6.5.0"
+version = "6.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa80de5f776fa29ff3a2cca0870336fb293304c37737f303b6bc7ac0c00e754e"
+checksum = "283ffe2f866869428c92e0d61c2f35dfb4355293cdfdc48f49e895c15f1333d1"
 dependencies = [
  "rust-embed-impl",
  "rust-embed-utils",
@@ -1750,9 +1750,9 @@ dependencies = [
 
 [[package]]
 name = "rust-embed-impl"
-version = "6.4.0"
+version = "6.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "301d857909c92e96893b03e7a048510da1bd16b814ef18c4826e7829b6095fed"
+checksum = "31ab23d42d71fb9be1b643fe6765d292c5e14d46912d13f3ae2815ca048ea04d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1764,9 +1764,9 @@ dependencies = [
 
 [[package]]
 name = "rust-embed-utils"
-version = "7.4.0"
+version = "7.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f52f7adca730960f96813a30bc943e43d0abe30c2e0ec3fd14632251dbd3f41"
+checksum = "c1669d81dfabd1b5f8e2856b8bbe146c6192b0ba22162edc738ac0a5de18f054"
 dependencies = [
  "sha2",
  "walkdir",
@@ -2053,9 +2053,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.1.44"
+version = "0.1.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
+checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
 dependencies = [
  "libc",
  "wasi 0.10.0+wasi-snapshot-preview1",
@@ -2253,9 +2253,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa"
-version = "2.4.1"
+version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f3d3bdf92ac0540a697804016df783bcce55f5ac7df74f0689ed9fbd448c846"
+checksum = "b626abb3bbbe41ce00df6dea3d109a83a034930245c3307026d82d71e7a06e43"
 dependencies = [
  "indexmap",
  "serde",
@@ -2265,9 +2265,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa-gen"
-version = "2.4.1"
+version = "2.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abf8baa7dc1638f2e4646d5631fa94e05c48c544c3ac5a3e0522321bb13f30cf"
+checksum = "250e8cdb0461b6fbaa1c1acb7f08300d773713fab721776becf5f7386b41a791"
 dependencies = [
  "lazy_static",
  "proc-macro-error",
@@ -2279,9 +2279,9 @@ dependencies = [
 
 [[package]]
 name = "utoipa-swagger-ui"
-version = "2.0.1"
+version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ec49afbc72cb3dfbdcc3498143f5ac6cdbd5fa8bd085636d97c24754ce1a53f"
+checksum = "0820c88504465c32db74d3765f7a06cb85a89b29d080c4481abd86c01e73944d"
 dependencies = [
  "actix-web",
  "mime_guess",

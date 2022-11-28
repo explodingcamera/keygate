@@ -12,7 +12,7 @@ path = "lib.rs"
 argon2 = "0.4"
 base64 = "0.13"
 hex = "0.4.3"
-keygate-jwt = {version = "1.1", features = ["eddsa", "none"]}
+keygate-jwt = {version = "1.2", features = ["eddsa"]}
 nanoid = "0.4.0"
 rand_core = {version = "0.6", features = ["std"]}
 regex = "1.5"

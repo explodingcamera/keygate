@@ -11,10 +11,7 @@ pub fn is_valid_device_id(device_id: &str) -> bool {
 }
 
 pub fn is_valid_id(random_string: &str) -> bool {
-    random_string.len() == 21
-        && random_string
-            .chars()
-            .all(|c| nanoid::alphabet::SAFE.contains(&c))
+    random_string.len() == 21 && random_string.chars().all(|c| nanoid::alphabet::SAFE.contains(&c))
 }
 
 pub fn is_valid_email(email: &str) -> bool {

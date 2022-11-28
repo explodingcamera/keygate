@@ -1,7 +1,6 @@
 use super::{
-    constants::*, BaseStorage, LogicStorageError, RedisExtensions, StorageError,
-    StorageIdentityExtension, StorageProcessExtension, StorageSerdeExtension,
-    StorageSessionExtension, StorageWithConfig,
+    constants::*, BaseStorage, LogicStorageError, RedisExtensions, StorageError, StorageIdentityExtension,
+    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
 };
 
 use crate::utils::{
@@ -51,38 +50,23 @@ impl StorageSessionExtension for RedisStorage {
         &self,
         identity_id: &str,
         refresh_expires_at: DateTime<Utc>,
-        access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
+    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
         let Some (identity) = self.get_identity_by_id(identity_id).await? else {
             return Err(LogicStorageError::NotFound(format!("no identity with id {identity_id}")).into());
         };
 
-        let (session, access_token, refresh_token) =
-            create_initial_session(identity_id, refresh_expires_at, access_expires_at);
+        let (session, refresh_token) = create_initial_session(identity_id, refresh_expires_at);
 
         let mut conn = self.pool();
         let sessions_key = join_keys!(IDENTITY_SESSIONS, identity_id);
         async_transaction!(&mut conn, &[sessions_key.clone()], {
-            let mut sessions: Vec<String> = conn
-                .get_and_deserialize(&sessions_key)
-                .await?
-                .unwrap_or_default();
+            let mut sessions: Vec<String> = conn.get_and_deserialize(&sessions_key).await?.unwrap_or_default();
             sessions.push(session.id.clone());
 
             redis::pipe()
                 .atomic()
-                .set(
-                    join_keys!(IDENTITY_SESSIONS, identity_id),
-                    to_bytes(&sessions)?,
-                )
-                .set(
-                    join_keys!(SESSION_BY_ID, &session.id.clone()),
-                    to_bytes(&session)?,
-                )
-                .set(
-                    join_keys!(ACCESS_TOKEN_BY_ID, &access_token.id.clone()),
-                    to_bytes(&access_token)?,
-                )
+                .set(join_keys!(IDENTITY_SESSIONS, identity_id), to_bytes(&sessions)?)
+                .set(join_keys!(SESSION_BY_ID, &session.id.clone()), to_bytes(&session)?)
                 .set(
                     join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id.clone()),
                     to_bytes(&refresh_token)?,
@@ -93,7 +77,7 @@ impl StorageSessionExtension for RedisStorage {
             Some(())
         });
 
-        Ok((refresh_token, access_token, session))
+        Ok((refresh_token, session))
     }
 
     async fn refresh_token(
@@ -101,77 +85,57 @@ impl StorageSessionExtension for RedisStorage {
         refresh_token_id: &str,
         refresh_expires_at: DateTime<Utc>,
         access_expires_at: DateTime<Utc>,
-    ) -> Result<(models::RefreshToken, models::AccessToken, models::Session), StorageError> {
+    ) -> Result<(models::RefreshToken, models::Session), StorageError> {
         let old_refresh_token_key = &join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id);
 
         let mut conn = self.pool();
-        let (refresh_token, access_token, session): (
-            models::RefreshToken,
-            models::AccessToken,
-            models::Session,
-        ) = async_transaction!(&mut conn, &[old_refresh_token_key], {
-            let refresh_token: models::RefreshToken = conn
-                .get_and_deserialize(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
-                .await?
-                .ok_or_else(|| {
-                    LogicStorageError::NotFound(format!(
-                        "refresh token with id {refresh_token_id} not found"
-                    ))
-                })?;
+        let (refresh_token, session): (models::RefreshToken, models::Session) =
+            async_transaction!(&mut conn, &[old_refresh_token_key], {
+                let refresh_token: models::RefreshToken = conn
+                    .get_and_deserialize(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
+                    .await?
+                    .ok_or_else(|| {
+                        LogicStorageError::NotFound(format!("refresh token with id {refresh_token_id} not found"))
+                    })?;
 
-            let session_id = refresh_token.session_id.clone();
+                let session_id = refresh_token.session_id.clone();
 
-            let session: models::Session = conn
-                .get_and_deserialize(&join_keys!(SESSION_BY_ID, &session_id))
-                .await?
-                .ok_or_else(|| {
-                    LogicStorageError::NotFound(format!("session with id {session_id} not found"))
-                })?;
+                let session: models::Session = conn
+                    .get_and_deserialize(&join_keys!(SESSION_BY_ID, &session_id))
+                    .await?
+                    .ok_or_else(|| LogicStorageError::NotFound(format!("session with id {session_id} not found")))?;
 
-            match utils::validate::can_refresh(&refresh_token) {
-                Ok(_) => (),
-                Err(RefreshTokenError::ReuseError(e)) => {
-                    self.reuse_detected(&refresh_token).await?;
-                    return Err(RefreshTokenError::ReuseError(e).into());
+                match utils::validate::can_refresh(&refresh_token) {
+                    Ok(_) => (),
+                    Err(RefreshTokenError::ReuseError(e)) => {
+                        self.reuse_detected(&refresh_token).await?;
+                        return Err(RefreshTokenError::ReuseError(e).into());
+                    }
+                    Err(e) => return Err(e.into()),
                 }
-                Err(e) => return Err(e.into()),
-            }
 
-            if !can_refresh_session(&session) {
-                self.reuse_detected(&refresh_token).await?;
-                return Err(StorageError::Session("revoked".to_string()));
-            }
+                if !can_refresh_session(&session) {
+                    self.reuse_detected(&refresh_token).await?;
+                    return Err(StorageError::Session("revoked".to_string()));
+                }
 
-            let res = rotate_refresh_token(
-                refresh_token,
-                session,
-                refresh_expires_at,
-                access_expires_at,
-            );
+                let res = rotate_refresh_token(refresh_token, session, refresh_expires_at, access_expires_at);
 
-            let (new_access_token_id, new_refresh_token_id, old_refresh_token_id) = (
-                res.new_access_token.id.clone(),
-                res.new_refresh_token.id.clone(),
-                res.old_refresh_token.id.clone(),
-            );
+                let (new_refresh_token_id, old_refresh_token_id) =
+                    (res.new_refresh_token.id.clone(), res.old_refresh_token.id.clone());
 
-            redis::pipe()
-                .atomic()
-                .set(new_access_token_id, to_bytes(&res.new_access_token)?)
-                .set(new_refresh_token_id, to_bytes(&res.new_refresh_token)?)
-                .set(session_id, to_bytes(&res.updated_session)?)
-                .set(old_refresh_token_id, to_bytes(&res.old_refresh_token)?)
-                .query_async(&mut conn)
-                .await?;
+                redis::pipe()
+                    .atomic()
+                    .set(new_refresh_token_id, to_bytes(&res.new_refresh_token)?)
+                    .set(session_id, to_bytes(&res.updated_session)?)
+                    .set(old_refresh_token_id, to_bytes(&res.old_refresh_token)?)
+                    .query_async(&mut conn)
+                    .await?;
 
-            Some((
-                res.new_refresh_token,
-                res.new_access_token,
-                res.updated_session,
-            ))
-        });
+                Some((res.new_refresh_token, res.updated_session))
+            });
 
-        Ok((refresh_token, access_token, session))
+        Ok((refresh_token, session))
     }
 
     async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
@@ -182,10 +146,7 @@ impl StorageSessionExtension for RedisStorage {
         todo!()
     }
 
-    async fn reuse_detected(
-        &self,
-        refresh_token: &models::RefreshToken,
-    ) -> Result<(), StorageError> {
+    async fn reuse_detected(&self, refresh_token: &models::RefreshToken) -> Result<(), StorageError> {
         todo!()
     }
 }
@@ -224,12 +185,7 @@ impl StorageIdentityExtension for RedisStorage {
         let identity_emails = identity
             .emails
             .iter()
-            .map(|email| {
-                (
-                    join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()),
-                    identity.id.as_str(),
-                )
-            })
+            .map(|email| (join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()), identity.id.as_str()))
             .collect::<Vec<_>>();
 
         let mut conn = self.pool();
@@ -241,10 +197,7 @@ impl StorageIdentityExtension for RedisStorage {
 
             for (email_key, identity_id) in identity_emails.clone() {
                 if conn.exists(email_key.clone()).await? {
-                    return Err(LogicStorageError::AlreadyExists(format!(
-                        "email already exists: {email_key}"
-                    ))
-                    .into());
+                    return Err(LogicStorageError::AlreadyExists(format!("email already exists: {email_key}")).into());
                 }
             }
 
@@ -253,10 +206,7 @@ impl StorageIdentityExtension for RedisStorage {
 
             pipe = pipe
                 // Set the identity
-                .set(
-                    join_keys!(IDENTITY_BY_ID, &identity.id),
-                    identity_bytes.clone(),
-                )
+                .set(join_keys!(IDENTITY_BY_ID, &identity.id), identity_bytes.clone())
                 // Set the email index
                 .set_multiple(&identity_emails);
 
@@ -286,11 +236,7 @@ impl StorageIdentityExtension for RedisStorage {
             let existing_identity: models::Identity = conn
                 .get_and_deserialize(identity_key)
                 .await?
-                .ok_or_else(|| {
-                    LogicStorageError::NotFound(format!(
-                        "identity with id {identity_key} not found"
-                    ))
-                })?;
+                .ok_or_else(|| LogicStorageError::NotFound(format!("identity with id {identity_key} not found")))?;
 
             if &existing_identity == identity {
                 return Ok(());
@@ -309,10 +255,7 @@ impl StorageIdentityExtension for RedisStorage {
                         IDENTITY_ID_BY_USERNAME,
                         &existing_identity_username.clone().unwrap()
                     )) // remove the old username index
-                    .zrem(
-                        IDENTITY_USERNAME_INDEX,
-                        existing_identity_username.clone().unwrap(),
-                    );
+                    .zrem(IDENTITY_USERNAME_INDEX, existing_identity_username.clone().unwrap());
                 // remove the old username from the index
             }
 
@@ -322,11 +265,7 @@ impl StorageIdentityExtension for RedisStorage {
                         join_keys!(IDENTITY_ID_BY_USERNAME, &identity_username.clone().unwrap()),
                         &identity.id,
                     ) // Set the new username index
-                    .zadd(
-                        IDENTITY_USERNAME_INDEX,
-                        &identity_username.clone().unwrap(),
-                        0,
-                    );
+                    .zadd(IDENTITY_USERNAME_INDEX, &identity_username.clone().unwrap(), 0);
                 //  add the new username to the index
             }
 
@@ -345,12 +284,7 @@ impl StorageIdentityExtension for RedisStorage {
                     &identity
                         .emails
                         .iter()
-                        .map(|email| {
-                            (
-                                join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()),
-                                identity.id.as_str(),
-                            )
-                        })
+                        .map(|email| (join_keys!(IDENTITY_ID_BY_EMAIL, email.0.as_str()), identity.id.as_str()))
                         .collect::<Vec<_>>(),
                 );
             }
@@ -363,10 +297,7 @@ impl StorageIdentityExtension for RedisStorage {
 
             // Set the identity
             let x = pipe
-                .set(
-                    join_keys!(IDENTITY_BY_ID, &identity.id),
-                    serialize::to_bytes(identity)?,
-                )
+                .set(join_keys!(IDENTITY_BY_ID, &identity.id), serialize::to_bytes(identity)?)
                 .query_async(&mut self.pool())
                 .await?;
 
@@ -376,14 +307,8 @@ impl StorageIdentityExtension for RedisStorage {
         Ok(())
     }
 
-    async fn get_identity_by_username(
-        &self,
-        username: &str,
-    ) -> Result<Option<models::Identity>, StorageError> {
-        let identity_id: Option<String> = self
-            .pool()
-            .get(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
-            .await?;
+    async fn get_identity_by_username(&self, username: &str) -> Result<Option<models::Identity>, StorageError> {
+        let identity_id: Option<String> = self.pool().get(&join_keys!(IDENTITY_ID_BY_USERNAME, username)).await?;
 
         let Some(identity_id) = identity_id else {
             return Ok(None)
@@ -392,14 +317,8 @@ impl StorageIdentityExtension for RedisStorage {
         self.get_identity_by_id(&identity_id).await
     }
 
-    async fn get_identity_by_email(
-        &self,
-        email: &str,
-    ) -> Result<Option<models::Identity>, StorageError> {
-        let identity_id: Option<String> = self
-            .pool()
-            .get(&join_keys!(IDENTITY_ID_BY_EMAIL, email))
-            .await?;
+    async fn get_identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
+        let identity_id: Option<String> = self.pool().get(&join_keys!(IDENTITY_ID_BY_EMAIL, email)).await?;
 
         let Some(identity_id) = identity_id else {
             return Ok(None)
@@ -409,8 +328,7 @@ impl StorageIdentityExtension for RedisStorage {
     }
 
     async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        let identity_bytes: Option<Vec<u8>> =
-            self.pool().get(&join_keys!(IDENTITY_BY_ID, id)).await?;
+        let identity_bytes: Option<Vec<u8>> = self.pool().get(&join_keys!(IDENTITY_BY_ID, id)).await?;
 
         let Some(identity_bytes) = identity_bytes else {
             return Ok(None);

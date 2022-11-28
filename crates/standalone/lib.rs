@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
-use keygate_core::{Keygate, KeygateConfig};
+use keygate_core::{generate_ed25519_key_pair, Keygate, KeygateConfig};
 
 mod api;
 mod errors;
@@ -13,7 +13,11 @@ mod utils;
 
 type KG = web::Data<Keygate>;
 pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
-    let keygate_public = web::Data::new(Keygate::new(config.clone()).await?);
+    let secrets = keygate_core::KeygateSecrets {
+        jwt_ed25519_keypair: generate_ed25519_key_pair(),
+    };
+
+    let keygate_public = web::Data::new(Keygate::new(config.clone(), secrets).await?);
     let keygate_admin = keygate_public.clone();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));

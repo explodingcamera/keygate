@@ -4,8 +4,7 @@ use utoipa::ToSchema;
 
 use crate::{
     utils::{
-        create_refresh_token_cookie, get_refresh_token_cookie_config, response, unauthorized,
-        HttpResult, JsonResult,
+        create_refresh_token_cookie, get_refresh_token_cookie_config, response, unauthorized, HttpResult, JsonResult,
     },
     KG,
 };
@@ -48,10 +47,7 @@ pub struct LoginProcessResponse {
   ),
 )]
 #[post("/")]
-async fn create_login_process(
-    req: Json<LoginProcessRequest>,
-    kg: KG,
-) -> JsonResult<LoginProcessResponse> {
+async fn create_login_process(req: Json<LoginProcessRequest>, kg: KG) -> JsonResult<LoginProcessResponse> {
     let res = kg
         .login
         .init_login_process(&req.username_or_email, &req.device_id)
@@ -88,10 +84,7 @@ pub struct LoginPasswordResponse {
 )]
 #[post("/password")]
 async fn login_process_password(req: Json<LoginPasswordRequest>, kg: KG) -> HttpResult {
-    let process = kg
-        .login
-        .get_login_process(&req.device_id, &req.process_id)
-        .await?;
+    let process = kg.login.get_login_process(&req.device_id, &req.process_id).await?;
 
     let Some(identity) = kg.identity.get_id(&process.process.identity_id).await? else {
         return Err(unauthorized!("identity not found"));
@@ -103,15 +96,10 @@ async fn login_process_password(req: Json<LoginPasswordRequest>, kg: KG) -> Http
 
     let (refresh_token, access_token) = kg.session.create(&identity.id).await?;
 
-    let cookie = create_refresh_token_cookie(
-        refresh_token,
-        get_refresh_token_cookie_config(kg.config.clone())?,
-    )?;
+    let cookie = create_refresh_token_cookie(refresh_token, get_refresh_token_cookie_config(kg.config.clone())?)?;
 
-    Ok(HttpResponse::Ok()
-        .cookie(cookie)
-        .json(response!(LoginPasswordResponse {
-            next_step: None,
-            access_token: Some(access_token.to_string()),
-        })))
+    Ok(HttpResponse::Ok().cookie(cookie).json(response!(LoginPasswordResponse {
+        next_step: None,
+        access_token: Some(access_token.into()),
+    })))
 }

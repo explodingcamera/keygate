@@ -1,17 +1,10 @@
-use actix_web::{
-    cookie::{time::Duration, Cookie, SameSite},
-    post, HttpRequest, HttpResponse,
-};
+use actix_web::{post, HttpRequest, HttpResponse};
 use keygate_core::config::Environment;
 use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::{
-    errors::KeygateResponseError,
-    utils::{
-        create_refresh_token_cookie, get_refresh_token_cookie_config, response, unauthorized,
-        HttpResult, RefreshTokenCookieOptions,
-    },
+    utils::{create_refresh_token_cookie, get_refresh_token_cookie_config, response, unauthorized, HttpResult},
     KG,
 };
 
@@ -77,7 +70,7 @@ async fn refresh(req: HttpRequest, kg: KG) -> HttpResult {
     }
 
     let (access_token, refresh_token) = kg.session.refresh(old_refresh_token.value()).await?;
-    let access_token: String = access_token.to_string();
+    let access_token: String = access_token.into();
     let cookie = create_refresh_token_cookie(refresh_token, refresh_token_cookie_config)?;
 
     Ok(HttpResponse::Ok()

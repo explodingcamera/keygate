@@ -49,11 +49,7 @@ impl Signup {
     }
 
     fn get_config(&self) -> Result<config::Configuration, SignupError> {
-        Ok(self
-            .config
-            .read()
-            .map_err(|_| SignupError::Unknown)?
-            .clone())
+        Ok(self.config.read().map_err(|_| SignupError::Unknown)?.clone())
     }
 }
 

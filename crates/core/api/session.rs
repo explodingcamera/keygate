@@ -1,11 +1,14 @@
 use crate::{
     models,
     storage::StorageError,
-    utils::tokens::{self, KeygateClaims, UnsignedAccessToken},
-    KeygateConfigInternal, KeygateError, KeygateStorage,
+    utils::tokens::{self, KeygateClaims},
+    KeygateConfigInternal, KeygateError, KeygateSecretsStore, KeygateStorage,
 };
 use chrono::{DateTime, Utc};
-use keygate_jwt::JWTError;
+use keygate_jwt::{
+    prelude::{EdDSAPublicKeyLike, NoCustomClaims},
+    JWTError,
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -14,16 +17,23 @@ pub enum SessionError {
     NotFound,
     #[error("unknown error")]
     Unknown,
+    #[error("invalid claims")]
+    InvalidClaims,
 }
 
 pub struct Session {
     config: KeygateConfigInternal,
     storage: KeygateStorage,
+    secrets: KeygateSecretsStore,
 }
 
 impl Session {
-    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
-        Self { config, storage }
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage, secrets: KeygateSecretsStore) -> Self {
+        Self {
+            config,
+            storage,
+            secrets,
+        }
     }
 }
 
@@ -42,40 +52,38 @@ fn get_expiration_times(
 }
 
 impl Session {
-    pub async fn create(
-        &self,
-        identity_id: &str,
-    ) -> Result<(tokens::RefreshToken, tokens::AccessToken), KeygateError> {
+    pub async fn create(&self, identity_id: &str) -> Result<(tokens::RefreshToken, tokens::AccessToken), KeygateError> {
         let (refresh_expires_at, access_expires_at) = get_expiration_times(self.config.clone())?;
-        let (access_token, refresh_token, _) = self
-            .storage
-            .create_session(identity_id, refresh_expires_at, access_expires_at)
-            .await?;
+        let (refresh_token, session) = self.storage.create_session(identity_id, refresh_expires_at).await?;
 
-        let access_token: tokens::AccessToken =
-            tokens::UnsignedAccessToken::new(&access_token.id).into();
+        let access_token = tokens::AccessToken::generate(
+            &session.identity_id,
+            "keygate-js",
+            access_expires_at.timestamp(),
+            self.secrets.jwt_ed25519_keypair()?,
+        )?;
         let refresh_token = tokens::RefreshToken::new(&refresh_token.id);
 
         Ok((refresh_token, access_token))
     }
 
     pub async fn validate(&self, access_token: &str) -> Result<models::Session, KeygateError> {
-        let claims = self.access_token_claims(access_token).await?;
+        let claims = self
+            .secrets
+            .jwt_ed25519_keypair()?
+            .public_key()
+            .verify_token::<NoCustomClaims>(access_token, None)
+            .map_err(KeygateError::from)?;
 
-        // if the access token is unsigned, we can only trust the jti
-        let Some(token) = self.storage.access_token_by_id(&claims.jwt_id).await? else {
-            return Err(SessionError::NotFound.into());
-        };
+        let claims: KeygateClaims = claims
+            .try_into()
+            .map_err(|_| KeygateError::from(SessionError::InvalidClaims))?;
 
-        if token.revoked_at.is_some() {
-            return Err(JWTError::OldTokenReused.into());
-        }
-
-        if token.expires_at < chrono::Utc::now().timestamp() {
+        if claims.expires_at.as_secs() < chrono::Utc::now().timestamp().unsigned_abs() {
             return Err(JWTError::TokenHasExpired.into());
         }
 
-        let Some(session) = self.storage.session_by_id(&token.id).await? else {
+        let Some(session) = self.storage.session_by_id(&claims.jwt_id).await? else {
             return Err(SessionError::NotFound.into());
         };
 
@@ -86,34 +94,11 @@ impl Session {
         Ok(session)
     }
 
-    pub async fn access_token_claims(
-        &self,
-        access_token: &str,
-    ) -> Result<KeygateClaims, KeygateError> {
-        let sign_jwts = {
-            self.config
-                .read()
-                .map_err(StorageError::from)?
-                .token
-                .sign_jwt
-        };
-
-        if sign_jwts {
-            todo!("validate signed access token")
-            // SignedAccessToken::from(access_token.to_string())
-            //     .verify()
-            //     .map_err(KeygateError::from)?
-            //     .claims
-        } else {
-            Ok(UnsignedAccessToken::from(access_token.to_string()).parse()?)
-        }
-    }
-
     pub async fn invalidate(&self, access_token_id: &str) -> Result<(), KeygateError> {
         Ok(self.storage.revoke_access_token(access_token_id).await?)
     }
 
-    pub async fn all(&self, user_id: &str) -> Result<(), KeygateError> {
+    pub async fn all(&self, identity_id: &str) -> Result<(), KeygateError> {
         todo!()
     }
 
@@ -127,13 +112,18 @@ impl Session {
     ) -> Result<(tokens::AccessToken, tokens::RefreshToken), KeygateError> {
         let (refresh_expires_at, access_expires_at) = get_expiration_times(self.config.clone())?;
 
-        let (refresh_token, access_token, _) = self
+        let (refresh_token, session) = self
             .storage
             .refresh_token(refresh_token_id, refresh_expires_at, access_expires_at)
             .await?;
 
-        let access_token: tokens::AccessToken =
-            tokens::UnsignedAccessToken::new(&access_token.id).into();
+        let access_token = tokens::AccessToken::generate(
+            &session.identity_id,
+            "keygate-js",
+            access_expires_at.timestamp(),
+            self.secrets.jwt_ed25519_keypair()?,
+        )?;
+
         let refresh_token = tokens::RefreshToken::new(&refresh_token.id);
 
         Ok((access_token, refresh_token))

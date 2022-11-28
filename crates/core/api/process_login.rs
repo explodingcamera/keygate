@@ -119,15 +119,11 @@ impl Login {
         email_process_id: &str,
     ) -> Result<BaseProcess<UsernameEmailLoginProcess>, KeygateError> {
         if !utils::validate::is_valid_device_id(device_id) {
-            return Err(KeygateError::ValidationError(
-                "invalid device id".to_string(),
-            ));
+            return Err(KeygateError::ValidationError("invalid device id".to_string()));
         }
 
         if !utils::validate::is_valid_id(email_process_id) {
-            return Err(KeygateError::ValidationError(
-                "invalid process id".to_string(),
-            ));
+            return Err(KeygateError::ValidationError("invalid process id".to_string()));
         }
 
         let process = self
@@ -142,19 +138,13 @@ impl Login {
         };
 
         if process.process.device_id != device_id {
-            return Err(KeygateError::ValidationError(
-                "invalid device id".to_string(),
-            ));
+            return Err(KeygateError::ValidationError("invalid device id".to_string()));
         }
 
         Ok(process)
     }
 
-    pub fn validate_password(
-        &self,
-        password: &str,
-        identity: &models::Identity,
-    ) -> Result<(), LoginError> {
+    pub fn validate_password(&self, password: &str, identity: &models::Identity) -> Result<(), LoginError> {
         let config = self.get_config()?;
 
         if !utils::validate::is_valid_password(password) {
@@ -169,9 +159,7 @@ impl Login {
             return Err(LoginError::InvalidPassword);
         }
 
-        if config.identity.password_min_length > 0
-            && password.len() < config.identity.password_min_length
-        {
+        if config.identity.password_min_length > 0 && password.len() < config.identity.password_min_length {
             return Err(LoginError::InvalidPassword);
         }
 

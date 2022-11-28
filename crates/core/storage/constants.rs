@@ -6,7 +6,6 @@ pub const IDENTITY_SESSIONS: &str = "kg:id:sn"; // maps identity id to a list of
 
 pub const SESSION_BY_ID: &str = "kg:sn:id"; // maps session id to session
 pub const REFRESH_TOKEN_BY_ID: &str = "kg:sn:rt"; // maps refresh token id to refresh token
-pub const ACCESS_TOKEN_BY_ID: &str = "kg:sn:at"; // maps access token id to access token
 
 pub const PROCESS_BY_ID: &str = "kg:pr:id"; // maps process id to process
 pub const PROCESS_TOKEN_BY_ID: &str = "kg:pr:by_tk"; // maps tokens (e.g otp + device_id, magic link token) to process id
