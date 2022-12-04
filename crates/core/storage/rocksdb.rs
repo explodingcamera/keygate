@@ -30,7 +30,8 @@ pub struct RocksDBStorage {
 
 impl RocksDBStorage {
     pub fn new(config: KeygateConfigInternal) -> Result<Self, StorageError> {
-        let opts = rocksdb::Options::default();
+        let mut opts = rocksdb::Options::default();
+        opts.create_if_missing(true);
 
         let db = OptimisticTransactionDB::open(&opts, "./db")?;
 

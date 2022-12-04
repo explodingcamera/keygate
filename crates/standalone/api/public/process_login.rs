@@ -16,7 +16,7 @@ pub struct LoginProcessRequest {
 }
 
 #[derive(Serialize, ToSchema)]
-enum LoginProcessStep {
+pub enum LoginProcessStep {
     // user needs to enter a password
     RequirePassword,
 

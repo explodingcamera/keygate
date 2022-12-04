@@ -32,8 +32,8 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
         let api = web::scope("/admin").service(api::admin::get());
 
         let admin_service = match &config.server.admin_prefix.clone() {
-            Some(prefix) => web::scope(&(prefix.to_owned() + "/api")).service(api),
-            None => web::scope("/api").service(api),
+            Some(prefix) => web::scope(&(prefix.to_owned() + "/api/v1")).service(api),
+            None => web::scope("/api/v1").service(api),
         };
 
         App::new()
@@ -45,15 +45,15 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
                 "ADMIN: %a \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T",
             ))
     })
-    .bind((config.server.admin_interface, config.server.admin_port))?
+    .bind((config.server.admin_interface.clone(), config.server.admin_port))?
     .run();
 
     let public_api = HttpServer::new(move || {
         let api = web::scope("/public").service(api::public::get());
 
         let public_service = match &config.server.public_prefix {
-            Some(prefix) => web::scope(&(prefix.to_owned() + "/api")).service(api),
-            None => web::scope("/api").service(api),
+            Some(prefix) => web::scope(&(prefix.to_owned() + "/api/v1")).service(api),
+            None => web::scope("/api/v1").service(api),
         };
 
         App::new()
@@ -65,8 +65,28 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
                 "PUBLIC: %a \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %T",
             ))
     })
-    .bind((config.server.public_interface, config.server.public_port))?
+    .bind((config.server.public_interface.clone(), config.server.public_port))?
     .run();
+
+    println!();
+
+    println!("Starting public API on port {}", config.server.public_port);
+    println!(
+        "api docs: http://{}:{}/api/v1/public/docs",
+        config.server.public_interface.clone(),
+        config.server.public_port
+    );
+
+    println!();
+
+    println!("Starting admin API on port {}", config.server.admin_port);
+    println!(
+        "api docs: http://{}:{}/api/v1/admin/docs",
+        config.server.admin_interface.clone(),
+        config.server.admin_port
+    );
+
+    println!();
 
     tokio::select! {
         _ = tokio::spawn(async move {

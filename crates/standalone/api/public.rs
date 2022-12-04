@@ -19,7 +19,7 @@ pub fn get() -> Scope {
     let process_signup = web::scope("/process/signup").service(session::refresh);
     let process_recovery = web::scope("/process/recovery").service(session::refresh);
 
-    web::scope("/v1")
+    web::scope("/")
         .service(session)
         .service(identity)
         .service(process_login)
@@ -41,6 +41,7 @@ pub fn get() -> Scope {
         // /api/v1/process/login
         schema::LoginProcessRequest,
         schema::LoginProcessResponse,
+        process_login::LoginProcessStep,
 
         KeygateErrorResponse
     ))

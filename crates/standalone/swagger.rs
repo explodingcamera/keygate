@@ -35,15 +35,15 @@ pub fn public_api_docs() -> utoipa_swagger_ui::SwaggerUi {
         // )
         .build();
 
-    SwaggerUi::new("/swagger-ui/{_:.*}").urls(vec![(
-        Url::new("KeyGate Public API", "/docs/openapi-keygate-public.json"),
+    SwaggerUi::new("/api-doc/{_:.*}").urls(vec![(
+        Url::new("KeyGate Public API v1", "/api-doc/openapi-keygate-public-v1.json"),
         open_api,
     )])
 }
 
 pub fn admin_api_docs() -> utoipa_swagger_ui::SwaggerUi {
-    SwaggerUi::new("/swagger-ui/{_:.*}").urls(vec![(
-        Url::new("KeyGate Admin API", "/docs/openapi-keygate-admin.json"),
+    SwaggerUi::new("/api-doc/{_:.*}").urls(vec![(
+        Url::new("KeyGate Admin API v1", "/api-doc/openapi-keygate-admin-v1.json"),
         crate::api::admin::AdminApiDoc::openapi(),
     )])
 }
