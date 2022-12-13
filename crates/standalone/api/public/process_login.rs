@@ -41,6 +41,7 @@ pub struct LoginProcessResponse {
 #[utoipa::path(
   tag = "Login Process",
   context_path = "/api/v1/login",
+  request_body = LoginProcessRequest,
   responses(
       (status = 200, body = LoginProcessResponse),
       (status = 401, body = KeygateErrorResponse, example = json!({"status": 400, "message": "invalid json body"}))
@@ -77,6 +78,7 @@ pub struct LoginPasswordResponse {
 #[utoipa::path(
     tag = "Login Process",
     context_path = "/api/v1/login",
+    request_body = LoginPasswordRequest,
     responses(
         (status = 200, body = LoginPasswordResponse),
         (status = 401, body = KeygateErrorResponse, example = json!({"status": 400, "message": "invalid json body"}))

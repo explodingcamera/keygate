@@ -7,6 +7,7 @@ use utoipa::OpenApi;
 
 mod identity;
 mod process_login;
+mod process_signup;
 mod schema;
 mod session;
 

@@ -72,7 +72,7 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
 
     println!("Starting public API on port {}", config.server.public_port);
     println!(
-        "api docs: http://{}:{}/api/v1/public/docs",
+        "api docs: http://{}:{}/api-doc/",
         config.server.public_interface.clone(),
         config.server.public_port
     );
@@ -81,7 +81,7 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
 
     println!("Starting admin API on port {}", config.server.admin_port);
     println!(
-        "api docs: http://{}:{}/api/v1/admin/docs",
+        "api docs: http://{}:{}/api-doc/",
         config.server.admin_interface.clone(),
         config.server.admin_port
     );

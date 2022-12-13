@@ -11,17 +11,15 @@ pub struct SignupProcessRequest {}
 pub struct SignupProcessResponse {}
 
 #[utoipa::path(
-  tag = "Signup Process",
-  context_path = "/api/v1/signup",
-  responses(
-      (status = 200, body = SignupProcessResponse),
-      (status = 401, body = KeygateErrorResponse, example = json!({"status": 400, "message": "invalid json body"}))
+    tag = "Signup Process",
+    context_path = "/api/v1/signup",
+    request_body = SignupProcessRequest,
+    responses(
+        (status = 200, body = SignupProcessResponse),
+        (status = 401, body = KeygateErrorResponse, example = json!({"status": 400, "message": "invalid json body"}))
   ),
 )]
 #[put("/")]
-async fn create_signup_process(
-    req: Json<SignupProcessRequest>,
-    kg: KG,
-) -> JsonResult<SignupProcessResponse> {
+async fn create_signup_process(req: Json<SignupProcessRequest>, kg: KG) -> JsonResult<SignupProcessResponse> {
     todo!()
 }
