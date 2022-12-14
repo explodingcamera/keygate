@@ -7,7 +7,7 @@ mod schema;
 #[openapi(paths())]
 pub struct AdminApiDoc;
 
-pub fn get() -> Scope {
+pub fn service(scope: &str) -> Scope {
     let identity = web::scope("/admin");
-    web::scope("/v1").service(identity)
+    web::scope(scope).service(identity)
 }

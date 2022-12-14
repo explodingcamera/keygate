@@ -1,4 +1,4 @@
-use actix_web::{post, HttpRequest, HttpResponse};
+use actix_web::{dev::HttpServiceFactory, post, web, HttpRequest, HttpResponse};
 use keygate_core::config::Environment;
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -8,6 +8,10 @@ use crate::{
     KG,
 };
 
+pub fn service(scope: &str) -> impl HttpServiceFactory {
+    web::scope(scope).service(refresh)
+}
+
 #[derive(Serialize, ToSchema)]
 pub struct RefreshResponse {
     access_token: String,
@@ -15,7 +19,7 @@ pub struct RefreshResponse {
 
 #[utoipa::path(
     tag = "Session",
-    context_path = "/api/v1/session",
+    context_path = "/api/v1/session/refresh",
     responses(
         (status = 200, body = RefreshResponse),
         (status = 401, body = KeygateErrorResponse, example = json!({"status": 401, "message": "invalid refresh token"}))

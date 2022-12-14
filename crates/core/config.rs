@@ -126,9 +126,6 @@ pub struct ServerConfig {
 
     /// public api prefix
     pub public_prefix: Option<String>,
-
-    /// the host keygate should listen on
-    pub host: String,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -154,41 +151,58 @@ pub struct Configuration {
     pub identity: IdentityConfig,
 }
 
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            admin_port: default_admin_port(),
+            admin_interface: default_admin_interface(),
+            public_port: default_public_port(),
+            public_interface: default_public_interface(),
+            keygate_domain: "auth.localhost".to_string(),
+            admin_prefix: None,
+            public_prefix: None,
+        }
+    }
+}
+
+impl Default for IdentityConfig {
+    fn default() -> Self {
+        Self {
+            allow_multiple_emails: false,
+            signup_with_email: false,
+            signup_with_username: true,
+            signup_require_username: true,
+            signup_require_email: false,
+            signup_require_email_verification: false,
+            signup_process_lifetime: 60 * 60,
+            login_with_email: true,
+            login_with_username: true,
+            login_process_lifetime: 60 * 60,
+            check_leaked_passwords: true,
+            password_min_length: 8,
+        }
+    }
+}
+
+impl Default for TokenConfig {
+    fn default() -> Self {
+        Self {
+            sign_jwt: false,
+            access_token_lifetime: default_access_token_lifetime(),
+            refresh_token_lifetime: default_refresh_token_lifetime(),
+        }
+    }
+}
+
 impl Default for Configuration {
     fn default() -> Self {
         Self {
             storage_type: default_storage_type(),
             storage_options: default_storage_options(),
             environment: Environment::Development,
-            server: ServerConfig {
-                admin_port: default_admin_port(),
-                admin_interface: default_admin_interface(),
-                public_port: default_public_port(),
-                public_interface: default_public_interface(),
-                keygate_domain: "auth.localhost".to_string(),
-                host: "localhost".to_string(),
-                admin_prefix: None,
-                public_prefix: None,
-            },
-            token: TokenConfig {
-                sign_jwt: false,
-                access_token_lifetime: default_access_token_lifetime(),
-                refresh_token_lifetime: default_refresh_token_lifetime(),
-            },
-            identity: IdentityConfig {
-                allow_multiple_emails: false,
-                signup_with_email: false,
-                signup_with_username: true,
-                signup_require_username: true,
-                signup_require_email: false,
-                signup_require_email_verification: false,
-                signup_process_lifetime: 60 * 60,
-                login_with_email: true,
-                login_with_username: true,
-                login_process_lifetime: 60 * 60,
-                check_leaked_passwords: true,
-                password_min_length: 8,
-            },
+            server: ServerConfig::default(),
+            token: TokenConfig::default(),
+            identity: IdentityConfig::default(),
         }
     }
 }

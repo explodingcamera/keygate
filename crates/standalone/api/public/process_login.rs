@@ -1,4 +1,9 @@
-use actix_web::{post, web::Json, HttpResponse};
+use actix_web::{
+    dev::HttpServiceFactory,
+    post,
+    web::{self, Json},
+    HttpResponse,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -30,6 +35,12 @@ pub enum LoginProcessStep {
     RequireEmailVerification,
 }
 
+pub fn service(scope: &str) -> impl HttpServiceFactory {
+    web::scope(scope)
+        .service(create_login_process)
+        .service(login_process_password)
+}
+
 #[derive(Serialize, ToSchema)]
 pub struct LoginProcessResponse {
     expires_at: i64,
@@ -40,14 +51,14 @@ pub struct LoginProcessResponse {
 
 #[utoipa::path(
   tag = "Login Process",
-  context_path = "/api/v1/login",
+  context_path = "/api/v1/process/login",
   request_body = LoginProcessRequest,
   responses(
       (status = 200, body = LoginProcessResponse),
       (status = 401, body = KeygateErrorResponse, example = json!({"status": 400, "message": "invalid json body"}))
   ),
 )]
-#[post("/")]
+#[post("")]
 async fn create_login_process(req: Json<LoginProcessRequest>, kg: KG) -> JsonResult<LoginProcessResponse> {
     let res = kg
         .login
@@ -77,7 +88,7 @@ pub struct LoginPasswordResponse {
 
 #[utoipa::path(
     tag = "Login Process",
-    context_path = "/api/v1/login",
+    context_path = "/api/v1/process/login/password",
     request_body = LoginPasswordRequest,
     responses(
         (status = 200, body = LoginPasswordResponse),

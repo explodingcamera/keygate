@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
-use keygate_core::{generate_ed25519_key_pair, Keygate, KeygateConfig};
+use keygate_core::{config::Environment, Keygate, KeygateConfig, KeygateSecrets};
 
 mod api;
 mod errors;
@@ -12,10 +12,10 @@ mod swagger;
 mod utils;
 
 type KG = web::Data<Keygate>;
-pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
-    let secrets = keygate_core::KeygateSecrets {
-        jwt_ed25519_keypair: generate_ed25519_key_pair(),
-    };
+pub async fn run(config: KeygateConfig, secrets: KeygateSecrets) -> eyre::Result<()> {
+    if config.environment == Environment::Development {
+        println!("\nWARNING: Running in development mode. CORS is enabled for all origins.\n");
+    }
 
     let keygate_public = web::Data::new(Keygate::new(config.clone(), secrets).await?);
     let keygate_admin = keygate_public.clone();
@@ -29,7 +29,7 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
     let json_cfg_admin = json_cfg_public.clone();
 
     let admin_api = HttpServer::new(move || {
-        let api = web::scope("/admin").service(api::admin::get());
+        let api = api::admin::service("");
 
         let admin_service = match &config.server.admin_prefix.clone() {
             Some(prefix) => web::scope(&(prefix.to_owned() + "/api/v1")).service(api),
@@ -49,7 +49,7 @@ pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
     .run();
 
     let public_api = HttpServer::new(move || {
-        let api = web::scope("/public").service(api::public::get());
+        let api = api::public::service("", keygate_public.clone());
 
         let public_service = match &config.server.public_prefix {
             Some(prefix) => web::scope(&(prefix.to_owned() + "/api/v1")).service(api),
