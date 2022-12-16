@@ -1,6 +1,7 @@
 #![deny(unsafe_code)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
+#![allow(clippy::enum_variant_names)]
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use keygate_core::{config::Environment, Keygate, KeygateConfig, KeygateSecrets};

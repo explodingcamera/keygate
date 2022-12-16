@@ -24,6 +24,8 @@ pub enum KeygateResponseError {
 
 impl KeygateResponseError {
     fn to_response_data(&self) -> String {
+        println!("to_response_data: {:?}", self);
+
         match *self {
             KeygateResponseError::KeygateError(_) => "Internal Server Error".to_string(), // don't expose internal errors
             KeygateResponseError::IoError(_) => "Internal Server Error".to_string(), // don't expose internal errors

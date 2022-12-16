@@ -1,13 +1,8 @@
-use chrono::Utc;
-
 use crate::models::RefreshToken;
+use chrono::Utc;
 
 pub fn is_valid_password(password: &str) -> bool {
     password.len() >= 8
-}
-
-pub fn is_valid_device_id(device_id: &str) -> bool {
-    device_id.len() == 16
 }
 
 pub fn is_valid_id(random_string: &str) -> bool {

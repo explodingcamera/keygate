@@ -108,9 +108,7 @@ async fn login_process_password(req: Json<LoginPasswordRequest>, kg: KG) -> Http
     };
 
     let (refresh_token, access_token) = kg.session.create(&identity.id).await?;
-
     let cookie = create_refresh_token_cookie(refresh_token, get_refresh_token_cookie_config(kg.config.clone())?)?;
-
     Ok(HttpResponse::Ok().cookie(cookie).json(response!(LoginPasswordResponse {
         next_step: None,
         access_token: Some(access_token.into()),

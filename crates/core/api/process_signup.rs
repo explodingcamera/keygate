@@ -4,7 +4,7 @@ use crate::{
     config,
     models::{self, BaseProcess, IdentityEmail, Process, UsernameEmailSignupProcess},
     utils::{self},
-    KeygateConfigInternal, KeygateStorage,
+    KeygateConfigInternal, KeygateError, KeygateStorage,
 };
 use thiserror::Error;
 
@@ -58,34 +58,34 @@ impl Signup {
         &self,
         username: Option<String>,
         email: Option<String>,
-        device_id: String,
-    ) -> Result<BaseProcess<UsernameEmailSignupProcess>, SignupError> {
+        device_id: &str,
+    ) -> Result<BaseProcess<UsernameEmailSignupProcess>, KeygateError> {
         let config = self.get_config()?;
 
-        if !utils::validate::is_valid_device_id(&device_id) {
-            return Err(SignupError::Unknown);
+        if !utils::validate::is_valid_id(device_id) {
+            return Err(SignupError::Unknown.into());
         }
 
         if config.identity.signup_with_email {
             let Some(email) = email.clone() else {
-                return Err(SignupError::InvalidEmail);
+                return Err(SignupError::InvalidEmail.into());
             };
 
             match self.storage.get_identity_by_email(&email).await {
-                Err(_) => return Err(SignupError::Unknown),
-                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
+                Err(_) => return Err(SignupError::Unknown.into()),
+                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists.into()),
                 Ok(None) => {}
             }
         }
 
         if config.identity.signup_require_username {
             let Some(username) = username.clone() else {
-                return Err(SignupError::InvalidUsername);
+                return Err(SignupError::InvalidUsername.into());
             };
 
             match self.storage.get_identity_by_username(&username).await {
-                Err(_) => return Err(SignupError::Unknown),
-                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists),
+                Err(_) => return Err(SignupError::Unknown.into()),
+                Ok(Some(user)) => return Err(SignupError::UserAlreadyExists.into()),
                 Ok(None) => {}
             }
         }
@@ -103,7 +103,7 @@ impl Signup {
         let process = models::BaseProcess {
             completed_at: None,
             process: models::UsernameEmailSignupProcess {
-                device_id,
+                device_id: device_id.to_string(),
                 username,
                 email,
             },
@@ -128,25 +128,25 @@ impl Signup {
         password: &str,
         process_id: &str,
         device_id: &str,
-    ) -> Result<models::Identity, SignupError> {
+    ) -> Result<models::Identity, KeygateError> {
         let Some(signup_process) = self.storage.process_by_id(process_id).await.map_err(|_| SignupError::Unknown)? else {
-            return Err(SignupError::ProcessNotFound);
+            return Err(SignupError::ProcessNotFound.into());
         };
 
         let Process::UsernameEmailSignup(signup_process) = signup_process else {
-            return Err(SignupError::ProcessNotFound);
+            return Err(SignupError::ProcessNotFound.into());
         };
 
         if signup_process.process.device_id != device_id {
-            return Err(SignupError::InvalidDeviceId);
+            return Err(SignupError::InvalidDeviceId.into());
         }
 
         if signup_process.expires_at < chrono::Utc::now().timestamp() {
-            return Err(SignupError::ProcessExpired);
+            return Err(SignupError::ProcessExpired.into());
         }
 
         if signup_process.completed_at.is_some() {
-            return Err(SignupError::ProcessAlreadyCompleted);
+            return Err(SignupError::ProcessAlreadyCompleted.into());
         }
 
         let emails = if let Some(email) = signup_process.process.email.clone() {
@@ -170,13 +170,13 @@ impl Signup {
         };
 
         if self.storage.create_identity(&new_identity).await.is_err() {
-            return Err(SignupError::Unknown);
+            return Err(SignupError::Unknown.into());
         };
 
         Ok(new_identity)
     }
 
-    pub async fn init_oidc_signup_process(&self, email: String) -> Result<(), SignupError> {
+    pub async fn init_oidc_signup_process(&self, email: String) -> Result<(), KeygateError> {
         unimplemented!()
     }
 }

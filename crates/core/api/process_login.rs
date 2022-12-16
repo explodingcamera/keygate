@@ -11,6 +11,9 @@ pub enum LoginError {
     #[error("unknown error")]
     Unknown,
 
+    #[error("invalid device id")]
+    InvalidDeviceId,
+
     #[error("invalid email")]
     InvalidEmail,
 
@@ -37,7 +40,7 @@ impl Login {
         Self { config, storage }
     }
 
-    fn get_config(&self) -> Result<config::Configuration, LoginError> {
+    fn get_config(&self) -> Result<config::Configuration, KeygateError> {
         Ok(self.config.read().map_err(|_| LoginError::Unknown)?.clone())
     }
 }
@@ -48,8 +51,8 @@ impl Login {
         username_or_email: &str,
         device_id: &str,
     ) -> Result<BaseProcess<UsernameEmailLoginProcess>, KeygateError> {
-        if !utils::validate::is_valid_device_id(device_id) {
-            return Err(LoginError::Unknown.into());
+        if !utils::validate::is_valid_id(device_id) {
+            return Err(LoginError::InvalidDeviceId.into());
         }
 
         let config = self.get_config()?;
@@ -118,7 +121,7 @@ impl Login {
         device_id: &str,
         email_process_id: &str,
     ) -> Result<BaseProcess<UsernameEmailLoginProcess>, KeygateError> {
-        if !utils::validate::is_valid_device_id(device_id) {
+        if !utils::validate::is_valid_id(device_id) {
             return Err(KeygateError::ValidationError("invalid device id".to_string()));
         }
 
@@ -144,23 +147,23 @@ impl Login {
         Ok(process)
     }
 
-    pub fn validate_password(&self, password: &str, identity: &models::Identity) -> Result<(), LoginError> {
+    pub fn validate_password(&self, password: &str, identity: &models::Identity) -> Result<(), KeygateError> {
         let config = self.get_config()?;
 
         if !utils::validate::is_valid_password(password) {
-            return Err(LoginError::InvalidPassword);
+            return Err(LoginError::InvalidPassword.into());
         }
 
         let Some(password_hash) = &identity.password_hash else {
-            return Err(LoginError::NoPassword);
+            return Err(LoginError::NoPassword.into());
         };
 
         if !hash::verify(password, password_hash).map_err(|_| LoginError::WrongPassword)? {
-            return Err(LoginError::InvalidPassword);
+            return Err(LoginError::InvalidPassword.into());
         }
 
         if config.identity.password_min_length > 0 && password.len() < config.identity.password_min_length {
-            return Err(LoginError::InvalidPassword);
+            return Err(LoginError::InvalidPassword.into());
         }
 
         Ok(())
