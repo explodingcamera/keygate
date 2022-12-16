@@ -8,7 +8,6 @@ use keygate_core::{config::Environment, Keygate, KeygateConfig, KeygateSecrets};
 
 mod api;
 mod errors;
-mod schema;
 mod swagger;
 mod utils;
 

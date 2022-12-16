@@ -12,7 +12,6 @@ use utoipa::OpenApi;
 mod identity;
 mod process_login;
 mod process_signup;
-mod schema;
 mod session;
 
 use crate::{errors::KeygateErrorResponse, KG};
@@ -81,16 +80,30 @@ async fn pong() -> &'static str {
         // /api/v1/session
         session::refresh,
         // /api/v1/process/login
-        process_login::create_login_process
+        process_login::create_login_process,
+        process_login::login_process_password,
+        // /api/v1/process/signup
+        process_signup::create_signup_process,
+        process_signup::signup_process_password
     ),
     components(schemas(
         // /api/v1/session
-        schema::RefreshResponse,
+        session::RefreshResponse,
         // /api/v1/process/login
-        schema::LoginProcessRequest,
-        schema::LoginProcessResponse,
+        process_login::LoginProcessRequest,
+        process_login::LoginProcessResponse,
+        process_login::LoginPasswordRequest,
+        process_login::LoginPasswordResponse,
         process_login::LoginProcessStep,
 
+        // /api/v1/process/signup
+        process_signup::SignupProcessRequest,
+        process_signup::SignupProcessResponse,
+        process_signup::SignupPasswordRequest,
+        process_signup::SignupPasswordResponse,
+        process_signup::SignupProcessStep,
+
+        // /api/v1/*
         KeygateErrorResponse
     ))
 )]
