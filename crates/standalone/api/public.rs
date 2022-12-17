@@ -10,18 +10,59 @@ use keygate_core::config::Environment;
 use utoipa::OpenApi;
 
 mod identity;
+mod meta;
 mod process_login;
 mod process_signup;
 mod session;
 
 use crate::{errors::KeygateErrorResponse, KG};
 
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        // /api/v1/session
+        session::refresh,
+        // /api/v1/process/login
+        process_login::create_login_process,
+        process_login::login_process_password,
+        // /api/v1/process/signup
+        process_signup::create_signup_process,
+        process_signup::signup_process_password,
+        // /api/v1/meta
+        meta::meta 
+    ),
+    components(schemas(
+        // /api/v1/session
+        session::RefreshResponse,
+        // /api/v1/process/login
+        process_login::LoginProcessRequest,
+        process_login::LoginProcessResponse,
+        process_login::LoginPasswordRequest,
+        process_login::LoginPasswordResponse,
+        process_login::LoginProcessStep,
+
+        // /api/v1/process/signup
+        process_signup::SignupProcessRequest,
+        process_signup::SignupProcessResponse,
+        process_signup::SignupPasswordRequest,
+        process_signup::SignupPasswordResponse,
+        process_signup::SignupProcessStep,
+
+        // /api/v1/meta
+        meta::MetaResonse,
+
+        // /api/v1/*
+        KeygateErrorResponse
+    ))
+)]
+pub struct PublicApiDoc;
+
 pub fn service(scope: &str, kg: KG) -> impl HttpServiceFactory {
     let session = session::service("/session");
     let identity = identity::service("/identity");
     let process_login = process_login::service("/process/login");
     let process_signup = process_signup::service("/process/signup");
-    // let process_recovery = process_recovery::service("/process/recovery");
+    let meta = meta::service("/meta");
 
     let environment = { kg.config.read().unwrap().environment.clone() };
 
@@ -73,38 +114,3 @@ pub fn service(scope: &str, kg: KG) -> impl HttpServiceFactory {
 async fn pong() -> &'static str {
     "pong"
 }
-
-#[derive(OpenApi)]
-#[openapi(
-    paths(
-        // /api/v1/session
-        session::refresh,
-        // /api/v1/process/login
-        process_login::create_login_process,
-        process_login::login_process_password,
-        // /api/v1/process/signup
-        process_signup::create_signup_process,
-        process_signup::signup_process_password
-    ),
-    components(schemas(
-        // /api/v1/session
-        session::RefreshResponse,
-        // /api/v1/process/login
-        process_login::LoginProcessRequest,
-        process_login::LoginProcessResponse,
-        process_login::LoginPasswordRequest,
-        process_login::LoginPasswordResponse,
-        process_login::LoginProcessStep,
-
-        // /api/v1/process/signup
-        process_signup::SignupProcessRequest,
-        process_signup::SignupProcessResponse,
-        process_signup::SignupPasswordRequest,
-        process_signup::SignupPasswordResponse,
-        process_signup::SignupProcessStep,
-
-        // /api/v1/*
-        KeygateErrorResponse
-    ))
-)]
-pub struct PublicApiDoc;
