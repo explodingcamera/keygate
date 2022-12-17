@@ -107,6 +107,7 @@ pub fn service(scope: &str, kg: KG) -> impl HttpServiceFactory {
         .service(identity)
         .service(process_login)
         .service(process_signup)
+        .service(meta)
         .route("/ping", web::get().to(pong))
     // .service(process_recovery)
 }

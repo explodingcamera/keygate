@@ -29,11 +29,10 @@ pub struct MetaResonse {
 }
 
 #[utoipa::path(
-  tag = "Login Process",
+  tag = "Meta",
   context_path = "/api/v1/meta",
-  request_body = LoginProcessRequest,
   responses(
-      (status = 200, body = LoginProcessResponse),
+      (status = 200, body = MetaResonse),
       (status = 401, body = KeygateErrorResponse, example = json!({"status": 400, "message": "invalid json body"}))
   ),
 )]
