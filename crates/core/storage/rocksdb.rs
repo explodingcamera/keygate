@@ -68,22 +68,22 @@ impl StorageSessionExtension for RocksDBStorage {
 
         let tx = self.db.transaction();
         let sessions = tx
-            .get(&join_keys!(IDENTITY_SESSIONS, &session.identity_id))?
+            .get(join_keys!(IDENTITY_SESSIONS, &session.identity_id))?
             .unwrap_or_default();
 
         let mut sessions: Vec<String> = from_bytes(&sessions)?;
         sessions.push(session.id.clone());
 
         tx.put(
-            &join_keys!(IDENTITY_SESSIONS, &session.identity_id),
-            &to_bytes(&sessions)?,
+            join_keys!(IDENTITY_SESSIONS, &session.identity_id),
+            to_bytes(&sessions)?,
         )?;
 
-        tx.put(&join_keys!(SESSION_BY_ID, &session.id), &to_bytes(&session)?)?;
+        tx.put(join_keys!(SESSION_BY_ID, &session.id), to_bytes(&session)?)?;
 
         tx.put(
-            &join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id),
-            &to_bytes(&refresh_token)?,
+            join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id),
+            to_bytes(&refresh_token)?,
         )?;
 
         tx.commit()?;
@@ -99,14 +99,14 @@ impl StorageSessionExtension for RocksDBStorage {
         let tx = self.db.transaction();
 
         let refresh_token: models::RefreshToken = tx
-            .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))?
+            .get(join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))?
             .ok_or_else(|| LogicStorageError::NotFound(format!("refresh token with id {} not found", refresh_token_id)))
             .map(|t| utils::serialize::from_bytes(&t))??;
 
         let session_id = refresh_token.session_id.clone();
 
         let session: models::Session = tx
-            .get(&join_keys!(SESSION_BY_ID, &session_id))?
+            .get(join_keys!(SESSION_BY_ID, &session_id))?
             .ok_or_else(|| LogicStorageError::NotFound(format!("session with id {} not found", session_id)))
             .map(|t| utils::serialize::from_bytes(&t))??;
 
