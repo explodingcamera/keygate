@@ -8,37 +8,52 @@ path = "lib.rs"
 
 [dependencies]
 
-# crypto & encoding
+# crypto and hashing
 argon2 = "0.4"
-base64 = "0.21"
-hex = "0.4.3"
 keygate-jwt = {version = "1.2", features = ["eddsa"]}
 nanoid = "0.4.0"
 rand_core = {version = "0.6", features = ["std"]}
-regex = "1.5"
-serde = {version = "1.0", features = ["derive"]}
-serde_json = "1.0"
 sha1 = "0.10"
 
+# serialization/encoding
+base64 = "0.21"
+hex = "0.4.3"
+regex = "1.5"
+rmp-serde = "1.1"
+serde = {version = "1.0", features = ["derive"]}
+serde_json = "1.0"
+
+# datastructures
+arc-swap = "1.6.0"
 chrono = {version = "0.4", features = ["serde"]}
 dashmap = "5"
+
+# macros
+async-trait = "0.1"
 downcast-rs = "1.2.0"
-reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]}
-rmp-serde = "1.1"
+no-panic = "0.1"
 thiserror = "1"
 
-async-trait = "0.1"
 redis = {version = "0.22", default-features = false, optional = true, features = ["aio", "connection-manager"]}
-rocksdb = {version = "0.19.0", default-features = false, optional = true, features = ["lz4"]}
+sea-orm = {version = "0.10", optional = true, features = ["macros"]}
 
-no-panic = "0.1"
+# async runtimes
+actix-web = {version = "4", optional = true, features = ["rustls"]}
+async-std = {version = "1", optional = true}
+tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
+
+# misc
+reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]}
 
 [dev-dependencies]
-tokio = {version = "1", default-features = false, features = ["macros"]}
 
 [features]
-default = ["backend-redis", "backend-rocksdb", "tokio"]
+default = ["backend-redis", "backend-sqlite", "runtime-tokio"]
 
 backend-redis = ["redis"]
-backend-rocksdb = ["rocksdb"]
-tokio = ["redis/tokio-comp"]
+backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
+sql = ["sea-orm"]
+
+runtime-actix = ["actix-web", "sea-orm?/runtime-actix-rustls"]
+runtime-async-std = ["async-std", "sea-orm?/runtime-async-std-rustls"]
+runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls", "redis?/tokio-comp"]

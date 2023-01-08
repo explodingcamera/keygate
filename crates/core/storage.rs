@@ -5,12 +5,12 @@ use thiserror::Error;
 
 use crate::utils::validate::RefreshTokenError;
 
-use self::{redis::RedisStorageError, rocksdb::RocksDBStorageError};
+use self::{redis::RedisStorageError, sql::SQLStorageError};
 
 pub mod constants;
 
-mod rocksdb;
-pub type RocksDBStorage = rocksdb::RocksDBStorage;
+mod sql;
+pub type SQLStorage = sql::SQLStorage;
 
 mod redis;
 pub type RedisStorage = redis::RedisStorage;
@@ -21,7 +21,7 @@ pub use traits::*;
 #[derive(Error, Debug)]
 pub enum StorageError {
     #[error(transparent)]
-    RocksDBStorage(#[from] RocksDBStorageError),
+    SQLStorage(#[from] SQLStorageError),
     #[error(transparent)]
     RedisStorage(#[from] RedisStorageError),
     #[error(transparent)]
@@ -58,7 +58,7 @@ pub enum LogicStorageError {
 
 #[derive(Clone, Copy, Debug, serde::Deserialize)]
 pub enum StorageType {
-    RocksDB,
+    SQL,
     Redis,
 }
 

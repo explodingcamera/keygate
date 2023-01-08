@@ -24,7 +24,7 @@ pub use storage::constants as storage_constants;
 pub use storage::traits;
 pub use storage::Storage;
 pub use storage::StorageType;
-pub use storage::{RedisStorage, RocksDBStorage};
+pub use storage::{RedisStorage, SQLStorage};
 
 use thiserror::Error;
 
@@ -91,7 +91,7 @@ impl Keygate {
         let storage_type = config.storage_type;
         let config = Arc::new(RwLock::new(config));
         let res = match storage_type {
-            StorageType::RocksDB => match RocksDBStorage::new(config.clone()) {
+            StorageType::SQL => match SQLStorage::new(config.clone()).await {
                 Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
                 Err(e) => return Err(e.into()),
             },

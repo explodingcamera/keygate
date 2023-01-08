@@ -3,12 +3,15 @@ use super::{
     StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
 };
 
-use crate::utils::{
-    self,
-    macros::{async_transaction, join_keys},
-    serialize::{self, to_bytes},
-    session::{create_initial_session, rotate_refresh_token},
-    validate::{can_refresh_session, RefreshTokenError},
+use crate::{
+    config::{self, RedisStorageOptions},
+    utils::{
+        self,
+        macros::{async_transaction, join_keys},
+        serialize::{self, to_bytes},
+        session::{create_initial_session, rotate_refresh_token},
+        validate::{can_refresh_session, RefreshTokenError},
+    },
 };
 use crate::{models, KeygateConfigInternal, Storage};
 use chrono::{DateTime, Utc};
@@ -23,7 +26,14 @@ pub struct RedisStorage {
 
 impl RedisStorage {
     pub async fn new(config: KeygateConfigInternal) -> Result<Self, StorageError> {
-        let redis_url = config.read()?.storage_options.redis_url.clone();
+        let config::StorageOptions::Redis(storage_options) = config.read().map_err(StorageError::from)?.storage_options.clone() else {
+            return Err(StorageError::Storage(LogicStorageError::NotFound(
+                "no redis storage options".to_string(),
+            )));
+        };
+
+        let redis_url = storage_options.redis_url.clone();
+
         let redis = redis::Client::open(redis_url.as_str())?;
         let pool = redis.get_tokio_connection_manager().await?;
 
