@@ -19,6 +19,7 @@ Keygate is currently in a very early stage of development. It is not ready for p
   Keygate should be easy to use and easy to understand. Not a lot of options, but the right ones.
 - **Easy to deploy**
   Keygate should be easy to deploy. Single binary, no database, no configuration file needed.
+  https://fishshell.com/docs/current/design.html#configurability-is-the-root-of-all-evil
 - **Portable**
   Data should be portable. You should be able seamlessly move your user data from keygate to your own solution. No vendor lock-in. No data lock-in.
 - **Privacy**
@@ -37,8 +38,12 @@ Keygate is currently in a very early stage of development. It is not ready for p
 ## License
 
 - Unless otherwise stated, all files in this repository are licensed under the AGPLv3 License. See the [LICENSE.md](./LICENSE.md) file for details.
-- All external contributions are additionally under the [MIT](./LICENSE.MIT.md) license.
 - All Community Edition binaries are licensed under the MIT license. See the [LICENSE.md](./LICENSE.MIT.md) file for details.
+- License exceptions are available for commercial use
+
+## Contributing
+
+Unless otherwise stated, any contribution intentionally submitted for inclusion in the work by you, shall be dual licensed under the AGPLv3 and MIT license, without any additional terms or conditions.
 
 ## FAQ
 
@@ -48,4 +53,4 @@ A: Keygate is a lightweight, portable, and open source alternative to commercial
 
 ### Why Dual License?
 
-The AGPLv3 license was chosen to prevent the projects code being used for propriatary projects. The MIT license is chosen to allow external contributions without the need to sign a CLA. The MIT license is also chosen for the Community Edition binaries to allow the use of Keygate in proprietary projects without the need to open source the entire project.
+The AGPLv3 license was chosen to prevent the projects code being used for propriatary projects. The MIT license is chosen to allow external contributions without the need to sign a CLA. The MIT license is also chosen for the Community Edition binaries to allow these binaries to be embedded in proprietary or otherwise incompatible projects.

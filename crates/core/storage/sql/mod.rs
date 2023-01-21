@@ -1,6 +1,5 @@
-use crate::KeygateConfigInternal;
-
 use super::StorageError;
+use crate::KeygateConfigInternal;
 
 pub type SQLStorageError = sea_orm::error::DbErr;
 

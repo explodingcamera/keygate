@@ -1,0 +1,13 @@
+[package]
+edition = "2021"
+name = "entity"
+publish = false
+version = "0.1.0"
+
+[lib]
+name = "entity"
+path = "src/lib.rs"
+
+[dependencies]
+sea-orm = {version = "0.10", features = ["macros"]}
+serde = {version = "1", features = ["derive"]}

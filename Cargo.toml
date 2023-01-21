@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/core", "crates/standalone"]
+members = [
+  "crates/core",
+  "crates/core/storage/sql/entity",
+  "crates/core/storage/sql/migration",
+  "crates/standalone",
+]
 
 [profile.release]
 # codegen-units = 1 

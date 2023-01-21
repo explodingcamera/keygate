@@ -86,6 +86,14 @@ pub struct Keygate {
     pub signup: api::Signup,
 }
 
+fn restrict_syscalls() {
+    extrasafe::SafetyContext::new()
+        .enable(extrasafe::builtins::basic::BasicCapabilities)
+        .unwrap()
+        .apply_to_all_threads()
+        .unwrap();
+}
+
 impl Keygate {
     pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Keygate, KeygateError> {
         let storage_type = config.storage_type;

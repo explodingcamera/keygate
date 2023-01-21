@@ -4,7 +4,7 @@ use super::{
 };
 
 use crate::{
-    config::{self, RedisStorageOptions},
+    config,
     utils::{
         self,
         macros::{async_transaction, join_keys},
