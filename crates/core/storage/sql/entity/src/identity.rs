@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
