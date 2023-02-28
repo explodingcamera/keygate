@@ -69,7 +69,7 @@ impl Login {
             }
 
             self.storage
-                .get_identity_by_email(&username_or_email)
+                .identity_by_email(&username_or_email)
                 .await
                 .map_err(|_| LoginError::Unknown)?
         } else {
@@ -82,7 +82,7 @@ impl Login {
             }
 
             self.storage
-                .get_identity_by_username(&username_or_email)
+                .identity_by_username(&username_or_email)
                 .await
                 .map_err(|_| LoginError::Unknown)?
         };
@@ -109,7 +109,7 @@ impl Login {
         };
 
         self.storage
-            .create_process(&models::Process::UsernameEmailLogin(process.clone()))
+            .process_create(&models::Process::UsernameEmailLogin(process.clone()))
             .await
             .map_err(|_| LoginError::Unknown)?;
 

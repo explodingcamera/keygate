@@ -12,6 +12,7 @@ pub mod utils;
 
 pub mod config;
 mod secrets;
+use arc_swap::ArcSwap;
 use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
@@ -20,7 +21,6 @@ pub use secrets::generate_ed25519_key_pair;
 use secrets::SecretStore;
 use storage::StorageError;
 
-pub use storage::constants as storage_constants;
 pub use storage::traits;
 pub use storage::Storage;
 pub use storage::StorageType;
@@ -75,8 +75,7 @@ pub struct Keygate {
     pub config: KeygateConfigInternal,
     pub storage: KeygateStorage,
     secrets: KeygateSecretsStore,
-
-    pub health: Arc<RwLock<Health>>,
+    pub health: ArcSwap<Health>,
 
     pub identity: api::Identity,
     pub login: api::Login,
@@ -100,8 +99,9 @@ impl Keygate {
         let config = Arc::new(RwLock::new(config));
         let res = match storage_type {
             StorageType::SQL => match SQLStorage::new(config.clone()).await {
-                Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
-                Err(e) => return Err(e.into()),
+                // Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
+                // Err(e) => return Err(e.into()),
+                _ => unimplemented!(),
             },
             StorageType::Redis => match RedisStorage::new(config.clone()).await {
                 Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
@@ -123,8 +123,7 @@ impl Keygate {
             config: config.clone(),
             storage: storage.clone(),
             secrets: secrets_store.clone(),
-            health: Arc::new(RwLock::new(Health::Starting)),
-
+            health: ArcSwap::new(Arc::new(Health::Starting)),
             identity: api::Identity::new(config.clone(), storage.clone()).await,
             login: api::Login::new(config.clone(), storage.clone()).await,
             metadata: api::Metadata::new(config.clone(), storage.clone()).await,

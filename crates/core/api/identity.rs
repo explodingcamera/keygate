@@ -42,15 +42,15 @@ impl Identity {
     }
 
     pub async fn get_id(&self, identity_id: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.get_identity_by_id(identity_id).await?)
+        Ok(self.storage.identity_by_id(identity_id).await?)
     }
 
     pub async fn get_email(&self, email: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.get_identity_by_email(email).await?)
+        Ok(self.storage.identity_by_email(email).await?)
     }
 
     pub async fn get_username(&self, username: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.get_identity_by_username(username).await?)
+        Ok(self.storage.identity_by_username(username).await?)
     }
 
     pub async fn delete(&self, _identity_id: &str) -> Result<(), KeygateError> {
@@ -58,7 +58,7 @@ impl Identity {
     }
 
     pub async fn update(&self, identity: &models::Identity) -> Result<(), KeygateError> {
-        Ok(self.storage.update_identity(identity).await?)
+        Ok(self.storage.identity_update(identity).await?)
     }
 
     pub async fn identities(&self) -> Result<(), KeygateError> {

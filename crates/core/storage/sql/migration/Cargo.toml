@@ -9,8 +9,12 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
-async-std = {version = "^1", features = ["attributes", "tokio1"]}
+sea-orm-migration = {version = "0.11"}
 
-[dependencies.sea-orm-migration]
-version = "^0.10.0"
-# todo: runtime & database driver features
+async-std = {version = "1", optional = true}
+tokio = {version = "1", optional = true}
+
+[features]
+default = ["runtime-tokio"]
+runtime-async-std = ["async-std", "sea-orm-migration/runtime-async-std-rustls"]
+runtime-tokio = ["tokio", "sea-orm-migration/runtime-tokio-rustls"]

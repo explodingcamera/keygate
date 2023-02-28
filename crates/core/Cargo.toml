@@ -16,12 +16,10 @@ rand_core = {version = "0.6", features = ["std"]}
 sha1 = "0.10"
 
 # serialization/encoding
-base64 = "0.21"
 hex = "0.4.3"
 regex = "1.5"
 rmp-serde = "1.1"
 serde = {version = "1.0", features = ["derive"]}
-serde_json = "1.0"
 
 # datastructures
 arc-swap = "1.6.0"
@@ -30,18 +28,17 @@ dashmap = "5"
 
 # macros
 async-trait = "0.1"
-downcast-rs = "1.2.0"
-no-panic = "0.1"
 thiserror = "1"
 
+# redis
 redis = {version = "0.22", default-features = false, optional = true, features = ["aio", "connection-manager"]}
 
+# sql
 entity = {optional = true, path = "storage/sql/entity"}
 migration = {optional = true, path = "storage/sql/migration"}
-sea-orm = {version = "0.10", optional = true, features = ["macros"]}
+sea-orm = {version = "0.11", optional = true, features = ["macros"]}
 
 # async runtimes
-actix-web = {version = "4", optional = true, features = ["rustls"]}
 async-std = {version = "1", optional = true}
 tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
 
@@ -54,11 +51,12 @@ reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]
 [features]
 default = ["backend-redis", "backend-sqlite", "runtime-tokio"]
 
+backend-redis = ["redis"]
+
+backend-mysql = ["sql", "sea-orm/sqlx-mysql"]
+backend-postgres = ["sql", "sea-orm/sqlx-postgres"]
+backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
 sql = ["sea-orm", "entity", "migration"]
 
-backend-redis = ["redis"]
-backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
-
-runtime-actix = ["actix-web", "sea-orm?/runtime-actix-rustls"]
 runtime-async-std = ["async-std", "sea-orm?/runtime-async-std-rustls"]
 runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls", "redis?/tokio-comp"]

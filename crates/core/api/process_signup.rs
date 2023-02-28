@@ -71,7 +71,7 @@ impl Signup {
                 return Err(SignupError::InvalidEmail.into());
             };
 
-            match self.storage.get_identity_by_email(&email).await {
+            match self.storage.identity_by_email(&email).await {
                 Err(_) => return Err(SignupError::Unknown.into()),
                 Ok(Some(user)) => return Err(SignupError::UserAlreadyExists.into()),
                 Ok(None) => {}
@@ -83,7 +83,7 @@ impl Signup {
                 return Err(SignupError::InvalidUsername.into());
             };
 
-            match self.storage.get_identity_by_username(&username).await {
+            match self.storage.identity_by_username(&username).await {
                 Err(_) => return Err(SignupError::Unknown.into()),
                 Ok(Some(user)) => return Err(SignupError::UserAlreadyExists.into()),
                 Ok(None) => {}
@@ -116,7 +116,7 @@ impl Signup {
         };
 
         self.storage
-            .create_process(&models::Process::UsernameEmailSignup(process.clone()))
+            .process_create(&models::Process::UsernameEmailSignup(process.clone()))
             .await
             .map_err(|_| SignupError::Unknown)?;
 
@@ -169,7 +169,7 @@ impl Signup {
             updated_at: chrono::Utc::now().timestamp(),
         };
 
-        if self.storage.create_identity(&new_identity).await.is_err() {
+        if self.storage.identity_create(&new_identity).await.is_err() {
             return Err(SignupError::Unknown.into());
         };
 

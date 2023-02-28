@@ -54,7 +54,7 @@ fn get_expiration_times(
 impl Session {
     pub async fn create(&self, identity_id: &str) -> Result<(tokens::RefreshToken, tokens::AccessToken), KeygateError> {
         let (refresh_expires_at, access_expires_at) = get_expiration_times(self.config.clone())?;
-        let (refresh_token, session) = self.storage.create_session(identity_id, refresh_expires_at).await?;
+        let (refresh_token, session) = self.storage.session_create(identity_id, refresh_expires_at).await?;
 
         let access_token = tokens::AccessToken::generate(
             &session.identity_id,
@@ -95,7 +95,7 @@ impl Session {
     }
 
     pub async fn invalidate(&self, access_token_id: &str) -> Result<(), KeygateError> {
-        Ok(self.storage.revoke_access_token(access_token_id).await?)
+        Ok(self.storage.access_token_revoke(access_token_id).await?)
     }
 
     pub async fn all(&self, identity_id: &str) -> Result<(), KeygateError> {
@@ -103,7 +103,7 @@ impl Session {
     }
 
     pub async fn refresh_invalidate(&self, refresh_token_id: &str) -> Result<(), KeygateError> {
-        Ok(self.storage.revoke_refresh_token(refresh_token_id).await?)
+        Ok(self.storage.refresh_token_revoke(refresh_token_id).await?)
     }
 
     pub async fn refresh(
@@ -114,7 +114,7 @@ impl Session {
 
         let (refresh_token, session) = self
             .storage
-            .refresh_token(refresh_token_id, refresh_expires_at, access_expires_at)
+            .refresh_token_rotate(refresh_token_id, refresh_expires_at, access_expires_at)
             .await?;
 
         let access_token = tokens::AccessToken::generate(

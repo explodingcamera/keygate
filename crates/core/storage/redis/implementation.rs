@@ -1,19 +1,11 @@
-use super::{
-    constants::*, BaseStorage, LogicStorageError, RedisExtensions, StorageError, StorageIdentityExtension,
-    StorageProcessExtension, StorageSerdeExtension, StorageSessionExtension, StorageWithConfig,
-};
+use super::constants::*;
 
-use crate::{
-    config,
-    utils::{
-        self,
-        macros::{async_transaction, join_keys},
-        serialize::{self, to_bytes},
-        session::{create_initial_session, rotate_refresh_token},
-        validate::{can_refresh_session, RefreshTokenError},
-    },
-};
-use crate::{models, KeygateConfigInternal, Storage};
+use crate::storage::{traits::*, LogicStorageError, StorageError};
+use crate::utils::macros::{async_transaction, join_keys};
+use crate::utils::validate::RefreshTokenError;
+use crate::{config, models, utils, KeygateConfigInternal, Storage};
+
+use super::utils::RedisExtensions;
 use chrono::{DateTime, Utc};
 use redis::{aio::ConnectionManager, AsyncCommands};
 
@@ -43,43 +35,86 @@ impl RedisStorage {
     pub fn pool(&self) -> ConnectionManager {
         self.pool.clone()
     }
+
+    pub async fn get<T>(&self, key: &str) -> Result<Option<T>, StorageError>
+    where
+        T: redis::FromRedisValue,
+    {
+        let value: Option<T> = self.pool().get(key).await?;
+        Ok(value)
+    }
+
+    pub async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.pool().get_deserialized(key).await
+    }
 }
 
-impl StorageWithConfig for RedisStorage {
-    fn get_config(&self) -> &KeygateConfigInternal {
+impl StorageConfigExtension for RedisStorage {
+    fn config(&self) -> &KeygateConfigInternal {
         &self.config
     }
 }
 
 impl Storage for RedisStorage {}
-impl StorageProcessExtension for RedisStorage {}
+
+#[async_trait::async_trait]
+impl StorageProcessExtension for RedisStorage {
+    async fn process_by_id(&self, id: &str) -> Result<Option<models::Process>, StorageError> {
+        self.get_deserialized::<models::Process>(&join_keys!(PROCESS_BY_ID, id))
+            .await
+    }
+
+    async fn process_by_token(&self, token_id: &str) -> Result<Option<models::Process>, StorageError> {
+        match self.get::<String>(&join_keys!(PROCESS_ID_BY_TOKEN, token_id)).await? {
+            Some(id) => self.process_by_id(&id).await,
+            None => Ok(None),
+        }
+    }
+
+    async fn process_create(&self, process: &models::Process) -> Result<(), StorageError> {
+        unimplemented!()
+    }
+
+    async fn process_update(&self, updated_process: &models::Process) -> Result<(), StorageError> {
+        unimplemented!()
+    }
+}
 
 #[async_trait::async_trait]
 impl StorageSessionExtension for RedisStorage {
-    async fn create_session(
+    async fn session_create(
         &self,
         identity_id: &str,
         refresh_expires_at: DateTime<Utc>,
     ) -> Result<(models::RefreshToken, models::Session), StorageError> {
-        let Some (identity) = self.get_identity_by_id(identity_id).await? else {
+        let Some (identity) = self.identity_by_id(identity_id).await? else {
             return Err(LogicStorageError::NotFound(format!("no identity with id {identity_id}")).into());
         };
 
-        let (session, refresh_token) = create_initial_session(identity_id, refresh_expires_at);
+        let (session, refresh_token) = utils::session::create_initial_session(identity_id, refresh_expires_at);
 
         let mut conn = self.pool();
         let sessions_key = join_keys!(IDENTITY_SESSIONS, identity_id);
         async_transaction!(&mut conn, &[sessions_key.clone()], {
-            let mut sessions: Vec<String> = conn.get_and_deserialize(&sessions_key).await?.unwrap_or_default();
+            let mut sessions: Vec<String> = conn.get_deserialized(&sessions_key).await?.unwrap_or_default();
             sessions.push(session.id.clone());
 
             redis::pipe()
                 .atomic()
-                .set(join_keys!(IDENTITY_SESSIONS, identity_id), to_bytes(&sessions)?)
-                .set(join_keys!(SESSION_BY_ID, &session.id.clone()), to_bytes(&session)?)
+                .set(
+                    join_keys!(IDENTITY_SESSIONS, identity_id),
+                    utils::encoding::to_bytes(&sessions)?,
+                )
+                .set(
+                    join_keys!(SESSION_BY_ID, &session.id.clone()),
+                    utils::encoding::to_bytes(&session)?,
+                )
                 .set(
                     join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id.clone()),
-                    to_bytes(&refresh_token)?,
+                    utils::encoding::to_bytes(&refresh_token)?,
                 )
                 .query_async(&mut conn)
                 .await?;
@@ -90,7 +125,7 @@ impl StorageSessionExtension for RedisStorage {
         Ok((refresh_token, session))
     }
 
-    async fn refresh_token(
+    async fn refresh_token_rotate(
         &self,
         refresh_token_id: &str,
         refresh_expires_at: DateTime<Utc>,
@@ -102,7 +137,7 @@ impl StorageSessionExtension for RedisStorage {
         let (refresh_token, session): (models::RefreshToken, models::Session) =
             async_transaction!(&mut conn, &[old_refresh_token_key], {
                 let refresh_token: models::RefreshToken = conn
-                    .get_and_deserialize(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
+                    .get_deserialized(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
                     .await?
                     .ok_or_else(|| {
                         LogicStorageError::NotFound(format!("refresh token with id {refresh_token_id} not found"))
@@ -111,34 +146,35 @@ impl StorageSessionExtension for RedisStorage {
                 let session_id = refresh_token.session_id.clone();
 
                 let session: models::Session = conn
-                    .get_and_deserialize(&join_keys!(SESSION_BY_ID, &session_id))
+                    .get_deserialized(&join_keys!(SESSION_BY_ID, &session_id))
                     .await?
                     .ok_or_else(|| LogicStorageError::NotFound(format!("session with id {session_id} not found")))?;
 
                 match utils::validate::can_refresh(&refresh_token) {
                     Ok(_) => (),
                     Err(RefreshTokenError::ReuseError(e)) => {
-                        self.reuse_detected(&refresh_token).await?;
+                        self.session_reuse_detected(&refresh_token).await?;
                         return Err(RefreshTokenError::ReuseError(e).into());
                     }
                     Err(e) => return Err(e.into()),
                 }
 
-                if !can_refresh_session(&session) {
-                    self.reuse_detected(&refresh_token).await?;
+                if !utils::validate::can_refresh_session(&session) {
+                    self.session_reuse_detected(&refresh_token).await?;
                     return Err(StorageError::Session("revoked".to_string()));
                 }
 
-                let res = rotate_refresh_token(refresh_token, session, refresh_expires_at, access_expires_at);
+                let res =
+                    utils::session::rotate_refresh_token(refresh_token, session, refresh_expires_at, access_expires_at);
 
                 let (new_refresh_token_id, old_refresh_token_id) =
                     (res.new_refresh_token.id.clone(), res.old_refresh_token.id.clone());
 
                 redis::pipe()
                     .atomic()
-                    .set(new_refresh_token_id, to_bytes(&res.new_refresh_token)?)
-                    .set(session_id, to_bytes(&res.updated_session)?)
-                    .set(old_refresh_token_id, to_bytes(&res.old_refresh_token)?)
+                    .set(new_refresh_token_id, utils::encoding::to_bytes(&res.new_refresh_token)?)
+                    .set(session_id, utils::encoding::to_bytes(&res.updated_session)?)
+                    .set(old_refresh_token_id, utils::encoding::to_bytes(&res.old_refresh_token)?)
                     .query_async(&mut conn)
                     .await?;
 
@@ -148,48 +184,54 @@ impl StorageSessionExtension for RedisStorage {
         Ok((refresh_token, session))
     }
 
-    async fn revoke_access_token(&self, access_token_id: &str) -> Result<(), StorageError> {
+    async fn access_token_revoke(&self, access_token_id: &str) -> Result<(), StorageError> {
         todo!()
     }
 
-    async fn revoke_refresh_token(&self, refresh_token_id: &str) -> Result<(), StorageError> {
+    async fn refresh_token_revoke(&self, refresh_token_id: &str) -> Result<(), StorageError> {
         todo!()
     }
 
-    async fn reuse_detected(&self, refresh_token: &models::RefreshToken) -> Result<(), StorageError> {
+    async fn session_reuse_detected(&self, refresh_token: &models::RefreshToken) -> Result<(), StorageError> {
         todo!()
+    }
+
+    async fn refresh_token_by_id(&self, refresh_token_id: &str) -> Result<Option<models::RefreshToken>, StorageError> {
+        let refresh_token_bytes: Option<Vec<u8>> = self
+            .pool()
+            .get(&join_keys!(REFRESH_TOKEN_BY_ID, refresh_token_id))
+            .await?;
+
+        let Some(refresh_token_bytes) = refresh_token_bytes else {
+            return Ok(None);
+        };
+
+        Ok(Some(utils::encoding::from_bytes(&refresh_token_bytes)?))
+    }
+
+    async fn session_by_id(&self, session_id: &str) -> Result<Option<models::Session>, StorageError> {
+        self.get_deserialized::<models::Session>(&join_keys!(SESSION_BY_ID, session_id))
+            .await
+    }
+
+    async fn sessions(&self, identity_id: &str) -> Result<Option<Vec<models::Session>>, StorageError> {
+        self.get_deserialized::<Vec<models::Session>>(&join_keys!(IDENTITY_SESSIONS, identity_id))
+            .await
+    }
+
+    async fn refresh_token_create(&self, refresh_token: &models::RefreshToken) -> Result<(), StorageError> {
+        let refresh_token_bytes = utils::encoding::to_bytes(refresh_token)?;
+        self.pool()
+            .set(&join_keys!(REFRESH_TOKEN_BY_ID, &refresh_token.id), refresh_token_bytes)
+            .await?;
+        Ok(())
     }
 }
-
-#[async_trait::async_trait]
-impl BaseStorage for RedisStorage {
-    async fn _get_u8(&self, key: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        Ok(self.pool().get(key).await?)
-    }
-
-    async fn _set_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        Ok(self.pool().set(key, value).await?)
-    }
-
-    async fn exists(&self, key: &str) -> Result<bool, StorageError> {
-        Ok(self.pool().exists(key).await?)
-    }
-
-    async fn _del(&self, key: &str) -> Result<(), StorageError> {
-        Ok(self.pool().del(key).await?)
-    }
-
-    async fn _create_u8(&self, key: &str, value: &[u8]) -> Result<(), StorageError> {
-        Ok(self.pool().set_nx(key, value).await?)
-    }
-}
-
-impl StorageSerdeExtension for RedisStorage {}
 
 #[async_trait::async_trait]
 impl StorageIdentityExtension for RedisStorage {
-    async fn create_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
-        let identity_bytes = serialize::to_bytes(identity)?;
+    async fn identity_create(&self, identity: &models::Identity) -> Result<(), StorageError> {
+        let identity_bytes = utils::encoding::to_bytes(identity)?;
 
         let identity_username = identity.username.clone();
         let identity_emails = identity
@@ -236,7 +278,7 @@ impl StorageIdentityExtension for RedisStorage {
         Ok(())
     }
 
-    async fn update_identity(&self, identity: &models::Identity) -> Result<(), StorageError> {
+    async fn identity_update(&self, identity: &models::Identity) -> Result<(), StorageError> {
         let mut conn = self.pool();
 
         let identity_key = &join_keys!(IDENTITY_BY_ID, &identity.id);
@@ -244,7 +286,7 @@ impl StorageIdentityExtension for RedisStorage {
 
         async_transaction!(&mut conn, &[identity_key], {
             let existing_identity: models::Identity = conn
-                .get_and_deserialize(identity_key)
+                .get_deserialized(identity_key)
                 .await?
                 .ok_or_else(|| LogicStorageError::NotFound(format!("identity with id {identity_key} not found")))?;
 
@@ -307,7 +349,10 @@ impl StorageIdentityExtension for RedisStorage {
 
             // Set the identity
             let x = pipe
-                .set(join_keys!(IDENTITY_BY_ID, &identity.id), serialize::to_bytes(identity)?)
+                .set(
+                    join_keys!(IDENTITY_BY_ID, &identity.id),
+                    utils::encoding::to_bytes(identity)?,
+                )
                 .query_async(&mut self.pool())
                 .await?;
 
@@ -317,34 +362,25 @@ impl StorageIdentityExtension for RedisStorage {
         Ok(())
     }
 
-    async fn get_identity_by_username(&self, username: &str) -> Result<Option<models::Identity>, StorageError> {
-        let identity_id: Option<String> = self.pool().get(&join_keys!(IDENTITY_ID_BY_USERNAME, username)).await?;
-
-        let Some(identity_id) = identity_id else {
-            return Ok(None)
-        };
-
-        self.get_identity_by_id(&identity_id).await
+    async fn identity_by_username(&self, username: &str) -> Result<Option<models::Identity>, StorageError> {
+        match self
+            .get::<String>(&join_keys!(IDENTITY_ID_BY_USERNAME, username))
+            .await?
+        {
+            Some(identity_id) => self.identity_by_id(&identity_id).await,
+            None => Ok(None),
+        }
     }
 
-    async fn get_identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
-        let identity_id: Option<String> = self.pool().get(&join_keys!(IDENTITY_ID_BY_EMAIL, email)).await?;
-
-        let Some(identity_id) = identity_id else {
-            return Ok(None)
-        };
-
-        self.get_identity_by_id(&identity_id).await
+    async fn identity_by_email(&self, email: &str) -> Result<Option<models::Identity>, StorageError> {
+        match self.get::<String>(&join_keys!(IDENTITY_ID_BY_EMAIL, email)).await? {
+            Some(identity_id) => self.identity_by_id(&identity_id).await,
+            None => Ok(None),
+        }
     }
 
-    async fn get_identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
-        let identity_bytes: Option<Vec<u8>> = self.pool().get(&join_keys!(IDENTITY_BY_ID, id)).await?;
-
-        let Some(identity_bytes) = identity_bytes else {
-            return Ok(None);
-        };
-
-        let identity: models::Identity = serialize::from_bytes(&identity_bytes)?;
-        Ok(Some(identity))
+    async fn identity_by_id(&self, id: &str) -> Result<Option<models::Identity>, StorageError> {
+        self.get_deserialized::<models::Identity>(&join_keys!(IDENTITY_BY_ID, id))
+            .await
     }
 }
