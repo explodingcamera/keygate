@@ -44,10 +44,7 @@ impl RedisStorage {
         Ok(value)
     }
 
-    pub async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError>
-    where
-        T: serde::de::DeserializeOwned,
-    {
+    pub async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError> {
         self.pool().get_deserialized(key).await
     }
 }

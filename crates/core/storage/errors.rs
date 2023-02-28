@@ -1,4 +1,4 @@
-use crate::utils::validate::RefreshTokenError;
+use crate::utils::{encoding, validate::RefreshTokenError};
 use std::sync::PoisonError;
 use thiserror::Error;
 
@@ -14,10 +14,8 @@ pub enum StorageError {
     RefreshToken(#[from] RefreshTokenError),
     #[error("invalid session: {0}")]
     Session(String),
-    #[error("decoding error")]
-    Decoding(#[from] rmp_serde::decode::Error),
-    #[error("encoding error")]
-    Encoding(#[from] rmp_serde::encode::Error),
+    #[error(transparent)]
+    Decoding(#[from] encoding::EncodingError),
     #[error(transparent)]
     Storage(#[from] LogicStorageError),
     #[error("paniced at {0}")]

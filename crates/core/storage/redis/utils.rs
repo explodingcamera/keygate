@@ -1,23 +1,17 @@
 use crate::storage::StorageError;
-use crate::utils;
 use redis::{aio::ConnectionManager, AsyncCommands};
 
 #[async_trait::async_trait]
 pub trait RedisExtensions {
-    async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError>
-    where
-        T: serde::de::DeserializeOwned;
+    async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError>;
 }
 
 #[async_trait::async_trait]
 impl RedisExtensions for ConnectionManager {
-    async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError>
-    where
-        T: serde::de::DeserializeOwned,
-    {
+    async fn get_deserialized<T>(&self, key: &str) -> Result<Option<T>, StorageError> {
         let value: Option<Vec<u8>> = self.clone().get(key).await?;
         match value {
-            Some(bytes) => Ok(utils::encoding::from_bytes(&bytes)?),
+            Some(bytes) => unimplemented!(),
             None => Ok(None),
         }
     }

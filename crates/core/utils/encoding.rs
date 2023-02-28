@@ -1,10 +1,18 @@
-pub fn to_bytes(value: &impl serde::Serialize) -> Result<Vec<u8>, rmp_serde::encode::Error> {
-    rmp_serde::to_vec(value)
+use std::any::Any;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum EncodingError {
+    #[error("serialization error: {0}")]
+    SerializationError(String),
+    #[error("deserialization error: {0}")]
+    DeserializationError(String),
 }
 
-pub fn from_bytes<T>(bytes: &[u8]) -> Result<T, rmp_serde::decode::Error>
-where
-    T: serde::de::DeserializeOwned,
-{
-    rmp_serde::from_slice(bytes)
+pub fn to_bytes(value: &impl Any) -> Result<Vec<u8>, EncodingError> {
+    unimplemented!()
+}
+
+pub fn from_bytes<T>(bytes: &[u8]) -> Result<T, EncodingError> {
+    unimplemented!()
 }

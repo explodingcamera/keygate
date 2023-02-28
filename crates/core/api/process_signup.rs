@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     config,
-    models::{self, IdentityEmail, Process, UsernameEmailSignupProcess},
+    models::{self, IdentityEmail, Process},
     utils::{self},
     KeygateConfigInternal, KeygateError, KeygateStorage,
 };

@@ -19,8 +19,3 @@ eyre = "0.6"
 keygate-core = {path = "../core"}
 thiserror = "1"
 tokio = {version = "1"}
-
-[profile.release]
-codegen-units = 1
-lto = true
-strip = true

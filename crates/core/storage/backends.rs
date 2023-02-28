@@ -1,6 +1,6 @@
 use super::traits::*;
 
-#[derive(Clone, Copy, Debug, serde::Deserialize)]
+#[derive(Clone, Copy, Debug)]
 pub enum StorageType {
     SQL,
     Redis,

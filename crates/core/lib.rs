@@ -91,11 +91,7 @@ impl Keygate {
         let storage_type = config.storage_type;
         let config = Arc::new(RwLock::new(config));
         let res = match storage_type {
-            StorageType::SQL => match SQLStorage::new(config.clone()).await {
-                // Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
-                // Err(e) => return Err(e.into()),
-                _ => unimplemented!(),
-            },
+            StorageType::SQL => unimplemented!(),
             StorageType::Redis => match RedisStorage::new(config.clone()).await {
                 Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
                 Err(e) => return Err(e.into()),

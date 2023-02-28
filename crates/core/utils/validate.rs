@@ -1,12 +1,14 @@
 use chrono::Utc;
 use proto::v1::models::RefreshToken;
 
+use super::random::RANDOMID_ALPHABET;
+
 pub fn is_valid_password(password: &str) -> bool {
     password.len() >= 8
 }
 
 pub fn is_valid_id(random_string: &str) -> bool {
-    random_string.len() == 21 && random_string.chars().all(|c| nanoid::alphabet::SAFE.contains(&c))
+    random_string.len() == 21 && random_string.chars().all(|c| RANDOMID_ALPHABET.contains(&c))
 }
 
 pub fn is_valid_email(email: &str) -> bool {
