@@ -6,14 +6,13 @@ impl Default for StorageOptions {
     }
 }
 
-#[derive(Clone, Debug, serde::Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Environment {
     Development,
     Production,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug)]
 pub struct IdentityConfig {
     pub signup_with_email: bool,
     pub signup_with_username: bool,
@@ -32,27 +31,25 @@ pub struct IdentityConfig {
     pub check_leaked_passwords: bool,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug)]
 pub enum StorageOptions {
     SQL(SQLStorageOptions),
     Redis(RedisStorageOptions),
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug)]
 pub struct SQLStorageOptions {
     pub storage_path: String,
     pub sql_url: String,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default)]
+#[derive(Clone, Debug)]
 pub struct RedisStorageOptions {
     pub storage_path: String,
     pub redis_url: String,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default)]
+#[derive(Clone, Debug)]
 pub struct TokenConfig {
     /// Sign JWT tokens
     pub sign_jwt: bool,
@@ -64,8 +61,7 @@ pub struct TokenConfig {
     pub refresh_token_lifetime: i64,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default)]
+#[derive(Clone, Debug)]
 pub struct ServerConfig {
     /// the domain keygate is running on, e.g `accounts.example.com`
     /// refresh tokens are only valid for this domain
@@ -92,8 +88,7 @@ pub struct ServerConfig {
     pub public_prefix: Option<String>,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
-#[serde(default)]
+#[derive(Clone, Debug)]
 pub struct Configuration {
     pub environment: Environment,
 
@@ -116,10 +111,10 @@ pub struct Configuration {
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
-            admin_port: default_admin_port(),
-            admin_interface: default_admin_interface(),
-            public_port: default_public_port(),
-            public_interface: default_public_interface(),
+            admin_port: 8081,
+            admin_interface: "127.0.0.1".to_string(),
+            public_port: 8080,
+            public_interface: "0.0.0.0".to_string(),
             keygate_domain: "auth.localhost".to_string(),
             admin_prefix: None,
             public_prefix: None,
@@ -150,8 +145,8 @@ impl Default for TokenConfig {
     fn default() -> Self {
         Self {
             sign_jwt: false,
-            access_token_lifetime: default_access_token_lifetime(),
-            refresh_token_lifetime: default_refresh_token_lifetime(),
+            access_token_lifetime: 30 * 60,
+            refresh_token_lifetime: 14 * 24 * 3600,
         }
     }
 }
@@ -159,8 +154,8 @@ impl Default for TokenConfig {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            storage_type: default_storage_type(),
-            storage_options: default_storage_options(),
+            storage_type: StorageType::SQL,
+            storage_options: StorageOptions::default(),
             environment: Environment::Development,
             server: ServerConfig::default(),
             token: TokenConfig::default(),
@@ -172,7 +167,7 @@ impl Default for Configuration {
 impl Default for SQLStorageOptions {
     fn default() -> Self {
         SQLStorageOptions {
-            storage_path: default_storage_path(),
+            storage_path: "./data".to_string(),
             sql_url: "sqlite://data.db".to_string(),
         }
     }
@@ -181,48 +176,8 @@ impl Default for SQLStorageOptions {
 impl Default for RedisStorageOptions {
     fn default() -> Self {
         RedisStorageOptions {
-            storage_path: default_storage_path(),
+            storage_path: "./data".to_string(),
             redis_url: "redis://localhost/".to_string(),
         }
     }
-}
-
-fn default_access_token_lifetime() -> i64 {
-    30 * 60
-}
-
-fn default_refresh_token_lifetime() -> i64 {
-    14 * 24 * 3600
-}
-
-fn default_admin_port() -> u16 {
-    8081
-}
-
-fn default_public_port() -> u16 {
-    8080
-}
-
-fn default_admin_interface() -> String {
-    "127.0.0.1".to_string()
-}
-
-fn default_public_interface() -> String {
-    "0.0.0.0".to_string()
-}
-
-fn default_storage_type() -> StorageType {
-    StorageType::SQL
-}
-
-fn default_storage_path() -> String {
-    "./data".to_string()
-}
-
-fn default_environment() -> Environment {
-    Environment::Development
-}
-
-fn default_storage_options() -> StorageOptions {
-    StorageOptions::default()
 }

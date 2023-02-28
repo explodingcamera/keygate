@@ -7,24 +7,18 @@ version = "0.1.0"
 path = "lib.rs"
 
 [dependencies]
-
 # crypto and hashing
 argon2 = "0.4"
 keygate-jwt = {version = "1.2", features = ["eddsa"]}
-nanoid = "0.4.0"
 rand_core = {version = "0.6", features = ["std"]}
-sha1 = "0.10"
 
 # serialization/encoding
 hex = "0.4.3"
 regex = "1.5"
-rmp-serde = "1.1"
-serde = {version = "1.0", features = ["derive"]}
 
 # datastructures
 arc-swap = "1.6.0"
-chrono = {version = "0.4", features = ["serde"]}
-dashmap = "5"
+chrono = {version = "0.4"}
 
 # macros
 async-trait = "0.1"
@@ -43,20 +37,24 @@ async-std = {version = "1", optional = true}
 tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
 
 # misc
-extrasafe = "0.1.2"
-reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]}
+proto = {path = "../proto"}
 
-[dev-dependencies]
+# pwned passwords
+reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"], optional = true}
+sha1 = {version = "0.10", optional = true}
 
 [features]
-default = ["backend-redis", "backend-sqlite", "runtime-tokio"]
+default = ["backend-redis", "backend-sqlite", "runtime-tokio", "pwned-passwords"]
+pwned-passwords = ["reqwest", "sha1"]
 
+runtime-async-std = ["async-std", "sea-orm?/runtime-async-std-rustls"]
+runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls", "redis?/tokio-comp"]
+
+# redis
 backend-redis = ["redis"]
 
+# sql
 backend-mysql = ["sql", "sea-orm/sqlx-mysql"]
 backend-postgres = ["sql", "sea-orm/sqlx-postgres"]
 backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
 sql = ["sea-orm", "entity", "migration"]
-
-runtime-async-std = ["async-std", "sea-orm?/runtime-async-std-rustls"]
-runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls", "redis?/tokio-comp"]

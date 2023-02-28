@@ -1,5 +1,5 @@
-use crate::models::RefreshToken;
 use chrono::Utc;
+use proto::v1::models::RefreshToken;
 
 pub fn is_valid_password(password: &str) -> bool {
     password.len() >= 8

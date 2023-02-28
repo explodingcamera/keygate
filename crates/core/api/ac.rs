@@ -1,4 +1,4 @@
-use crate::{models, KeygateConfigInternal, KeygateError, KeygateStorage};
+use crate::{KeygateConfigInternal, KeygateError, KeygateStorage};
 use thiserror::Error;
 
 #[derive(Error, Debug)]

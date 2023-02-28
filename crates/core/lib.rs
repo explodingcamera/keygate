@@ -6,8 +6,9 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::RwLock;
 
+pub use proto::v1::models;
+
 mod api;
-pub mod models;
 pub mod utils;
 
 pub mod config;
@@ -83,14 +84,6 @@ pub struct Keygate {
     pub recovery: api::Recovery,
     pub session: api::Session,
     pub signup: api::Signup,
-}
-
-fn restrict_syscalls() {
-    extrasafe::SafetyContext::new()
-        .enable(extrasafe::builtins::basic::BasicCapabilities)
-        .unwrap()
-        .apply_to_all_threads()
-        .unwrap();
 }
 
 impl Keygate {

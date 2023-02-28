@@ -4,6 +4,7 @@ members = [
   "crates/core/storage/sql/entity",
   "crates/core/storage/sql/migration",
   "crates/server",
+  "crates/proto",
 ]
 
 [profile.release]

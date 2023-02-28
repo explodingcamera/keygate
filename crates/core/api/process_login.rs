@@ -1,6 +1,6 @@
 use crate::{
     config,
-    models::{self, BaseProcess, UsernameEmailLoginProcess},
+    models::{self, UsernameEmailLoginProcess},
     utils::{self, hash},
     KeygateConfigInternal, KeygateError, KeygateStorage,
 };
@@ -50,7 +50,7 @@ impl Login {
         &self,
         username_or_email: &str,
         device_id: &str,
-    ) -> Result<BaseProcess<UsernameEmailLoginProcess>, KeygateError> {
+    ) -> Result<models::Process, KeygateError> {
         if !utils::validate::is_valid_id(device_id) {
             return Err(LoginError::InvalidDeviceId.into());
         }
@@ -92,15 +92,15 @@ impl Login {
             None => return Err(LoginError::Unknown.into()),
         };
 
-        let process = UsernameEmailLoginProcess {
-            identity_id: identity.id,
+        let data = UsernameEmailLoginProcess {
             device_id: device_id.to_string(),
+            identity_id: identity.id,
         };
 
-        let process = BaseProcess {
+        let process = models::Process {
             completed_at: None,
             id: utils::random::secure_random_id(),
-            process,
+            data: Some(models::process::Data::UsernameEmailLogin(data)),
             created_at: chrono::Utc::now().timestamp(),
             expires_at: chrono::Utc::now()
                 .timestamp()
@@ -109,7 +109,7 @@ impl Login {
         };
 
         self.storage
-            .process_create(&models::Process::UsernameEmailLogin(process.clone()))
+            .process_create(&process)
             .await
             .map_err(|_| LoginError::Unknown)?;
 
@@ -120,7 +120,7 @@ impl Login {
         &self,
         device_id: &str,
         email_process_id: &str,
-    ) -> Result<BaseProcess<UsernameEmailLoginProcess>, KeygateError> {
+    ) -> Result<models::Process, KeygateError> {
         if !utils::validate::is_valid_id(device_id) {
             return Err(KeygateError::ValidationError("invalid device id".to_string()));
         }
@@ -133,15 +133,20 @@ impl Login {
             .storage
             .process_by_id(email_process_id)
             .await
-            .map_err(|_| KeygateError::Unknown)?;
+            .map_err(|_| KeygateError::Unknown)?
+            .ok_or(KeygateError::Unknown)?;
 
-        let process = match process {
-            Some(models::Process::UsernameEmailLogin(process)) => process,
+        let data = match process.data.clone() {
+            Some(models::process::Data::UsernameEmailLogin(process)) => process,
             _ => return Err(KeygateError::Unknown),
         };
 
-        if process.process.device_id != device_id {
-            return Err(KeygateError::ValidationError("invalid device id".to_string()));
+        if let Some(models::process::Data::UsernameEmailLogin(process)) = process.data.clone() {
+            if process.device_id != device_id {
+                return Err(KeygateError::ValidationError("invalid device id".to_string()));
+            }
+        } else {
+            return Err(KeygateError::Unknown);
         }
 
         Ok(process)

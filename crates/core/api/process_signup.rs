@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     config,
-    models::{self, BaseProcess, IdentityEmail, Process, UsernameEmailSignupProcess},
+    models::{self, IdentityEmail, Process, UsernameEmailSignupProcess},
     utils::{self},
     KeygateConfigInternal, KeygateError, KeygateStorage,
 };
@@ -59,7 +59,7 @@ impl Signup {
         username: Option<String>,
         email: Option<String>,
         device_id: &str,
-    ) -> Result<BaseProcess<UsernameEmailSignupProcess>, KeygateError> {
+    ) -> Result<Process, KeygateError> {
         let config = self.get_config()?;
 
         if !utils::validate::is_valid_id(device_id) {
@@ -90,23 +90,15 @@ impl Signup {
             }
         }
 
-        let email = email.map(|email| {
-            (
-                email,
-                IdentityEmail {
-                    verified: false,
-                    verified_at: None,
-                },
-            )
-        });
-
-        let process = models::BaseProcess {
+        let process = models::Process {
             completed_at: None,
-            process: models::UsernameEmailSignupProcess {
-                device_id: device_id.to_string(),
-                username,
-                email,
-            },
+            data: Some(models::process::Data::UsernameEmailSignup(
+                models::UsernameEmailSignupProcess {
+                    device_id: device_id.to_string(),
+                    username,
+                    email,
+                },
+            )),
             id: utils::random::secure_random_id(),
             created_at: chrono::Utc::now().timestamp(),
             expires_at: chrono::Utc::now()
@@ -116,7 +108,7 @@ impl Signup {
         };
 
         self.storage
-            .process_create(&models::Process::UsernameEmailSignup(process.clone()))
+            .process_create(&process)
             .await
             .map_err(|_| SignupError::Unknown)?;
 
@@ -133,11 +125,11 @@ impl Signup {
             return Err(SignupError::ProcessNotFound.into());
         };
 
-        let Process::UsernameEmailSignup(signup_process) = signup_process else {
+        let Some(models::process::Data::UsernameEmailSignup(signup_process_data)) = signup_process.data.clone() else {
             return Err(SignupError::ProcessNotFound.into());
         };
 
-        if signup_process.process.device_id != device_id {
+        if signup_process_data.device_id != device_id {
             return Err(SignupError::InvalidDeviceId.into());
         }
 
@@ -149,8 +141,8 @@ impl Signup {
             return Err(SignupError::ProcessAlreadyCompleted.into());
         }
 
-        let emails = if let Some(email) = signup_process.process.email.clone() {
-            HashMap::from_iter(vec![(email.0, email.1)])
+        let emails = if let Some(email) = signup_process_data.email.clone() {
+            HashMap::from_iter(vec![(email, IdentityEmail { verified_at: None })])
         } else {
             HashMap::new()
         };
@@ -160,7 +152,7 @@ impl Signup {
         let new_identity = models::Identity {
             first_name: None,
             last_name: None,
-            username: signup_process.process.username,
+            username: signup_process_data.username,
             emails,
             linked_accounts: HashMap::new(),
             password_hash: Some(password_hash),
