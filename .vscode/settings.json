@@ -6,5 +6,6 @@
   "[javascript][javascriptreact][typescript][typescriptreact]": {
     "editor.defaultFormatter": "rome.rome",
     "editor.formatOnSave": true
-  }
+  },
+  "rust-analyzer.cargo.buildScripts.enable": true
 }

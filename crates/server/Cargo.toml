@@ -17,5 +17,7 @@ path = "bin.rs"
 extrasafe = "0.1.2"
 eyre = "0.6"
 keygate-core = {path = "../core"}
+proto = {path = "../proto", features = ["server"]}
 thiserror = "1"
-tokio = {version = "1"}
+tokio = {version = "1", features = ["rt-multi-thread", "macros", "sync", "time"]}
+tonic = {version = "0.8", features = ["tls"]}

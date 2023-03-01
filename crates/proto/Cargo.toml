@@ -8,8 +8,8 @@ version = "0.1.0"
 path = "lib.rs"
 
 [dependencies]
-bytes = "1.1"
 prost = "0.11"
+tonic = {version = "0.8", features = ["prost"], default-features = false, optional = true}
 
 [build-dependencies]
 tonic-build = "0.8"
@@ -17,4 +17,4 @@ tonic-build = "0.8"
 [features]
 client = []
 default = []
-server = []
+server = ["tonic"]
