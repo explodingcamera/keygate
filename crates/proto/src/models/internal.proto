@@ -1,0 +1,4 @@
+syntax = "proto3";
+package v1.models.internal;
+
+message InternalIdentity { optional string password_hash = 1; }

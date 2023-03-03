@@ -1,0 +1,12 @@
+syntax = "proto3";
+package v1.api.meta;
+
+import "models.proto";
+
+service MetaService {
+  rpc GetVersion() returns (GetVersionResponse) {}
+  rpc GetStatus() returns (GetStatusResponse) {}
+}
+
+message GetVersionResponse { string version = 1; }
+message GetStatusResponse { string status = 1; }

@@ -2,30 +2,24 @@ syntax = "proto3";
 package v1.api.identity;
 
 import "models.proto";
+import "google/protobuf/empty.proto";
 
 service IdentityService {
-  rpc GetIdentity(GetIdentityRequest) returns (GetIdentityResponse) {}
-  rpc CreateIdentity(CreateIdentityRequest) returns (CreateIdentityResponse) {}
-  rpc UpdateIdentity(UpdateIdentityRequest) returns (UpdateIdentityResponse) {}
-  rpc DeleteIdentity(DeleteIdentityRequest) returns (DeleteIdentityResponse) {}
+  rpc GetIdentity(GetIdentityRequest) returns (models.Identity) {}
+  rpc CreateIdentity(models.Identity) returns (models.Identity) {}
+  rpc UpdateIdentity(models.Identity) returns (models.Identity) {}
+  rpc DeleteIdentity(DeleteIdentityRequest) returns (google.protobuf.Empty) {}
   rpc ListIdentities(ListIdentitiesRequest) returns (ListIdentitiesResponse) {}
 }
 
-// GetIdentity
-message GetIdentityRequest { string id = 1; }
-message GetIdentityResponse { models.Identity identity = 1; }
+message GetIdentityRequest {
+  oneof user {
+    string id = 1;
+    string email = 2;
+  }
+}
 
-// CreateIdentity
-message CreateIdentityRequest { models.Identity identity = 1; }
-message CreateIdentityResponse { models.Identity identity = 1; }
-
-// UpdateIdentity
-message UpdateIdentityRequest { models.Identity identity = 1; }
-message UpdateIdentityResponse { models.Identity identity = 1; }
-
-// DeleteIdentity
 message DeleteIdentityRequest { string id = 1; }
-message DeleteIdentityResponse { models.Identity identity = 1; }
 
 // ListIdentities
 message ListIdentitiesRequest {

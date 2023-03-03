@@ -1,0 +1,6 @@
+syntax = "proto3";
+package v1.api.access_control;
+
+import "models.proto";
+
+service ACService {}

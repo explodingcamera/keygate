@@ -23,7 +23,7 @@ impl Metadata {
         env!("CARGO_PKG_VERSION")
     }
 
-    pub async fn health(&self) -> Health {
+    pub async fn status(&self) -> Health {
         Health::Healthy
     }
 }

@@ -1,0 +1,11 @@
+syntax = "proto3";
+package v1.api.process;
+
+import "models.proto";
+
+service LoginProcessService {
+  rpc Init(InitLoginProcessRequest) returns (LoginProcessResponse);
+  rpc Step(LoginProcessStep) returns (LoginProcessResponse);
+  rpc GetStatus(LoginProcessRequest) returns (LoginProcessResponse);
+  rpc ValidatePassword(ValidatePAsswordRequest) returns (LoginProcessResponse);
+}
