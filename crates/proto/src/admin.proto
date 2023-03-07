@@ -1,6 +1,4 @@
 syntax = "proto3";
 package v1.api.admin;
 
-import "models.proto";
-
 service AdminService {}

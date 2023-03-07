@@ -1,8 +1,8 @@
 syntax = "proto3";
 package v1.api.identity;
 
-import "models.proto";
 import "google/protobuf/empty.proto";
+import "models/models.proto";
 
 service IdentityService {
   rpc GetIdentity(GetIdentityRequest) returns (models.Identity) {}

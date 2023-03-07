@@ -7,5 +7,9 @@ pub mod v1 {
 
     pub mod models {
         include!(concat!(env!("OUT_DIR"), "/v1.models.rs"));
+
+        pub mod internal {
+            include!(concat!(env!("OUT_DIR"), "/v1.models.internal.rs"));
+        }
     }
 }

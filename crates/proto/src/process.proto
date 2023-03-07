@@ -1,11 +1,29 @@
 syntax = "proto3";
 package v1.api.process;
 
-import "models.proto";
-
 service LoginProcessService {
   rpc Init(InitLoginProcessRequest) returns (LoginProcessResponse);
   rpc Step(LoginProcessStep) returns (LoginProcessResponse);
   rpc GetStatus(LoginProcessRequest) returns (LoginProcessResponse);
-  rpc ValidatePassword(ValidatePAsswordRequest) returns (LoginProcessResponse);
+  rpc ValidatePassword(ValidatePasswordRequest) returns (LoginProcessResponse);
 }
+
+message InitLoginProcessRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginProcessRequest { string process_id = 1; }
+
+message LoginProcessStep {
+  string process_id = 1;
+  string step_id = 2;
+  string step_data = 3;
+}
+
+message ValidatePasswordRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginProcessResponse {}

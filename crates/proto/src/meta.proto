@@ -1,11 +1,11 @@
 syntax = "proto3";
 package v1.api.meta;
 
-import "models.proto";
+import "google/protobuf/empty.proto";
 
 service MetaService {
-  rpc GetVersion() returns (GetVersionResponse) {}
-  rpc GetStatus() returns (GetStatusResponse) {}
+  rpc GetVersion(google.protobuf.Empty) returns (GetVersionResponse) {}
+  rpc GetStatus(google.protobuf.Empty) returns (GetStatusResponse) {}
 }
 
 message GetVersionResponse { string version = 1; }

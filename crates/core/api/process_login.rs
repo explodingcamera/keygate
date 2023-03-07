@@ -152,14 +152,29 @@ impl Login {
         Ok(process)
     }
 
-    pub fn validate_password(&self, password: &str, identity: &models::Identity) -> Result<(), KeygateError> {
+    pub async fn validate_password(&self, password: &str, identity_id: &str) -> Result<(), KeygateError> {
         let config = self.get_config()?;
+
+        if !utils::validate::is_valid_id(identity_id) {
+            return Err(LoginError::Unknown.into());
+        }
 
         if !utils::validate::is_valid_password(password) {
             return Err(LoginError::InvalidPassword.into());
         }
 
-        let Some(password_hash) = &identity.password_hash else {
+        let identity = self
+            .storage
+            .identity_by_id(identity_id)
+            .await
+            .map_err(|_| LoginError::Unknown)?
+            .ok_or(LoginError::Unknown)?;
+
+        let Some(internal) = &identity.internal else {
+            return Err(LoginError::Unknown.into());
+        };
+
+        let Some(password_hash) = &internal.password_hash else {
             return Err(LoginError::NoPassword.into());
         };
 

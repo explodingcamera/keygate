@@ -155,10 +155,12 @@ impl Signup {
             username: signup_process_data.username,
             emails,
             linked_accounts: HashMap::new(),
-            password_hash: Some(password_hash),
             id: utils::random::secure_random_id(),
             created_at: chrono::Utc::now().timestamp(),
             updated_at: chrono::Utc::now().timestamp(),
+            internal: Some(models::internal::InternalIdentity {
+                password_hash: Some(password_hash),
+            }),
         };
 
         if self.storage.identity_create(&new_identity).await.is_err() {
