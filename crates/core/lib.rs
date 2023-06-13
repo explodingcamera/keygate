@@ -22,11 +22,6 @@ pub use secrets::generate_ed25519_key_pair;
 use secrets::SecretStore;
 use storage::StorageError;
 
-pub use storage::traits;
-pub use storage::Storage;
-pub use storage::StorageType;
-pub use storage::{RedisStorage, SQLStorage};
-
 use thiserror::Error;
 
 #[derive(Clone, Copy)]
@@ -70,7 +65,7 @@ pub type KeygateResult<T> = Result<T, KeygateError>;
 pub type KeygateConfigInternal = Arc<RwLock<Configuration>>;
 pub type KeygateSecretsStore = Arc<secrets::SecretStore>;
 pub type KeygateSecrets = secrets::Secrets;
-type KeygateStorage = Arc<dyn Storage + Send + Sync>;
+type KeygateStorage = Arc<dyn storage::StorageBacked + Send + Sync>;
 
 pub struct Keygate {
     pub config: KeygateConfigInternal,
@@ -88,22 +83,16 @@ pub struct Keygate {
 
 impl Keygate {
     pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Keygate, KeygateError> {
-        let storage_type = config.storage_type;
         let config = Arc::new(RwLock::new(config));
-        let res = match storage_type {
-            StorageType::SQL => unimplemented!(),
-            StorageType::Redis => match RedisStorage::new(config.clone()).await {
-                Ok(storage) => Keygate::new_with_storage(config.clone(), Arc::new(storage), secrets),
-                Err(e) => return Err(e.into()),
-            },
-        };
 
-        Ok(res.await)
+        unimplemented!();
+        // Keygate::new_with_storage(config, storage, secrets).await
+        // Ok(res.await)
     }
 
     pub async fn new_with_storage(
         config: KeygateConfigInternal,
-        storage: Arc<dyn Storage + Send + Sync>,
+        storage: KeygateStorage,
         secrets: KeygateSecrets,
     ) -> Keygate {
         let secrets_store = Arc::new(SecretStore::new(secrets));

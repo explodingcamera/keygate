@@ -1,11 +1,3 @@
-use crate::StorageType;
-
-impl Default for StorageOptions {
-    fn default() -> Self {
-        StorageOptions::Redis(RedisStorageOptions::default())
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Environment {
     Development,
@@ -33,14 +25,7 @@ pub struct IdentityConfig {
 
 #[derive(Clone, Debug)]
 pub enum StorageOptions {
-    SQL(SQLStorageOptions),
-    Redis(RedisStorageOptions),
-}
-
-#[derive(Clone, Debug)]
-pub struct SQLStorageOptions {
-    pub storage_path: String,
-    pub sql_url: String,
+    SQL { storage_path: String, sql_url: String },
 }
 
 #[derive(Clone, Debug)]
@@ -91,9 +76,6 @@ pub struct ServerConfig {
 #[derive(Clone, Debug)]
 pub struct Configuration {
     pub environment: Environment,
-
-    /// What storage backend to use
-    pub storage_type: StorageType,
 
     /// Options for the storage backend
     pub storage_options: StorageOptions,
@@ -154,7 +136,6 @@ impl Default for TokenConfig {
 impl Default for Configuration {
     fn default() -> Self {
         Self {
-            storage_type: StorageType::SQL,
             storage_options: StorageOptions::default(),
             environment: Environment::Development,
             server: ServerConfig::default(),
@@ -164,20 +145,11 @@ impl Default for Configuration {
     }
 }
 
-impl Default for SQLStorageOptions {
+impl Default for StorageOptions {
     fn default() -> Self {
-        SQLStorageOptions {
+        StorageOptions::SQL {
             storage_path: "./data".to_string(),
             sql_url: "sqlite://data.db".to_string(),
-        }
-    }
-}
-
-impl Default for RedisStorageOptions {
-    fn default() -> Self {
-        RedisStorageOptions {
-            storage_path: "./data".to_string(),
-            redis_url: "redis://localhost/".to_string(),
         }
     }
 }

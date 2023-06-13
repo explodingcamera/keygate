@@ -24,12 +24,9 @@ chrono = {version = "0.4"}
 async-trait = "0.1"
 thiserror = "1"
 
-# redis
-redis = {version = "0.22", default-features = false, optional = true, features = ["aio", "connection-manager"]}
-
 # sql
-entity = {optional = true, path = "storage/sql/entity"}
-migration = {optional = true, path = "storage/sql/migration"}
+migration = {optional = true, path = "migration"}
+models = {optional = true, path = "models"}
 sea-orm = {version = "0.11", optional = true, features = ["macros"]}
 
 # async runtimes
@@ -44,17 +41,14 @@ reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"]
 sha1 = {version = "0.10", optional = true}
 
 [features]
-default = ["backend-redis", "backend-sqlite", "runtime-tokio", "pwned-passwords"]
+default = ["backend-sqlite", "runtime-tokio", "pwned-passwords"]
 pwned-passwords = ["reqwest", "sha1"]
 
 runtime-async-std = ["async-std", "sea-orm?/runtime-async-std-rustls"]
-runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls", "redis?/tokio-comp"]
-
-# redis
-backend-redis = ["redis"]
+runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls"]
 
 # sql
 backend-mysql = ["sql", "sea-orm/sqlx-mysql"]
 backend-postgres = ["sql", "sea-orm/sqlx-postgres"]
 backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
-sql = ["sea-orm", "entity", "migration"]
+sql = ["sea-orm", "models", "migration"]

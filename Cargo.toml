@@ -1,8 +1,8 @@
 [workspace]
 members = [
   "crates/core",
-  "crates/core/storage/sql/entity",
-  "crates/core/storage/sql/migration",
+  "crates/core/models",
+  "crates/core/migration",
   "crates/server",
   "crates/proto",
 ]

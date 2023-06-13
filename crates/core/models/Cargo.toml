@@ -1,12 +1,12 @@
 [package]
 edition = "2021"
-name = "entity"
+name = "models"
 publish = false
 version = "0.1.0"
 
 [lib]
-name = "entity"
-path = "src/lib.rs"
+name = "models"
+path = "lib.rs"
 
 [dependencies]
 sea-orm = {version = "0.11", features = ["macros"]}

@@ -1,15 +1,24 @@
 use crate::utils::{encoding, validate::RefreshTokenError};
-use std::sync::PoisonError;
+use sea_orm::error::DbErr as SQLStorageError;
+
 use thiserror::Error;
 
-use super::{redis::RedisStorageError, sql::SQLStorageError};
+pub trait StorageBacked {}
+
+pub struct SQLStorage {}
+
+impl SQLStorage {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl StorageBacked for SQLStorage {}
 
 #[derive(Error, Debug)]
 pub enum StorageError {
     #[error(transparent)]
     SQLStorage(#[from] SQLStorageError),
-    #[error(transparent)]
-    RedisStorage(#[from] RedisStorageError),
     #[error(transparent)]
     RefreshToken(#[from] RefreshTokenError),
     #[error("invalid session: {0}")]
@@ -22,12 +31,6 @@ pub enum StorageError {
     Panic(String),
     #[error("config poisoned")]
     ConfigPoisoned,
-}
-
-impl<T> From<PoisonError<T>> for StorageError {
-    fn from(err: PoisonError<T>) -> Self {
-        Self::ConfigPoisoned
-    }
 }
 
 #[derive(Error, Debug)]

@@ -1,17 +1,3 @@
-// https://github.com/redis-rs/redis-rs/issues/353#issuecomment-666290557
-macro_rules! async_transaction {
-    ($conn:expr, $keys:expr, $body:expr) => {
-        loop {
-            redis::cmd("WATCH").arg($keys).query_async($conn).await?;
-
-            if let Some(response) = $body {
-                redis::cmd("UNWATCH").query_async($conn).await?;
-                break response;
-            }
-        }
-    };
-}
-
 macro_rules! join_keys {
   ($($args:expr),*) => {{
     let separator = ":";
@@ -28,7 +14,6 @@ macro_rules! join_keys {
   }}
 }
 
-pub(crate) use async_transaction;
 pub(crate) use join_keys;
 
 mod tests {
