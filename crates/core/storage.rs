@@ -1,19 +1,32 @@
+use std::time::Duration;
+
 use crate::utils::{encoding, validate::RefreshTokenError};
-use sea_orm::error::DbErr as SQLStorageError;
+use sea_orm::{error::DbErr as SQLStorageError, ConnectOptions, Database, DatabaseConnection};
 
 use thiserror::Error;
 
-pub trait StorageBacked {}
-
-pub struct SQLStorage {}
-
-impl SQLStorage {
-    pub fn new() -> Self {
-        Self {}
-    }
+#[derive(Debug)]
+pub struct SQLStorageBackend {
+    database: DatabaseConnection,
 }
 
-impl StorageBacked for SQLStorage {}
+impl SQLStorageBackend {
+    pub async fn connect() -> Result<Self, SQLStorageError> {
+        let mut opt = ConnectOptions::new("protocol://username:password@host/database".to_owned());
+        opt.max_connections(100)
+            .min_connections(5)
+            .connect_timeout(Duration::from_secs(8))
+            .acquire_timeout(Duration::from_secs(8))
+            .idle_timeout(Duration::from_secs(8))
+            .max_lifetime(Duration::from_secs(8))
+            // .sqlx_logging(true)
+            // .sqlx_logging_level(log::LevelFilter::Info)
+            .set_schema_search_path("my_schema".into()); // Setting default PostgreSQL schema
+
+        let db = Database::connect(opt).await?;
+        Ok(Self { database: db })
+    }
+}
 
 #[derive(Error, Debug)]
 pub enum StorageError {

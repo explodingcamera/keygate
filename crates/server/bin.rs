@@ -4,7 +4,6 @@ use keygate_server::run;
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
     let config = KeygateConfig {
-        storage_type: keygate_core::StorageType::SQL,
         server: ServerConfig {
             keygate_domain: "accounts.localhost".to_string(),
             ..Default::default()

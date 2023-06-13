@@ -1,4 +1,4 @@
-use crate::{models, KeygateConfigInternal, KeygateError, KeygateStorage};
+use crate::{models, KeygateConfigInternal, KeygateError, KeygateSql};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,13 +7,14 @@ pub enum IdentityError {
     Unknown(String),
 }
 
+#[derive(Debug)]
 pub struct Identity {
     config: KeygateConfigInternal,
-    storage: KeygateStorage,
+    storage: KeygateSql,
 }
 
 impl Identity {
-    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateSql) -> Self {
         Self { config, storage }
     }
 }
@@ -42,15 +43,15 @@ impl Identity {
     }
 
     pub async fn get_id(&self, identity_id: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.identity_by_id(identity_id).await?)
+        todo!()
     }
 
     pub async fn get_email(&self, email: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.identity_by_email(email).await?)
+        todo!()
     }
 
     pub async fn get_username(&self, username: &str) -> Result<Option<models::Identity>, KeygateError> {
-        Ok(self.storage.identity_by_username(username).await?)
+        todo!()
     }
 
     pub async fn delete(&self, _identity_id: &str) -> Result<(), KeygateError> {
@@ -58,7 +59,7 @@ impl Identity {
     }
 
     pub async fn update(&self, identity: &models::Identity) -> Result<(), KeygateError> {
-        Ok(self.storage.identity_update(identity).await?)
+        todo!()
     }
 
     pub async fn identities(&self) -> Result<(), KeygateError> {

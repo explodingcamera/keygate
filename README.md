@@ -37,20 +37,14 @@ Keygate is currently in a very early stage of development. It is not ready for p
 
 ## License
 
-- Unless otherwise stated, all files in this repository are licensed under the AGPLv3 License. See the [LICENSE.md](./LICENSE.md) file for details.
-- All Community Edition binaries are licensed under the MIT license. See the [LICENSE.md](./LICENSE.MIT.md) file for details.
-- License exceptions are available for commercial use
+- Unless otherwise stated, all files in this repository are licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 ## Contributing
 
-Unless otherwise stated, any contribution intentionally submitted for inclusion in the work by you, shall be dual licensed under the AGPLv3 and MIT license, without any additional terms or conditions.
+Unless otherwise stated, any contribution intentionally submitted for inclusion in the work by you, shall be licensed as above without any additional terms or conditions.
 
 ## FAQ
 
 ### How does Keygate compare to other solutions?
 
 A: Keygate is a lightweight, portable, and open source alternative to commercial solutions like Auth0, Okta, or AWS Cognito. A full comparison will be added to the documentation in the future.
-
-### Why Dual License?
-
-The AGPLv3 license was chosen to prevent the projects code being used for propriatary projects. The MIT license is chosen to allow external contributions without the need to sign a CLA. The MIT license is also chosen for the Community Edition binaries to allow these binaries to be embedded in proprietary or otherwise incompatible projects.

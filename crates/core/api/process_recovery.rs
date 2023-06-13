@@ -1,4 +1,4 @@
-use crate::{KeygateConfigInternal, KeygateError, KeygateStorage};
+use crate::{KeygateConfigInternal, KeygateError, KeygateSql};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,13 +7,14 @@ pub enum RecoveryError {
     Unknown,
 }
 
+#[derive(Debug)]
 pub struct Recovery {
     config: KeygateConfigInternal,
-    storage: KeygateStorage,
+    storage: KeygateSql,
 }
 
 impl Recovery {
-    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateSql) -> Self {
         Self { config, storage }
     }
 }

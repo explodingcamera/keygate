@@ -1,10 +1,16 @@
 use keygate_jwt::prelude::Ed25519KeyPair;
-use std::sync::RwLock;
+use std::{fmt::Debug, sync::RwLock};
 
 use crate::KeygateError;
 
 pub struct SecretStore {
     storage: RwLock<SecretsInner>,
+}
+
+impl Debug for SecretStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SecretStore").finish()
+    }
 }
 
 pub fn generate_ed25519_key_pair() -> Ed25519KeyPair {

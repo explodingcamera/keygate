@@ -1,4 +1,4 @@
-use crate::{Health, KeygateConfigInternal, KeygateStorage};
+use crate::{Health, KeygateConfigInternal, KeygateSql};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -7,13 +7,14 @@ pub enum MetadataError {
     Unknown,
 }
 
+#[derive(Debug)]
 pub struct Metadata {
     config: KeygateConfigInternal,
-    storage: KeygateStorage,
+    storage: KeygateSql,
 }
 
 impl Metadata {
-    pub async fn new(config: KeygateConfigInternal, storage: KeygateStorage) -> Self {
+    pub async fn new(config: KeygateConfigInternal, storage: KeygateSql) -> Self {
         Self { config, storage }
     }
 }

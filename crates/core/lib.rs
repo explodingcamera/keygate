@@ -6,6 +6,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::RwLock;
 
+use config::KeygateConfigInternal;
 pub use proto::v1::models;
 
 mod api;
@@ -24,7 +25,7 @@ use storage::StorageError;
 
 use thiserror::Error;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Health {
     Healthy,
     Starting,
@@ -62,14 +63,15 @@ pub enum KeygateError {
 }
 
 pub type KeygateResult<T> = Result<T, KeygateError>;
-pub type KeygateConfigInternal = Arc<RwLock<Configuration>>;
+
 pub type KeygateSecretsStore = Arc<secrets::SecretStore>;
 pub type KeygateSecrets = secrets::Secrets;
-type KeygateStorage = Arc<dyn storage::StorageBacked + Send + Sync>;
+pub type KeygateSql = Arc<storage::SQLStorageBackend>;
 
+#[derive(Debug)]
 pub struct Keygate {
     pub config: KeygateConfigInternal,
-    pub storage: KeygateStorage,
+    pub sql: KeygateSql,
     secrets: KeygateSecretsStore,
     pub health: ArcSwap<Health>,
 
@@ -82,7 +84,7 @@ pub struct Keygate {
 }
 
 impl Keygate {
-    pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Keygate, KeygateError> {
+    pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Arc<Self>, KeygateError> {
         let config = Arc::new(RwLock::new(config));
 
         unimplemented!();
@@ -90,24 +92,20 @@ impl Keygate {
         // Ok(res.await)
     }
 
-    pub async fn new_with_storage(
-        config: KeygateConfigInternal,
-        storage: KeygateStorage,
-        secrets: KeygateSecrets,
-    ) -> Keygate {
+    pub async fn new_with_storage(config: KeygateConfigInternal, sql: KeygateSql, secrets: KeygateSecrets) -> Self {
         let secrets_store = Arc::new(SecretStore::new(secrets));
 
         Keygate {
             config: config.clone(),
-            storage: storage.clone(),
+            sql: sql.clone(),
             secrets: secrets_store.clone(),
             health: ArcSwap::new(Arc::new(Health::Starting)),
-            identity: api::Identity::new(config.clone(), storage.clone()).await,
-            login: api::Login::new(config.clone(), storage.clone()).await,
-            metadata: api::Metadata::new(config.clone(), storage.clone()).await,
-            recovery: api::Recovery::new(config.clone(), storage.clone()).await,
-            session: api::Session::new(config.clone(), storage.clone(), secrets_store).await,
-            signup: api::Signup::new(config, storage.clone()).await,
+            identity: api::Identity::new(config.clone(), sql.clone()).await,
+            login: api::Login::new(config.clone(), sql.clone()).await,
+            metadata: api::Metadata::new(config.clone(), sql.clone()).await,
+            recovery: api::Recovery::new(config.clone(), sql.clone()).await,
+            session: api::Session::new(config.clone(), sql.clone(), secrets_store).await,
+            signup: api::Signup::new(config, sql.clone()).await,
         }
     }
 }

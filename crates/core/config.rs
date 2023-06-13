@@ -1,3 +1,5 @@
+
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Environment {
     Development,
@@ -72,6 +74,8 @@ pub struct ServerConfig {
     /// public api prefix
     pub public_prefix: Option<String>,
 }
+
+pub type KeygateConfigInternal = std::sync::Arc<Configuration>;
 
 #[derive(Clone, Debug)]
 pub struct Configuration {
