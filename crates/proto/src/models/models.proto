@@ -1,8 +1,6 @@
 syntax = "proto3";
 package v1.models;
 
-import "internal.proto";
-
 message Identity {
   string id = 1;
   optional string username = 2;
@@ -12,7 +10,6 @@ message Identity {
   map<string, IdentityAccount> linked_accounts = 6;
   int64 created_at = 7;
   int64 updated_at = 8;
-  optional internal.InternalIdentity internal = 9;
 }
 
 message IdentityEmail { optional int64 verified_at = 2; }
@@ -52,6 +49,24 @@ message Process {
     VerificationProcess verification = 7;
     RecoveryProcess recovery = 8;
   }
+}
+
+enum StepType {
+  // login/signup
+  USERNAME = 0;
+  EMAIL = 1;
+  SECOND_FACTOR = 2;
+  PASSWORD = 3;
+
+  // verification
+  TOKEN = 4;
+}
+
+enum ProcessType {
+  USERNAME_EMAIL_LOGIN = 0;
+  USERNAME_EMAIL_SIGNUP = 1;
+  VERIFICATION = 2;
+  RECOVERY = 3;
 }
 
 message UsernameEmailLoginProcess {

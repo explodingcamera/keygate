@@ -1,24 +1,30 @@
 syntax = "proto3";
 package v1.api.process;
 
-service LoginProcessService {
-  rpc Init(InitLoginProcessRequest) returns (LoginProcessResponse);
-  rpc Step(LoginProcessStep) returns (LoginProcessResponse);
-  rpc GetStatus(LoginProcessRequest) returns (LoginProcessResponse);
-  rpc ValidatePassword(ValidatePasswordRequest) returns (LoginProcessResponse);
+import "models/models.proto";
+
+service ProcessService {
+  rpc Create(InitProcessRequest) returns (ProcessResponse);
+  rpc Step(ProcessStepRequest) returns (ProcessResponse);
+  rpc Status(ProcessRequest) returns (ProcessResponse);
 }
 
-message InitLoginProcessRequest {
-  string username = 1;
-  string password = 2;
+message ProcessRequest { string process_id = 1; }
+
+message InitProcessRequest {
+  models.ProcessType process_type = 1;
+  string device_id = 2;
+  bytes ip_address = 3;
+
+  // the first step of the process can be provided here if it is known (e.g.
+  // username/email) to avoid an extra round trip
+  optional ProcessStepRequest step = 4;
 }
 
-message LoginProcessRequest { string process_id = 1; }
-
-message LoginProcessStep {
-  string process_id = 1;
-  string step_id = 2;
-  string step_data = 3;
+message ProcessStepRequest {
+  models.StepType step_type = 1;
+  string process_id = 2;
+  string data = 3;
 }
 
 message ValidatePasswordRequest {
@@ -26,4 +32,14 @@ message ValidatePasswordRequest {
   string password = 2;
 }
 
-message LoginProcessResponse {}
+message ProcessResponse {
+  oneof response {
+    ProcessSuccessResponse success = 1;
+    ProcessNextStepResponse next_step = 2;
+    ProcessFailureResponse failure = 3;
+  }
+}
+
+message ProcessSuccessResponse { string data = 1; }
+message ProcessFailureResponse { string error = 1; }
+message ProcessNextStepResponse { models.StepType step_type = 1; }

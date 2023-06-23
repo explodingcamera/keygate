@@ -5,17 +5,18 @@ import "google/protobuf/empty.proto";
 import "models/models.proto";
 
 service IdentityService {
-  rpc GetIdentity(GetIdentityRequest) returns (models.Identity) {}
-  rpc CreateIdentity(models.Identity) returns (models.Identity) {}
-  rpc UpdateIdentity(models.Identity) returns (models.Identity) {}
-  rpc DeleteIdentity(DeleteIdentityRequest) returns (google.protobuf.Empty) {}
-  rpc ListIdentities(ListIdentitiesRequest) returns (ListIdentitiesResponse) {}
+  rpc Get(GetIdentityRequest) returns (models.Identity) {}
+  rpc Create(models.Identity) returns (models.Identity) {}
+  rpc Update(models.Identity) returns (models.Identity) {}
+  rpc Delete(DeleteIdentityRequest) returns (google.protobuf.Empty) {}
+  rpc List(ListIdentitiesRequest) returns (ListIdentitiesResponse) {}
 }
 
 message GetIdentityRequest {
   oneof user {
     string id = 1;
     string email = 2;
+    string username = 3;
   }
 }
 

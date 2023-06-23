@@ -18,32 +18,29 @@ impl IdentityServiceImpl {
 
 #[tonic::async_trait]
 impl IdentityService for IdentityServiceImpl {
-    async fn get_identity(
-        &self,
-        request: Request<identity::GetIdentityRequest>,
-    ) -> Result<Response<models::Identity>, Status> {
+    async fn get(&self, request: Request<identity::GetIdentityRequest>) -> Result<Response<models::Identity>, Status> {
         Ok(Response::new(models::Identity {
             id: "test".to_string(),
             ..Default::default()
         }))
     }
 
-    async fn create_identity(&self, request: Request<models::Identity>) -> Result<Response<models::Identity>, Status> {
+    async fn create(&self, request: Request<models::Identity>) -> Result<Response<models::Identity>, Status> {
         // TODO: Implement create_identity function
         unimplemented!()
     }
 
-    async fn update_identity(&self, request: Request<models::Identity>) -> Result<Response<models::Identity>, Status> {
+    async fn update(&self, request: Request<models::Identity>) -> Result<Response<models::Identity>, Status> {
         // TODO: Implement update_identity function
         unimplemented!()
     }
 
-    async fn delete_identity(&self, request: Request<identity::DeleteIdentityRequest>) -> Result<Response<()>, Status> {
+    async fn delete(&self, request: Request<identity::DeleteIdentityRequest>) -> Result<Response<()>, Status> {
         // TODO: Implement delete_identity function
         unimplemented!()
     }
 
-    async fn list_identities(
+    async fn list(
         &self,
         request: Request<identity::ListIdentitiesRequest>,
     ) -> Result<Response<identity::ListIdentitiesResponse>, Status> {
