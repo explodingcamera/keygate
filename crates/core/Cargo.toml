@@ -7,45 +7,33 @@ version = "0.1.0"
 path = "lib.rs"
 
 [dependencies]
-# crypto and hashing
+arc-swap = "1.6"
 argon2 = "0.5"
+async-trait = "0.1"
+chrono = {version = "0.4"}
 keygate-jwt = {version = "1.2", features = ["eddsa"]}
 rand_core = {version = "0.6", features = ["std"]}
-
-# serialization/encoding
-hex = "0.4.3"
 regex = "1.5"
+thiserror = "1.0"
+tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
 
-# datastructures
-arc-swap = "1.6.0"
-chrono = {version = "0.4"}
-
-# macros
-async-trait = "0.1"
-thiserror = "1"
+# proto
+proto = {path = "../proto"}
+tonic = {version = "0.9", features = ["tls"]}
 
 # sql
 migration = {optional = true, path = "migration"}
 models = {optional = true, path = "models"}
 sea-orm = {version = "0.11", optional = true, features = ["macros"]}
 
-# async runtimes
-async-std = {version = "1", optional = true}
-tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
-
-# grpc
-proto = {path = "../proto"}
-tonic = {version = "0.9", features = ["tls"]}
-
 # pwned passwords
+hex = "0.4.3"
 reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"], optional = true}
 sha1 = {version = "0.10", optional = true}
 
 [features]
 default = ["backend-sqlite", "runtime-tokio", "pwned-passwords"]
 pwned-passwords = ["reqwest", "sha1"]
-
-runtime-async-std = ["async-std", "sea-orm?/runtime-async-std-rustls"]
 runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls"]
 
 # sql

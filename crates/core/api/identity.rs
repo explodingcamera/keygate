@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use proto::v1::api::identity::{self, identity_service_server};
-use proto::v1::models;
+use proto::api::identity::{self, identity_service_server};
+use proto::models;
 use tonic::{Request, Response, Status};
 
 use crate::KeygateInternal;
-pub use proto::v1::api::identity::identity_service_server::IdentityService;
+pub use proto::api::identity::identity_service_server::IdentityService;
 
 #[derive(Debug, Clone)]
 pub struct Identity {

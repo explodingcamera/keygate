@@ -1562,7 +1562,6 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "argon2",
- "async-std",
  "async-trait",
  "chrono",
  "hex",

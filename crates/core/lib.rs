@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 use config::KeygateConfigInternal;
-pub use proto::v1::models;
+pub use proto::models;
 
 mod api;
 pub mod utils;

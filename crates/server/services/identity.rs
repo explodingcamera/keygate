@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use keygate_core::Keygate;
-use proto::v1::api::identity::{self, identity_service_server::IdentityService};
-use proto::v1::models;
+use proto::api::identity::{self, identity_service_server::IdentityService};
+use proto::models;
 use tonic::{Request, Response, Status};
 
 #[derive(Debug)]

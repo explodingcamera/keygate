@@ -1,5 +1,5 @@
 use chrono::Utc;
-use proto::v1::models::RefreshToken;
+use proto::models::RefreshToken;
 
 use super::random::RANDOMID_ALPHABET;
 
