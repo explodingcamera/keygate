@@ -33,8 +33,9 @@ sea-orm = {version = "0.11", optional = true, features = ["macros"]}
 async-std = {version = "1", optional = true}
 tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
 
-# misc
+# grpc
 proto = {path = "../proto"}
+tonic = {version = "0.9", features = ["tls"]}
 
 # pwned passwords
 reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"], optional = true}

@@ -1,68 +1,56 @@
-use crate::{models, KeygateConfigInternal, KeygateError, KeygateSql};
-use thiserror::Error;
+use std::sync::Arc;
 
-#[derive(Error, Debug)]
-pub enum IdentityError {
-    #[error("unknown error {0}")]
-    Unknown(String),
-}
+use proto::v1::api::identity::{self, identity_service_server};
+use proto::v1::models;
+use tonic::{Request, Response, Status};
 
-#[derive(Debug)]
+use crate::KeygateInternal;
+pub use proto::v1::api::identity::identity_service_server::IdentityService;
+
+#[derive(Debug, Clone)]
 pub struct Identity {
-    config: KeygateConfigInternal,
-    storage: KeygateSql,
+    keygate: Arc<KeygateInternal>,
 }
 
 impl Identity {
-    pub async fn new(config: KeygateConfigInternal, storage: KeygateSql) -> Self {
-        Self { config, storage }
+    pub(crate) fn new(keygate: Arc<KeygateInternal>) -> Self {
+        Self { keygate }
+    }
+
+    pub fn service(&self) -> identity_service_server::IdentityServiceServer<Identity> {
+        identity_service_server::IdentityServiceServer::new(Self::new(self.keygate.clone()))
     }
 }
 
-impl Identity {
-    pub async fn update_in_place<F>(
+#[tonic::async_trait]
+impl IdentityService for Identity {
+    async fn get(&self, request: Request<identity::GetIdentityRequest>) -> Result<Response<models::Identity>, Status> {
+        Ok(Response::new(models::Identity {
+            id: "test".to_string(),
+            ..Default::default()
+        }))
+    }
+
+    async fn create(&self, request: Request<models::Identity>) -> Result<Response<models::Identity>, Status> {
+        // TODO: Implement create_identity function
+        unimplemented!()
+    }
+
+    async fn update(&self, request: Request<models::Identity>) -> Result<Response<models::Identity>, Status> {
+        // TODO: Implement update_identity function
+        unimplemented!()
+    }
+
+    async fn delete(&self, request: Request<identity::DeleteIdentityRequest>) -> Result<Response<()>, Status> {
+        // TODO: Implement delete_identity function
+        unimplemented!()
+    }
+
+    async fn list(
         &self,
-        identity_id: &str,
-        closure: F,
-    ) -> Result<Option<models::Identity>, KeygateError>
-    where
-        F: FnOnce(Option<models::Identity>) -> Option<models::Identity>,
-    {
-        let identity = self.get_id(identity_id).await?;
-        match closure(identity) {
-            Some(new_identity) => {
-                if new_identity.id != identity_id {
-                    return Err(IdentityError::Unknown("identity id mismatch".to_string()).into());
-                }
-
-                self.update(&new_identity).await?;
-                Ok(Some(new_identity))
-            }
-            None => Ok(None),
-        }
-    }
-
-    pub async fn get_id(&self, identity_id: &str) -> Result<Option<models::Identity>, KeygateError> {
-        todo!()
-    }
-
-    pub async fn get_email(&self, email: &str) -> Result<Option<models::Identity>, KeygateError> {
-        todo!()
-    }
-
-    pub async fn get_username(&self, username: &str) -> Result<Option<models::Identity>, KeygateError> {
-        todo!()
-    }
-
-    pub async fn delete(&self, _identity_id: &str) -> Result<(), KeygateError> {
-        todo!()
-    }
-
-    pub async fn update(&self, identity: &models::Identity) -> Result<(), KeygateError> {
-        todo!()
-    }
-
-    pub async fn identities(&self) -> Result<(), KeygateError> {
-        todo!()
+        request: Request<identity::ListIdentitiesRequest>,
+    ) -> Result<Response<identity::ListIdentitiesResponse>, Status> {
+        // TODO: Implement list_identities function
+        unimplemented!()
     }
 }

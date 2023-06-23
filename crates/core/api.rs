@@ -5,7 +5,7 @@ mod process_recovery;
 mod process_signup;
 mod session;
 
-pub use identity::{Identity, IdentityError};
+pub use identity::Identity;
 pub use metadata::{Metadata, MetadataError};
 pub use process_login::{Login, LoginError};
 pub use process_recovery::{Recovery, RecoveryError};

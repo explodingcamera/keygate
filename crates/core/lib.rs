@@ -20,7 +20,6 @@ pub use config::Configuration as KeygateConfig;
 
 mod storage;
 pub use secrets::generate_ed25519_key_pair;
-use secrets::SecretStore;
 use storage::StorageError;
 
 use thiserror::Error;
@@ -39,8 +38,6 @@ pub enum KeygateError {
     #[error(transparent)]
     JWTError(#[from] keygate_jwt::JWTError),
 
-    #[error(transparent)]
-    Identity(#[from] api::IdentityError),
     #[error(transparent)]
     Login(#[from] api::LoginError),
     #[error(transparent)]
@@ -69,43 +66,36 @@ pub type KeygateSecrets = secrets::Secrets;
 pub type KeygateSql = Arc<storage::SQLStorageBackend>;
 
 #[derive(Debug)]
-pub struct Keygate {
+struct KeygateInternal {
     pub config: KeygateConfigInternal,
     pub sql: KeygateSql,
-    secrets: KeygateSecretsStore,
     pub health: ArcSwap<Health>,
+}
 
-    pub identity: api::Identity,
-    pub login: api::Login,
-    pub metadata: api::Metadata,
-    pub recovery: api::Recovery,
-    pub session: api::Session,
-    pub signup: api::Signup,
+#[derive(Debug)]
+pub struct Keygate {
+    inner: Arc<KeygateInternal>,
+    pub identity: Arc<api::Identity>,
 }
 
 impl Keygate {
-    pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Arc<Self>, KeygateError> {
+    pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Self, KeygateError> {
         let config = Arc::new(RwLock::new(config));
-
         unimplemented!();
         // Keygate::new_with_storage(config, storage, secrets).await
         // Ok(res.await)
     }
 
     pub async fn new_with_storage(config: KeygateConfigInternal, sql: KeygateSql, secrets: KeygateSecrets) -> Self {
-        let secrets_store = Arc::new(SecretStore::new(secrets));
+        let internal = Arc::new(KeygateInternal {
+            config,
+            sql,
+            health: ArcSwap::from_pointee(Health::Starting),
+        });
 
         Keygate {
-            config: config.clone(),
-            sql: sql.clone(),
-            secrets: secrets_store.clone(),
-            health: ArcSwap::new(Arc::new(Health::Starting)),
-            identity: api::Identity::new(config.clone(), sql.clone()).await,
-            login: api::Login::new(config.clone(), sql.clone()).await,
-            metadata: api::Metadata::new(config.clone(), sql.clone()).await,
-            recovery: api::Recovery::new(config.clone(), sql.clone()).await,
-            session: api::Session::new(config.clone(), sql.clone(), secrets_store).await,
-            signup: api::Signup::new(config, sql.clone()).await,
+            inner: internal.clone(),
+            identity: Arc::new(api::Identity::new(internal)),
         }
     }
 }
