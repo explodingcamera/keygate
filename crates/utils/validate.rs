@@ -1,5 +1,4 @@
 use chrono::Utc;
-use proto::models::RefreshToken;
 
 use super::random::RANDOMID_ALPHABET;
 
@@ -39,41 +38,4 @@ pub enum RefreshTokenReuseError {
     Revoked,
     #[error("Refresh token superceeded")]
     Superceeded,
-}
-
-pub fn can_refresh(refresh_token: &RefreshToken) -> Result<(), RefreshTokenError> {
-    if refresh_token.next.is_some() {
-        return Err(RefreshTokenReuseError::Superceeded.into());
-    }
-
-    if refresh_token.revoked_at.is_some() {
-        return Err(RefreshTokenReuseError::Revoked.into());
-    }
-
-    let now = Utc::now();
-    if refresh_token.expires_at < now.timestamp() {
-        return Err(RefreshTokenError::Expired);
-    }
-
-    if refresh_token.created_at > now.timestamp() {
-        return Err(RefreshTokenError::Invalid);
-    }
-
-    if !is_valid_id(&refresh_token.id) || !is_valid_id(&refresh_token.access_token_id) || !is_valid_id(&refresh_token.session_id) {
-        return Err(RefreshTokenError::Invalid);
-    }
-
-    Ok(())
-}
-
-pub fn can_refresh_session(session: &crate::models::Session) -> bool {
-    if session.revoked_at.is_some() {
-        return false;
-    }
-
-    if !is_valid_id(&session.id) || !is_valid_id(&session.identity_id) {
-        return false;
-    }
-
-    true
 }

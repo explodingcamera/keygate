@@ -1,7 +1,6 @@
 use std::{net::IpAddr, sync::Arc};
 
 use proto::{api::auth::auth_service_server::*, api::auth::*};
-use sea_orm::{prelude::*, TransactionTrait};
 use tonic::{Request, Response, Status};
 
 use crate::{utils::random::secure_random_id, KeygateInternal};

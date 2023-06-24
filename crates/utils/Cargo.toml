@@ -1,0 +1,30 @@
+[package]
+edition = "2021"
+name = "keygate-utils"
+version = "0.1.0"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+arc-swap = "1.6"
+argon2 = "0.5"
+async-trait = "0.1"
+chrono = {version = "0.4"}
+keygate-jwt = {version = "1.2", features = ["eddsa"]}
+rand_core = {version = "0.6", features = ["std"]}
+regex = "1.5"
+rusty_paseto = "0.5"
+thiserror = "1.0"
+
+# pwned passwords
+hex = "0.4.3"
+reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"], optional = true}
+sha1 = {version = "0.10", optional = true}
+
+[dev-dependencies]
+tokio = {version = "1", default-features = false, features = ["macros"]}
+
+[features]
+default = ["pwned"]
+pwned = ["reqwest", "sha1"]

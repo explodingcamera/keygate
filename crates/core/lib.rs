@@ -10,7 +10,6 @@ use config::KeygateConfigInternal;
 pub use proto::models;
 
 mod api;
-pub mod utils;
 
 pub mod config;
 mod secrets;
@@ -19,7 +18,6 @@ use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
 mod storage;
-use sea_orm::DatabaseConnection;
 pub use secrets::generate_ed25519_key_pair;
 use storage::StorageError;
 
