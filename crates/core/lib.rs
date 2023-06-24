@@ -19,6 +19,7 @@ use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
 mod storage;
+use sea_orm::DatabaseConnection;
 pub use secrets::generate_ed25519_key_pair;
 use storage::StorageError;
 
@@ -70,6 +71,12 @@ struct KeygateInternal {
     pub config: KeygateConfigInternal,
     pub sql: KeygateSql,
     pub health: ArcSwap<Health>,
+}
+
+impl KeygateInternal {
+    fn db(&self) -> &DatabaseConnection {
+        &self.sql.database
+    }
 }
 
 #[derive(Debug)]

@@ -7,7 +7,7 @@ use thiserror::Error;
 
 #[derive(Debug)]
 pub struct SQLStorageBackend {
-    database: DatabaseConnection,
+    pub database: DatabaseConnection,
 }
 
 impl SQLStorageBackend {

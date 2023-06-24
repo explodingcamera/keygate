@@ -22,8 +22,8 @@ proto = {path = "../proto"}
 tonic = {version = "0.9", features = ["tls"]}
 
 # sql
+database = {optional = true, path = "database"}
 migration = {optional = true, path = "migration"}
-models = {optional = true, path = "models"}
 sea-orm = {version = "0.11", optional = true, features = ["macros"]}
 
 # pwned passwords
@@ -40,4 +40,4 @@ runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls"]
 backend-mysql = ["sql", "sea-orm/sqlx-mysql"]
 backend-postgres = ["sql", "sea-orm/sqlx-postgres"]
 backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
-sql = ["sea-orm", "models", "migration"]
+sql = ["sea-orm", "database", "migration"]

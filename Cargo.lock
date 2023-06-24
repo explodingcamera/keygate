@@ -788,6 +788,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "database"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "proto",
+ "sea-orm",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "der"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1564,10 +1575,10 @@ dependencies = [
  "argon2",
  "async-trait",
  "chrono",
+ "database",
  "hex",
  "keygate-jwt",
  "migration",
- "models",
  "proto",
  "rand_core",
  "regex",
@@ -1756,16 +1767,6 @@ dependencies = [
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys",
-]
-
-[[package]]
-name = "models"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "sea-orm",
- "serde",
- "tokio",
 ]
 
 [[package]]

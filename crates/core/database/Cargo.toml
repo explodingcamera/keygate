@@ -1,11 +1,11 @@
 [package]
 edition = "2021"
-name = "models"
+name = "database"
 publish = false
 version = "0.1.0"
 
 [lib]
-name = "models"
+name = "database"
 path = "lib.rs"
 
 [dependencies]
@@ -13,6 +13,7 @@ sea-orm = {version = "0.11", features = ["macros"]}
 serde = {version = "1", features = ["derive"]}
 
 async-std = {version = "1", optional = true}
+proto = {path = "../../proto"}
 tokio = {version = "1", optional = true}
 
 [features]

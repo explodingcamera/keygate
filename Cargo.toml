@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "crates/core",
-  "crates/core/models",
+  "crates/core/database",
   "crates/core/migration",
   "crates/server",
   "crates/proto",
