@@ -3,8 +3,6 @@ use std::collections::HashMap;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::ToProto;
-
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
 #[sea_orm(table_name = "identities")]
 pub struct Model {
@@ -18,13 +16,10 @@ pub struct Model {
     pub updated_at: i64,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
 impl ActiveModelBehavior for ActiveModel {}
 
-impl ToProto<proto::models::Identity> for Model {
-    fn to_proto_public(&self) -> proto::models::Identity {
+impl Into<proto::models::Identity> for Model {
+    fn into(self) -> proto::models::Identity {
         proto::models::Identity {
             id: self.id.to_owned(),
             username: self.username.to_owned(),
@@ -35,16 +30,17 @@ impl ToProto<proto::models::Identity> for Model {
             linked_accounts: HashMap::default(),
         }
     }
+}
 
-    fn to_proto_private(&self) -> proto::models::Identity {
-        proto::models::Identity {
-            id: self.id.to_owned(),
-            username: self.username.to_owned(),
-            primary_email: self.primary_email.to_owned(),
-            created_at: self.created_at,
-            updated_at: self.updated_at,
-            emails: HashMap::default(),
-            linked_accounts: HashMap::default(),
-        }
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
+pub enum Relation {
+    #[sea_orm(has_many = "super::login::Entity")]
+    Login,
+}
+
+// `Related` trait has to be implemented by hand
+impl Related<super::login::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Login.def()
     }
 }

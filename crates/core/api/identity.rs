@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use database::ToProto;
 use proto::api::identity::{self, get_identity_request, identity_service_server};
 use proto::models;
 use sea_orm::prelude::*;
@@ -46,8 +45,8 @@ impl IdentityService for Identity {
         .ok_or(Status::not_found("Identity not found"))?;
 
         match req.include_private_fields {
-            Some(true) => Ok(Response::new(identity.to_proto_private())),
-            _ => Ok(Response::new(identity.to_proto_public())),
+            Some(true) => Ok(Response::new(identity.into())),
+            _ => Ok(Response::new(identity.into())),
         }
     }
 

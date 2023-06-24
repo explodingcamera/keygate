@@ -39,17 +39,6 @@ pub enum KeygateError {
     #[error(transparent)]
     JWTError(#[from] keygate_jwt::JWTError),
 
-    #[error(transparent)]
-    Login(#[from] api::LoginError),
-    #[error(transparent)]
-    Metadata(#[from] api::MetadataError),
-    #[error(transparent)]
-    Recovery(#[from] api::RecoveryError),
-    #[error(transparent)]
-    Session(#[from] api::SessionError),
-    #[error(transparent)]
-    Signup(#[from] api::SignupError),
-
     #[error("validation error: {0}")]
     ValidationError(String),
 

@@ -3,6 +3,10 @@ pub mod v1 {
         pub mod identity {
             include!(concat!(env!("OUT_DIR"), "/v1.api.identity.rs"));
         }
+
+        pub mod login {
+            include!(concat!(env!("OUT_DIR"), "/v1.api.login.rs"));
+        }
     }
 
     pub mod models {
