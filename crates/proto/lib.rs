@@ -4,8 +4,8 @@ pub mod v1 {
             include!(concat!(env!("OUT_DIR"), "/v1.api.identity.rs"));
         }
 
-        pub mod login {
-            include!(concat!(env!("OUT_DIR"), "/v1.api.login.rs"));
+        pub mod auth {
+            include!(concat!(env!("OUT_DIR"), "/v1.api.auth.rs"));
         }
     }
 

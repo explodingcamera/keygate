@@ -8,7 +8,7 @@ fn main() -> Result<()> {
                 "src/ac.proto",
                 "src/admin.proto",
                 "src/identity.proto",
-                "src/login.proto",
+                "src/auth.proto",
                 "src/meta.proto",
                 "src/session.proto",
                 "src/models/models.proto",
