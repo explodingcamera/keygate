@@ -1,7 +1,7 @@
 use keygate_jwt::{
     prelude::{
-        Audiences, Claims, Duration, Ed25519KeyPair, EdDSAKeyPairLike, EdDSAPublicKeyLike, JWTClaims, NoCustomClaims,
-        UnixTimeStamp, VerificationOptions,
+        Audiences, Claims, Duration, Ed25519KeyPair, EdDSAKeyPairLike, EdDSAPublicKeyLike, JWTClaims, NoCustomClaims, UnixTimeStamp,
+        VerificationOptions,
     },
     JWTError,
 };
@@ -68,12 +68,7 @@ impl AccessToken {
         claims.try_into()
     }
 
-    pub fn generate(
-        identity_id: &str,
-        audience: &str,
-        expires_in_seconds: i64,
-        key_pair: Ed25519KeyPair,
-    ) -> Result<Self, JWTError> {
+    pub fn generate(identity_id: &str, audience: &str, expires_in_seconds: i64, key_pair: Ed25519KeyPair) -> Result<Self, JWTError> {
         let claims = Claims::create(Duration::from_secs(expires_in_seconds.unsigned_abs()))
             .with_issuer("keygate")
             .with_audience(audience)

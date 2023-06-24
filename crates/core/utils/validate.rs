@@ -59,10 +59,7 @@ pub fn can_refresh(refresh_token: &RefreshToken) -> Result<(), RefreshTokenError
         return Err(RefreshTokenError::Invalid);
     }
 
-    if !is_valid_id(&refresh_token.id)
-        || !is_valid_id(&refresh_token.access_token_id)
-        || !is_valid_id(&refresh_token.session_id)
-    {
+    if !is_valid_id(&refresh_token.id) || !is_valid_id(&refresh_token.access_token_id) || !is_valid_id(&refresh_token.session_id) {
         return Err(RefreshTokenError::Invalid);
     }
 

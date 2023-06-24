@@ -38,16 +38,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_pwned_check() -> Result<(), PwnedError> {
-        assert_eq!(
-            Err(PwnedError::Pwned),
-            pwned_check("password").await,
-            "password is pwned"
-        );
-        assert_eq!(
-            Err(PwnedError::Pwned),
-            pwned_check("adminadmin").await,
-            "adminadmin is pwned"
-        );
+        assert_eq!(Err(PwnedError::Pwned), pwned_check("password").await, "password is pwned");
+        assert_eq!(Err(PwnedError::Pwned), pwned_check("adminadmin").await, "adminadmin is pwned");
         assert_eq!(
             Ok(()),
             pwned_check("flkatoihkvdjnasdjölewm").await,
