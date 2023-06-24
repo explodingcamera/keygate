@@ -51,17 +51,6 @@ message Process {
   }
 }
 
-enum StepType {
-  // login/signup
-  USERNAME = 0;
-  EMAIL = 1;
-  SECOND_FACTOR = 2;
-  PASSWORD = 3;
-
-  // verification
-  TOKEN = 4;
-}
-
 enum ProcessType {
   USERNAME_EMAIL_LOGIN = 0;
   USERNAME_EMAIL_SIGNUP = 1;
@@ -72,21 +61,37 @@ enum ProcessType {
 message UsernameEmailLoginProcess {
   string identity_id = 1;
   string device_id = 2;
+  Step current_step = 3;
+
+  enum Step {
+    WAIT = 0;
+    USERNAME = 1;
+    EMAIL = 2;
+    SECOND_FACTOR = 3;
+    PASSWORD = 4;
+  }
 }
 
 message UsernameEmailSignupProcess {
   string device_id = 1;
   optional string email = 2;
   optional string username = 3;
+  Step current_step = 4;
+
+  enum Step {
+    WAIT = 0;
+    USERNAME = 1;
+    EMAIL = 2;
+    PASSWORD = 3;
+  }
+}
+
+message StepType {
+  oneof type {
+    UsernameEmailSignupProcess.Step username_email_signup = 1;
+    UsernameEmailLoginProcess.Step username_email_login = 2;
+  }
 }
 
 message VerificationProcess { string identity_id = 1; }
-
 message RecoveryProcess { string identity_id = 1; }
-
-message ProcessToken {
-  string id = 1;
-  string process_id = 2;
-  int64 expires_at = 3;
-  int64 created_at = 4;
-}
