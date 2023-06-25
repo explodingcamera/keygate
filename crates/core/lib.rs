@@ -7,9 +7,10 @@ use std::sync::Arc;
 use std::sync::RwLock;
 
 use config::KeygateConfigInternal;
+use prisma::PrismaClient;
 pub use proto::models;
 
-mod api;
+// mod api;
 
 pub mod config;
 mod secrets;
@@ -17,9 +18,7 @@ use arc_swap::ArcSwap;
 use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
-mod storage;
 pub use secrets::generate_ed25519_key_pair;
-use storage::StorageError;
 
 use thiserror::Error;
 
@@ -32,8 +31,6 @@ pub enum Health {
 
 #[derive(Error, Debug)]
 pub enum KeygateError {
-    #[error(transparent)]
-    Storage(#[from] StorageError),
     #[error(transparent)]
     JWTError(#[from] keygate_jwt::JWTError),
 
@@ -51,25 +48,18 @@ pub type KeygateResult<T> = Result<T, KeygateError>;
 
 pub type KeygateSecretsStore = Arc<secrets::SecretStore>;
 pub type KeygateSecrets = secrets::Secrets;
-pub type KeygateSql = Arc<storage::SQLStorageBackend>;
 
 #[derive(Debug)]
 struct KeygateInternal {
     pub config: KeygateConfigInternal,
-    pub sql: KeygateSql,
+    pub prisma: PrismaClient,
     pub health: ArcSwap<Health>,
 }
 
-impl KeygateInternal {
-    fn db(&self) -> &DatabaseConnection {
-        &self.sql.database
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Keygate {
     inner: Arc<KeygateInternal>,
-    pub identity: Arc<api::Identity>,
+    // pub identity: Arc<api::Identity>,
 }
 
 impl Keygate {
@@ -80,16 +70,16 @@ impl Keygate {
         // Ok(res.await)
     }
 
-    pub async fn new_with_storage(config: KeygateConfigInternal, sql: KeygateSql, secrets: KeygateSecrets) -> Self {
+    pub async fn new_with_storage(config: KeygateConfigInternal, prisma: PrismaClient, secrets: KeygateSecrets) -> Self {
         let internal = Arc::new(KeygateInternal {
             config,
-            sql,
+            prisma,
             health: ArcSwap::from_pointee(Health::Starting),
         });
 
         Keygate {
             inner: internal.clone(),
-            identity: Arc::new(api::Identity::new(internal)),
+            // identity: Arc::new(api::Identity::new(internal)),
         }
     }
 }

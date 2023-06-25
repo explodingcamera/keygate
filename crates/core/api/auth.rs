@@ -3,7 +3,7 @@ use std::{net::IpAddr, sync::Arc};
 use proto::{api::auth::auth_service_server::*, api::auth::*};
 use tonic::{Request, Response, Status};
 
-use crate::{utils::random::secure_random_id, KeygateInternal};
+use crate::KeygateInternal;
 
 #[derive(Debug, Clone)]
 pub struct Auth {
@@ -31,7 +31,7 @@ impl AuthService for Auth {
             return Err(Status::invalid_argument("Invalid IP address"));
         }
 
-        let login_process_id = secure_random_id();
+        let login_process_id = keygate_utils::secure_random_id();
         let is_email = req.username_or_email.contains('@');
         let current_step = match is_email {
             true => LoginStep::Email,

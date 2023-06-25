@@ -15,17 +15,18 @@ pub async fn run(config: KeygateConfig, secrets: KeygateSecrets) -> eyre::Result
     }
 
     let keygate = Keygate::new(config, secrets).await?;
-    let addr = "[::1]:50051".parse().unwrap();
 
-    let gprc_server = Server::builder()
-        .add_service(keygate.identity.service())
-        .add_service(keygate.identity.service());
+    // let addr = "[::1]:50051".parse().unwrap();
 
-    tokio::select! {
-        _ = gprc_server.serve(addr) => {
-            println!("gRPC server stopped");
-        }
-    };
+    // let gprc_server = Server::builder()
+    //     .add_service(keygate.identity.service())
+    //     .add_service(keygate.identity.service());
+
+    // tokio::select! {
+    //     _ = gprc_server.serve(addr) => {
+    //         println!("gRPC server stopped");
+    //     }
+    // };
 
     Ok(())
 }
