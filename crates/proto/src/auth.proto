@@ -71,9 +71,7 @@ message LoginSuccessResponse { string refresh_token = 1; }
 
 message LoginStatusResponse {
   LoginStep current_step = 1;
-
-  // the user might have multiple ways to authenticate
-  repeated LoginStep next_steps = 2;
+  int64 expires_at = 2;
 }
 
 message LoginNextStepResponse {
