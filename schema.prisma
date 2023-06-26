@@ -5,11 +5,11 @@ datasource db {
 
 generator client {
   provider = "cargo prisma"
-  output   = "./crates/prisma/prisma.rs"
+  output   = "./crates/core/prisma/prisma.rs"
 }
 
 model Identity {
-  id        String   @id @default(cuid())
+  id        String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -27,12 +27,12 @@ model Email {
 }
 
 model LinkedAccount {
-  id         String @id @default(cuid())
+  id         String @id
   providerId String
 }
 
 model LoginProcess {
-  id        String   @id @default(cuid())
+  id        String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -46,7 +46,7 @@ model LoginProcess {
 }
 
 model Session {
-  id        String    @id @default(cuid())
+  id        String    @id
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   revokedAt DateTime?

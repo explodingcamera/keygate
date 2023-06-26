@@ -10,7 +10,7 @@ use config::KeygateConfigInternal;
 use prisma::PrismaClient;
 pub use proto::models;
 
-// mod api;
+mod api;
 
 pub mod config;
 mod secrets;

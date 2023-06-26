@@ -7,7 +7,6 @@ mod errors;
 mod services;
 
 use keygate_core::{config::Environment, Keygate, KeygateConfig, KeygateSecrets};
-use tonic::transport::Server;
 
 pub async fn run(config: KeygateConfig, secrets: KeygateSecrets) -> eyre::Result<()> {
     if config.environment == Environment::Development {
