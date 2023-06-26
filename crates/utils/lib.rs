@@ -1,4 +1,3 @@
-pub mod encoding;
 pub mod hash;
 pub mod macros;
 pub mod pwned;

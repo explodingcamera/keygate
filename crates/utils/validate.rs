@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 use super::random::RANDOMID_ALPHABET;
 
 pub fn is_valid_password(password: &str) -> bool {

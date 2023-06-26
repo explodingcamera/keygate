@@ -1,4 +1,6 @@
+#[allow(warnings, unused)]
 mod prisma;
+
 use std::future::Future;
 
 use client::QueryError;

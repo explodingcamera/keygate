@@ -18,6 +18,7 @@ model Identity {
   passwordHash   String?
   LoginProcesses LoginProcess[] // one-to-many relation
   Sessions       Session[] // one-to-many relation
+  AuditLog       AuditLog[]
 }
 
 model Email {
@@ -53,5 +54,60 @@ model Session {
 
   refreshToken String
   identityId   String
-  Identity     Identity @relation(fields: [identityId], references: [id])
+  Identity     Identity   @relation(fields: [identityId], references: [id])
+  AuditLog     AuditLog[]
+}
+
+model PublicKey {
+  id        String   @id
+  createdAt DateTime @default(now())
+
+  // currently only supports ed25519
+  type String
+
+  // the node that holds the private key
+  nodeId String
+
+  // things that are signed with this key can't be verified after this date
+  validUntil DateTime
+
+  // currently unused
+  revokedAt DateTime?
+}
+
+model Meta {
+  key       String   @id @unique
+  updatedAt DateTime @updatedAt
+
+  value     String
+  valueDate DateTime?
+  valueInt  Int?
+  valueBool Boolean?
+  valueByte Bytes?
+}
+
+model AuditLog {
+  id        String   @id
+  createdAt DateTime @default(now())
+
+  identityId String
+  Identity   Identity @relation(fields: [identityId], references: [id])
+
+  sessionId String?
+  Session   Session? @relation(fields: [sessionId], references: [id])
+
+  // the node that performed the action
+  nodeId String
+
+  // the action that was performed
+  action String
+
+  // the target of the action
+  targetId String?
+
+  // the type of the target
+  targetType String?
+
+  // the data that was changed
+  data String?
 }

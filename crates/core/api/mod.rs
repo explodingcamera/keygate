@@ -90,10 +90,9 @@ impl From<prisma::client::QueryError> for APIError {
     }
 }
 
-// convert Code to tonic::Status
-impl Into<tonic::Status> for APIError {
-    fn into(self) -> tonic::Status {
-        match self {
+impl From<APIError> for tonic::Status {
+    fn from(err: APIError) -> Self {
+        match err {
             APIError::Cancelled(msg) => tonic::Status::cancelled(msg),
             APIError::Unknown(msg) => tonic::Status::unknown(msg),
             APIError::InvalidArgument(msg) => tonic::Status::invalid_argument(msg),

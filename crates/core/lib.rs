@@ -78,7 +78,7 @@ impl Keygate {
         });
 
         Keygate {
-            inner: internal.clone(),
+            inner: internal,
             // identity: Arc::new(api::Identity::new(internal)),
         }
     }

@@ -52,6 +52,9 @@ enum LoginStep {
 
   // email verification might be required for login
   VERIFY_EMAIL = 10;
+
+  // Successful login, the response will contain a refresh token
+  SUCCESS = 11;
 }
 
 message LoginStepRequest {

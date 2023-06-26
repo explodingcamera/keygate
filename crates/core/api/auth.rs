@@ -1,7 +1,7 @@
 use std::{net::IpAddr, sync::Arc};
 
 use keygate_utils::random::secure_random_id;
-use prisma::{identity, PrismaClient};
+use prisma::{identity, login_process, PrismaClient};
 use proto::api::auth::*;
 
 use super::APIError;
@@ -21,12 +21,15 @@ impl Auth {
         &self.keygate.prisma
     }
 
-    async fn login(&self, username_or_email: String, ip_address: String) -> Result<LoginResponse, APIError> {
+    // create a new login process for the given user
+    async fn login(
+        &self,
+        // everything with an @ is considered an email
+        username_or_email: &str,
+        // ip_address has to be validated by the caller, can be empty (0.0.0.0) if not available
+        ip_address: IpAddr,
+    ) -> Result<LoginResponse, APIError> {
         let client = self.client();
-
-        if ip_address.is_empty() || ip_address.parse::<IpAddr>().is_err() {
-            return Err(APIError::invalid_argument("Invalid IP address"));
-        }
 
         let login_process_id = secure_random_id();
         let _login_process_id = login_process_id.clone(); // we need to clone this for the closure
@@ -42,24 +45,23 @@ impl Auth {
                 let current_identity = client
                     .identity()
                     .find_unique(match is_email {
-                        true => identity::primary_email::equals(username_or_email),
-                        false => identity::username::equals(username_or_email),
-                    })
-                    .exec()
-                    .await?
-                    .ok_or(APIError::not_found("User not found"))?;
-
-                client
-                    .login_process()
-                    .create(
-                        _login_process_id,
-                        chrono::Utc::now().into(),
-                        current_step.as_str_name().to_string(),
-                        prisma::identity::UniqueWhereParam::IdEquals(current_identity.id),
-                        vec![],
-                    )
+                        true => identity::primary_email::equals,
+                        false => identity::username::equals,
+                    }(username_or_email.into()))
                     .exec()
                     .await?;
+
+                let current_identity_id = current_identity.ok_or(APIError::not_found("User not found"))?.id;
+
+                let login_process = login_process::Create {
+                    id: _login_process_id,
+                    expires_at: chrono::Utc::now().into(),
+                    current_step: current_step.as_str_name().to_string(),
+                    identity: identity::UniqueWhereParam::IdEquals(current_identity_id),
+                    _params: vec![login_process::ip_address::set(Some(ip_address.to_string()))],
+                };
+
+                login_process.to_query(&client).exec().await?;
 
                 // next step is always password for now
                 // TODO: device login
@@ -75,41 +77,52 @@ impl Auth {
         })
     }
 
-    async fn login_step(&self, request: LoginStepRequest) -> Result<LoginResponse, APIError> {
-        let next_steps: Option<Vec<LoginStep>> = self
+    async fn login_step(&self, process_id: &str, step_type: LoginStep, data: &str) -> Result<LoginResponse, APIError> {
+        let next_steps: Vec<LoginStep> = self
             .client()
             .tx::<APIError, _, _, _>(|client| async move {
                 let current_process = client
                     .login_process()
-                    .find_unique(prisma::login_process::UniqueWhereParam::IdEquals(request.process_id))
+                    .find_unique(prisma::login_process::UniqueWhereParam::IdEquals(process_id.into()))
                     .exec()
                     .await?
-                    .ok_or(APIError::not_found("Login process not found"))?;
+                    .ok_or(APIError::not_found("Login process not found"));
 
-                let current_step = LoginStep::from_str_name(&current_process.current_step)
+                let current_step = LoginStep::from_str_name(&current_process?.current_step)
                     .ok_or(APIError::invalid_argument("Invalid step type"))?;
-                let step = LoginStep::from_i32(request.step_type).ok_or(APIError::invalid_argument("Invalid step type"))?;
 
-                match (current_step, step) {
+                match (current_step, step_type) {
                     (LoginStep::Email, LoginStep::Password) | (LoginStep::Username, LoginStep::Password) => {
                         // TODO: Implement password login
+                        // TODO: Check if more steps are required (e.g. 2FA)
+                        Ok(vec![LoginStep::Success])
                     }
-                    _ => return Err(APIError::invalid_argument("Invalid step type")),
-                };
-
-                // TODO: Check if more steps are required (e.g. 2FA)
-                Ok(None)
+                    _ => Err(APIError::invalid_argument("Invalid step type")),
+                }
             })
             .await?;
 
-        unimplemented!()
+        if next_steps.first() == Some(&LoginStep::Success) {
+            Ok(LoginResponse {
+                response: Some(login_response::Response::Success(LoginSuccessResponse {
+                    refresh_token: "TODO".to_string(),
+                })),
+            })
+        } else {
+            Ok(LoginResponse {
+                response: Some(login_response::Response::NextStep(LoginNextStepResponse {
+                    step_type: next_steps.into_iter().map(|s| s as i32).collect(),
+                    process_id: process_id.into(),
+                })),
+            })
+        }
     }
 
-    async fn login_status(&self, request: LoginStatusRequest) -> Result<LoginStatusResponse, APIError> {
+    async fn login_status(&self, process_id: &str) -> Result<LoginStatusResponse, APIError> {
         let process = self
             .client()
             .login_process()
-            .find_unique(prisma::login_process::UniqueWhereParam::IdEquals(request.process_id))
+            .find_unique(prisma::login_process::UniqueWhereParam::IdEquals(process_id.into()))
             .exec()
             .await?
             .ok_or(APIError::not_found("Login process not found"))?;
@@ -122,14 +135,18 @@ impl Auth {
         })
     }
 
-    async fn account_exists(&self, request: AccountExistsRequest) -> Result<AccountExistsResponse, APIError> {
+    async fn account_exists(
+        &self,
+        // everything with an @ is considered an email
+        username_or_email: &str,
+    ) -> Result<AccountExistsResponse, APIError> {
         let exists = self
             .client()
             .identity()
-            .find_unique(match request.request.ok_or(APIError::invalid_argument("Missing request"))? {
-                account_exists_request::Request::Email(email) => identity::primary_email::equals(email),
-                account_exists_request::Request::Username(username) => identity::username::equals(username),
-            })
+            .find_unique(match username_or_email.contains('@') {
+                true => identity::primary_email::equals,
+                false => identity::username::equals,
+            }(username_or_email.into()))
             .exec()
             .await?
             .is_some();

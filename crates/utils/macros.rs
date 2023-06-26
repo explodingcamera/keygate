@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! join_keys {
   ($($args:expr),*) => {{
     let separator = ":";
@@ -14,14 +15,4 @@ macro_rules! join_keys {
   }}
 }
 
-pub(crate) use join_keys;
-
-mod tests {
-    use crate::macros::join_keys;
-
-    fn test_join_keys() {
-        assert_eq!(join_keys!("a", "b", "c"), "a:b:c");
-        assert_eq!(join_keys!("a", "b", "c", "d"), "a:b:c:d");
-        assert_eq!(join_keys!("a", "b", "c", "d", "e"), "a:b:c:d:e");
-    }
-}
+pub use join_keys;
