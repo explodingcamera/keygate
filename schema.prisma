@@ -1,0 +1,57 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.db"
+}
+
+generator client {
+  provider = "cargo prisma"
+  output   = "./crates/core/prisma/prisma.rs"
+}
+
+model Identity {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  username       String?        @unique
+  primaryEmail   String?        @unique
+  passwordHash   String?
+  LoginProcesses LoginProcess[] // one-to-many relation
+  Sessions       Session[] // one-to-many relation
+}
+
+model Email {
+  email      String    @id @unique
+  verified   Boolean
+  verifiedAt DateTime?
+}
+
+model LinkedAccount {
+  id         String @id
+  providerId String
+}
+
+model LoginProcess {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  identityId  String
+  ipAddress   String?
+  expiresAt   DateTime
+  completed   Boolean  @default(false)
+  currentStep String
+  magicLink   String?
+  Identity    Identity @relation(fields: [identityId], references: [id])
+}
+
+model Session {
+  id        String    @id
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  revokedAt DateTime?
+
+  refreshToken String
+  identityId   String
+  Identity     Identity @relation(fields: [identityId], references: [id])
+}

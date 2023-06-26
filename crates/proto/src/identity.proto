@@ -18,8 +18,6 @@ message GetIdentityRequest {
     string email = 2;
     string username = 3;
   }
-
-  optional bool include_private_fields = 4;
 }
 
 message DeleteIdentityRequest { string id = 1; }

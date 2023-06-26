@@ -1,3 +1,5 @@
 [alias]
 dev = "run --bin keygate --"
 release = "run --release --bin keygate --"
+
+prisma = "run --bin prisma --"

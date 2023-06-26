@@ -12,33 +12,17 @@ argon2 = "0.5"
 async-trait = "0.1"
 chrono = {version = "0.4"}
 keygate-jwt = {version = "1.2", features = ["eddsa"]}
-rand_core = {version = "0.6", features = ["std"]}
-regex = "1.5"
+keygate-utils = {path = "../utils"}
 rusty_paseto = "0.5"
+serde = {version = "1.0", features = ["derive"]}
 thiserror = "1.0"
-tokio = {version = "1", optional = true, default-features = false, features = ["macros"]}
+tokio = {version = "1", default-features = false, features = ["macros"]}
+
+prisma = {path = "./prisma"}
 
 # proto
 proto = {path = "../proto"}
 tonic = {version = "0.9", features = ["tls"]}
 
-# sql
-database = {optional = true, path = "database"}
-migration = {optional = true, path = "migration"}
-sea-orm = {version = "0.11", optional = true, features = ["macros"]}
-
-# pwned passwords
-hex = "0.4.3"
-reqwest = {version = "0.11", default-features = false, features = ["rustls-tls"], optional = true}
-sha1 = {version = "0.10", optional = true}
-
 [features]
-default = ["backend-sqlite", "runtime-tokio", "pwned-passwords"]
-pwned-passwords = ["reqwest", "sha1"]
-runtime-tokio = ["tokio", "sea-orm?/runtime-tokio-rustls"]
-
-# sql
-backend-mysql = ["sql", "sea-orm/sqlx-mysql"]
-backend-postgres = ["sql", "sea-orm/sqlx-postgres"]
-backend-sqlite = ["sql", "sea-orm/sqlx-sqlite"]
-sql = ["sea-orm", "database", "migration"]
+default = []

@@ -1,11 +1,12 @@
 [workspace]
 members = [
   "crates/core",
-  "crates/core/database",
-  "crates/core/migration",
+  "crates/core/prisma",
+  "crates/utils",
   "crates/server",
   "crates/proto",
 ]
+resolver = "2"
 
 [profile.release]
 codegen-units = 1

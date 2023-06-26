@@ -17,7 +17,7 @@ macro_rules! join_keys {
 pub(crate) use join_keys;
 
 mod tests {
-    use crate::utils::macros::join_keys;
+    use crate::macros::join_keys;
 
     fn test_join_keys() {
         assert_eq!(join_keys!("a", "b", "c"), "a:b:c");

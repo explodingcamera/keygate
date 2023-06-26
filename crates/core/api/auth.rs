@@ -1,10 +1,12 @@
 use std::{net::IpAddr, sync::Arc};
 
-use proto::{api::auth::auth_service_server::*, api::auth::*};
-use sea_orm::{prelude::*, TransactionTrait};
+use keygate_utils::random::secure_random_id;
+use prisma::{identity, PrismaClient};
+use proto::api::auth::*;
 use tonic::{Request, Response, Status};
 
-use crate::{utils::random::secure_random_id, KeygateInternal};
+use super::APIError;
+use crate::KeygateInternal;
 
 #[derive(Debug, Clone)]
 pub struct Auth {
@@ -16,70 +18,62 @@ impl Auth {
         Self { keygate }
     }
 
-    pub fn service(&self) -> AuthServiceServer<Auth> {
-        AuthServiceServer::new(Self::new(self.keygate.clone()))
+    fn client(&self) -> &PrismaClient {
+        &self.keygate.prisma
     }
-}
 
-#[tonic::async_trait]
-impl AuthService for Auth {
-    async fn login(&self, request: Request<InitLoginRequest>) -> Result<Response<LoginResponse>, Status> {
-        let req = request.into_inner();
-        let db = self.keygate.db();
+    async fn login(&self, req: InitLoginRequest) -> Result<LoginResponse, APIError> {
+        let client = self.client();
 
         let ip = req.ip_address;
         if ip.is_empty() || ip.parse::<IpAddr>().is_err() {
-            return Err(Status::invalid_argument("Invalid IP address"));
+            return Err(APIError::invalid_argument("Invalid IP address"));
         }
 
         let login_process_id = secure_random_id();
+        let _login_process_id = login_process_id.clone(); // we need to clone this for the closure
+
         let is_email = req.username_or_email.contains('@');
         let current_step = match is_email {
             true => LoginStep::Email,
             false => LoginStep::Username,
         };
 
-        let next_steps = db
-            .transaction::<_, Vec<LoginStep>, DbErr>(|txn| {
-                let login_process_id = login_process_id.clone();
-                Box::pin(async move {
-                    let user = database::Identity::find()
-                        .filter(match is_email {
-                            true => database::identity::Column::PrimaryEmail.eq(req.username_or_email),
-                            false => database::identity::Column::Username.eq(req.username_or_email),
-                        })
-                        .one(txn)
-                        .await?
-                        .ok_or(DbErr::Custom("User not found".into()))?;
+        let next_steps = client
+            ._transaction()
+            .run::<APIError, _, _, _>(|client| async move {
+                let current_identity = client
+                    .identity()
+                    .find_unique(match is_email {
+                        true => identity::primary_email::equals(req.username_or_email),
+                        false => identity::username::equals(req.username_or_email),
+                    })
+                    .exec()
+                    .await?
+                    .ok_or(APIError::not_found("User not found"))?;
 
-                    let login_process: database::login::ActiveModel = database::login::Model {
-                        current_step: current_step.as_str_name().to_string(),
-                        id: login_process_id.clone(),
-                        identity_id: user.id.clone(),
-                        completed: false,
-                        created_at: chrono::Utc::now().timestamp(),
-                        expires_at: chrono::Utc::now().timestamp(),
-                        updated_at: chrono::Utc::now().timestamp(),
-                        magic_link: None,
-                        ip_address: Some(ip),
-                    }
-                    .into();
+                client
+                    .login_process()
+                    .create(
+                        _login_process_id,
+                        chrono::Utc::now().into(),
+                        current_step.as_str_name().to_string(),
+                        prisma::identity::UniqueWhereParam::IdEquals(current_identity.id),
+                        vec![],
+                    )
+                    .exec()
+                    .await?;
 
-                    login_process.save(txn).await?;
-
-                    // for now, we only support password login
-                    Ok(vec![LoginStep::Password])
-                })
+                Ok(vec![LoginStep::Password as i32])
             })
-            .await
-            .map_err(|_| Status::internal("Database error"))?;
+            .await?;
 
-        Ok(Response::new(LoginResponse {
+        Ok(LoginResponse {
             response: Some(login_response::Response::NextStep(LoginNextStepResponse {
-                step_type: next_steps.iter().map(|s| *s as i32).collect(),
+                step_type: vec![LoginStep::Password as i32],
                 process_id: login_process_id,
             })),
-        }))
+        })
     }
 
     async fn login_step(&self, request: Request<LoginStepRequest>) -> Result<Response<LoginResponse>, Status> {
