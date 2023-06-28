@@ -1,6 +1,9 @@
 use std::{net::IpAddr, sync::Arc};
 
-use keygate_utils::random::secure_random_id;
+use keygate_utils::{
+    random::secure_random_id,
+    validate::{is_valid_email, is_valid_password, is_valid_username},
+};
 use prisma::{identity, login_process, PrismaClient};
 use proto::api::auth::*;
 
@@ -154,7 +157,59 @@ impl Auth {
         Ok(AccountExistsResponse { exists })
     }
 
-    async fn signup(&self, request: SignupRequest) -> Result<SignupResponse, APIError> {
-        unimplemented!()
+    async fn signup(
+        &self,
+        username: &str,
+        password: &str,
+        email: &str,
+        ip_address: IpAddr,
+    ) -> Result<prisma::identity::Data, APIError> {
+        if !is_valid_username(username) {
+            return Err(APIError::invalid_argument("Invalid username"));
+        }
+
+        if !is_valid_password(password) {
+            return Err(APIError::invalid_argument("Invalid password"));
+        }
+
+        if !is_valid_email(email) {
+            return Err(APIError::invalid_argument("Invalid email"));
+        }
+
+        let new_user = self
+            .client()
+            .tx::<APIError, _, _, _>(|client| async move {
+                // TODO: do we care about secondary emails?
+                let existing_user = client
+                    .identity()
+                    .find_first(vec![
+                        identity::username::equals(Some(username.into())),
+                        identity::primary_email::equals(Some(email.into())),
+                    ])
+                    .exec()
+                    .await?;
+
+                if existing_user.is_some() {
+                    return Err(APIError::invalid_argument("User already exists"));
+                }
+
+                let new_user = prisma::identity::Create {
+                    id: secure_random_id(),
+                    last_active: chrono::Utc::now().into(),
+                    _params: vec![
+                        identity::username::set(Some(username.into())),
+                        identity::primary_email::set(Some(email.into())),
+                        identity::password_hash::set(Some(
+                            keygate_utils::hash::password(password)
+                                .map_err(|e| APIError::internal(format!("Failed to hash password: {}", e)))?,
+                        )),
+                    ],
+                };
+
+                Ok(new_user.to_query(&client).exec().await?)
+            })
+            .await?;
+
+        Ok(new_user)
     }
 }

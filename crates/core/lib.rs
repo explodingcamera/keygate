@@ -18,8 +18,6 @@ use arc_swap::ArcSwap;
 use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
-pub use secrets::generate_ed25519_key_pair;
-
 use thiserror::Error;
 
 #[derive(Clone, Copy, Debug)]
@@ -31,9 +29,6 @@ pub enum Health {
 
 #[derive(Error, Debug)]
 pub enum KeygateError {
-    #[error(transparent)]
-    JWTError(#[from] keygate_jwt::JWTError),
-
     #[error("validation error: {0}")]
     ValidationError(String),
 
@@ -63,14 +58,14 @@ pub struct Keygate {
 }
 
 impl Keygate {
-    pub async fn new(config: Configuration, secrets: KeygateSecrets) -> Result<Self, KeygateError> {
+    pub async fn new(config: Configuration) -> Result<Self, KeygateError> {
         let config = Arc::new(RwLock::new(config));
         unimplemented!();
         // Keygate::new_with_storage(config, storage, secrets).await
         // Ok(res.await)
     }
 
-    pub async fn new_with_storage(config: KeygateConfigInternal, prisma: PrismaClient, secrets: KeygateSecrets) -> Self {
+    pub async fn new_with_storage(config: KeygateConfigInternal, prisma: PrismaClient) -> Self {
         let internal = Arc::new(KeygateInternal {
             config,
             prisma,

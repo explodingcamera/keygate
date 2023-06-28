@@ -6,14 +6,14 @@
 mod errors;
 mod services;
 
-use keygate_core::{config::Environment, Keygate, KeygateConfig, KeygateSecrets};
+use keygate_core::{config::Environment, Keygate, KeygateConfig};
 
-pub async fn run(config: KeygateConfig, secrets: KeygateSecrets) -> eyre::Result<()> {
+pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
     if config.environment == Environment::Development {
         println!("\nWARNING: Running in development mode. CORS is enabled for all origins.\n");
     }
 
-    let keygate = Keygate::new(config, secrets).await?;
+    let keygate = Keygate::new(config).await?;
 
     // let addr = "[::1]:50051".parse().unwrap();
 

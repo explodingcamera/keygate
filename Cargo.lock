@@ -1088,17 +1088,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "extrasafe"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eff0f21247a248c5fe234f50a3acebe0d26c60b9c5c7868d9f435efdc01f490"
-dependencies = [
- "libc",
- "libseccomp",
- "syscalls",
-]
-
-[[package]]
 name = "eyre"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1843,11 +1832,9 @@ dependencies = [
  "argon2",
  "async-trait",
  "chrono",
- "keygate-jwt",
  "keygate-utils",
  "prisma",
  "proto",
- "rusty_paseto",
  "serde",
  "thiserror",
  "tokio",
@@ -1877,7 +1864,6 @@ dependencies = [
 name = "keygate-server"
 version = "0.1.0"
 dependencies = [
- "extrasafe",
  "eyre",
  "keygate-core",
  "poem",
@@ -1892,9 +1878,7 @@ dependencies = [
 name = "keygate-utils"
 version = "0.1.0"
 dependencies = [
- "arc-swap",
  "argon2",
- "async-trait",
  "chrono",
  "hex",
  "keygate-jwt",
@@ -1924,24 +1908,6 @@ name = "libm"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7012b1bbb0719e1097c47611d3898568c546d597c2e74d66f6087edd5233ff4"
-
-[[package]]
-name = "libseccomp"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21c57fd8981a80019807b7b68118618d29a87177c63d704fc96e6ecd003ae5b3"
-dependencies = [
- "bitflags",
- "libc",
- "libseccomp-sys",
- "pkg-config",
-]
-
-[[package]]
-name = "libseccomp-sys"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a7cbbd4ad467251987c6e5b47d53b11a5a05add08f2447a9e2d70aef1e0d138"
 
 [[package]]
 name = "libsqlite3-sys"
@@ -4174,17 +4140,6 @@ dependencies = [
  "quote",
  "syn 1.0.109",
  "unicode-xid",
-]
-
-[[package]]
-name = "syscalls"
-version = "0.6.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97feb70b9443edd79ca26f40122d271fa61df4ffb2220965a27711bfe6ceec7c"
-dependencies = [
- "cc",
- "serde",
- "serde_repr",
 ]
 
 [[package]]

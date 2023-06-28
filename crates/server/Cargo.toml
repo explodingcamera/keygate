@@ -14,7 +14,6 @@ path = "bin.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-extrasafe = "0.1.2"
 eyre = "0.6"
 keygate-core = {path = "../core"}
 thiserror = "1"

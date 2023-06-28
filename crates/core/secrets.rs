@@ -1,7 +1,4 @@
-use keygate_jwt::prelude::Ed25519KeyPair;
 use std::{fmt::Debug, sync::RwLock};
-
-use crate::KeygateError;
 
 pub struct SecretStore {
     storage: RwLock<SecretsInner>,
@@ -13,9 +10,7 @@ impl Debug for SecretStore {
     }
 }
 
-pub fn generate_ed25519_key_pair() -> Ed25519KeyPair {
-    Ed25519KeyPair::generate()
-}
+pub struct Ed25519KeyPair(String);
 
 pub struct Secrets {
     pub jwt_ed25519_keypair: Ed25519KeyPair,
@@ -34,12 +29,12 @@ impl SecretStore {
         }
     }
 
-    pub fn jwt_ed25519_keypair(&self) -> Result<Ed25519KeyPair, KeygateError> {
-        Ok(self
-            .storage
-            .read()
-            .map_err(|_| KeygateError::LockPoisoned("secret store".to_string()))?
-            .jwt_ed25519_keypair
-            .clone())
-    }
+    // pub fn jwt_ed25519_keypair(&self) -> Result<Ed25519KeyPair, KeygateError> {
+    //     Ok(self
+    //         .storage
+    //         .read()
+    //         .map_err(|_| KeygateError::LockPoisoned("secret store".to_string()))?
+    //         .jwt_ed25519_keypair
+    //         .clone())
+    // }
 }

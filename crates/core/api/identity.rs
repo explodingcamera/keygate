@@ -44,9 +44,8 @@ impl Identity {
         })
     }
 
-    async fn create(&self, request: models::Identity) -> Result<models::Identity, APIError> {
-        // TODO: Implement create_identity function
-        unimplemented!()
+    async fn create(&self, identity: prisma::identity::Create) -> Result<prisma::identity::Data, APIError> {
+        Ok(identity.to_query(self.client()).exec().await?)
     }
 
     async fn update(&self, request: models::Identity) -> Result<models::Identity, APIError> {

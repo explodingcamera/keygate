@@ -1,4 +1,4 @@
-use keygate_core::{config::ServerConfig, generate_ed25519_key_pair, KeygateConfig};
+use keygate_core::{config::ServerConfig, KeygateConfig};
 use keygate_server::run;
 
 #[tokio::main]
@@ -11,9 +11,5 @@ async fn main() -> eyre::Result<()> {
         ..Default::default()
     };
 
-    let secrets = keygate_core::KeygateSecrets {
-        jwt_ed25519_keypair: generate_ed25519_key_pair(),
-    };
-
-    run(config, secrets).await
+    run(config).await
 }
