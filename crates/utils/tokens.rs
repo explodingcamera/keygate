@@ -1,9 +1,8 @@
-use crate::random::secure_random_id;
-use base64::Engine;
+use crate::{encode::FromBase64, random::secure_random_id};
 use chrono::{Duration, Utc};
+use rand_core::OsRng;
 use rusty_paseto::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -58,7 +57,7 @@ struct KeypairJson {
 }
 
 impl Keypair {
-    pub fn try_from_json(&self, data: &str) -> Result<Self, TokenError> {
+    pub fn try_from_json(data: &str) -> Result<Self, TokenError> {
         let data = serde_json::from_str::<KeypairJson>(data).expect("should never fail to deserialize keypair");
         Self::try_new(data.id, &data.private_key, &data.public_key)
     }
@@ -75,14 +74,9 @@ impl Keypair {
     }
 
     pub fn generate() -> Self {
-        let private_key = Key::<64>::try_new_random()
-            .map_err(|_| TokenError::Other("Failed to generate private key".to_string()))
-            .unwrap();
-
-        let public_key = Key::<32>::try_new_random()
-            .map_err(|_| TokenError::Other("Failed to generate public key".to_string()))
-            .unwrap();
-
+        let key = ed25519_dalek::SigningKey::generate(&mut OsRng);
+        let public_key = Key::<32>::from(key.verifying_key().as_bytes());
+        let private_key = Key::<64>::from(key.to_keypair_bytes());
         let key_id = secure_random_id();
 
         Self {
@@ -121,38 +115,32 @@ impl Keypair {
         PasetoAsymmetricPublicKey::<V4, Public>::from(&self.public_key)
     }
 
+    // After validating the token, the session has to be validated as well and revoked if the refresh token does not match
+    pub fn validate_refresh_token(&self, token: &str) -> Result<(String, String), TokenError> {
+        unimplemented!()
+    }
+
     pub fn generate_refresh_token(
         &self,
         // how long is this token valid for?
         duration: Duration,
-
         // what session is this token for?
         session_id: &str,
-
-        // e.g the web app or the mobile app
-        audience: &str,
-
-        // who is this token for? e.g. the identity id
-        subject: &str,
-
-        // who issued this token? Node ID
-        issuer: &str,
-    ) -> Result<RefreshToken, TokenError> {
-        let footer = json!({
-            "kid": self.id,
-        });
-        let footer: Footer = footer.as_str().unwrap().into();
+    ) -> Result<(RefreshToken, String), TokenError> {
+        let token_id = secure_random_id();
         let refresh_token = PasetoBuilder::<V4, Public>::default()
             .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(duration))?)
-            .set_claim(AudienceClaim::from(audience))
-            .set_claim(SubjectClaim::from(subject))
-            .set_claim(IssuerClaim::from(issuer))
-            .set_claim(TokenIdentifierClaim::from(session_id))
-            .set_claim(CustomClaim::try_from(("kind", "refresh"))?)
+            .set_claim(AudienceClaim::from("rft"))
+            // this is the actual refresh token, the rest is used to prevent replay attacks from old refresh tokens
+            .set_claim(TokenIdentifierClaim::from(token_id.as_str()))
+            .set_claim(SubjectClaim::from(session_id))
             .set_footer(Footer::from(self.id.as_str()))
             .build(&self.paseto_private_key())
-            .map_err(|_| TokenError::FailedToGenerateToken)?;
-        Ok(RefreshToken(refresh_token))
+            .map_err(|e| {
+                println!("Failed to generate refresh token: {:?}", e);
+                TokenError::FailedToGenerateToken
+            })?;
+        Ok((RefreshToken(refresh_token), token_id))
     }
 
     pub fn generate_access_token(
@@ -172,12 +160,16 @@ impl Keypair {
         // who issued this token? Node ID
         issuer: &str,
     ) -> Result<AccessToken, TokenError> {
+        if audience == "rft" {
+            return Err(TokenError::Other("Invalid audience".to_string()));
+        }
+
         let access_token = PasetoBuilder::<V4, Public>::default()
             .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(duration))?)
             .set_claim(AudienceClaim::from(audience))
             .set_claim(SubjectClaim::from(subject))
             .set_claim(IssuerClaim::from(issuer))
-            .set_claim(TokenIdentifierClaim::from(session_id))
+            .set_claim(CustomClaim::try_from(("sid", session_id))?)
             .set_claim(CustomClaim::try_from(("kind", "access"))?)
             .set_footer(Footer::from(self.id.as_str()))
             .build(&self.paseto_private_key())
@@ -185,27 +177,46 @@ impl Keypair {
 
         Ok(AccessToken(access_token))
     }
+}
 
-    pub fn get_key_id(token: &str) -> Result<String, TokenError> {
-        // sadly we have to do this because the paseto library doesn't expose the footer
-        // without parsing the token first and we need the footer to get the key id to parse the token
+pub fn get_key_id(token: &str) -> Result<String, TokenError> {
+    // sadly we have to do this because the paseto library doesn't expose the footer
+    // without parsing the token first and we need the footer to get the key id to parse the token
+    let parts: Vec<&str> = token.split('.').collect();
 
-        let parts: Vec<&str> = token.split('.').collect();
-
-        if parts.len() != 3 {
-            return Err(TokenError::InvalidToken);
-        }
-
-        let kid = base64::engine::general_purpose::STANDARD_NO_PAD
-            .decode(parts[2].as_bytes())
-            .map_err(|_| TokenError::InvalidToken)?;
-
-        let kid = String::from_utf8(kid).map_err(|_| TokenError::InvalidToken)?;
-
-        Ok(kid)
+    if parts.len() != 4 && !parts[0].starts_with("v4") {
+        return Err(TokenError::InvalidToken);
     }
+
+    let kid = parts[3].string_from_base64().map_err(|_| TokenError::InvalidToken)?;
+    Ok(kid)
 }
 
 pub fn duration_to_rfc3339(duration: Duration) -> String {
     (Utc::now() + duration).to_rfc3339()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn refresh_token() {
+        let keypair = Keypair::generate();
+        let (refresh_token, token_id) = keypair
+            .generate_refresh_token(Duration::hours(1), "session_id")
+            .expect("failed to generate refresh token");
+
+        let token = refresh_token.0;
+
+        println!("{}", token);
+
+        let keypair = Keypair::try_from_json(&keypair.to_json()).unwrap();
+        let kid = get_key_id(&token).unwrap();
+        assert_eq!(kid, keypair.id);
+
+        let (session_id, token_id2) = keypair.validate_refresh_token(&token).unwrap();
+        assert_eq!(session_id, "session_id");
+        assert_eq!(token_id, token_id2);
+    }
 }
