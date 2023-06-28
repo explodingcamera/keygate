@@ -106,3 +106,22 @@ impl From<APIError> for tonic::Status {
         }
     }
 }
+
+pub enum UserIdentifier {
+    Email(String),
+    Username(String),
+    Id(String),
+}
+
+impl TryFrom<proto::api::identity::GetIdentityRequest> for UserIdentifier {
+    type Error = APIError;
+
+    fn try_from(value: proto::api::identity::GetIdentityRequest) -> Result<Self, Self::Error> {
+        match value.user {
+            Some(proto::api::identity::get_identity_request::User::Email(email)) => Ok(UserIdentifier::Email(email)),
+            Some(proto::api::identity::get_identity_request::User::Username(username)) => Ok(UserIdentifier::Username(username)),
+            Some(proto::api::identity::get_identity_request::User::Id(id)) => Ok(UserIdentifier::Id(id)),
+            None => Err(APIError::invalid_argument("No user specified")),
+        }
+    }
+}

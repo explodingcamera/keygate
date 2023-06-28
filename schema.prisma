@@ -1,6 +1,6 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:dev.db"
+  url      = "file:./db/dev.db"
 }
 
 generator client {
@@ -9,9 +9,10 @@ generator client {
 }
 
 model Identity {
-  id        String   @id
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastActive DateTime
 
   username       String?        @unique
   primaryEmail   String?        @unique
@@ -19,6 +20,7 @@ model Identity {
   LoginProcesses LoginProcess[] // one-to-many relation
   Sessions       Session[] // one-to-many relation
   AuditLog       AuditLog[]
+  APIKey         APIKey[]
 }
 
 model Email {
@@ -44,18 +46,6 @@ model LoginProcess {
   currentStep String
   magicLink   String?
   Identity    Identity @relation(fields: [identityId], references: [id])
-}
-
-model Session {
-  id        String    @id
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  revokedAt DateTime?
-
-  refreshToken String
-  identityId   String
-  Identity     Identity   @relation(fields: [identityId], references: [id])
-  AuditLog     AuditLog[]
 }
 
 model PublicKey {
@@ -110,4 +100,42 @@ model AuditLog {
 
   // the data that was changed
   data String?
+}
+
+model Session {
+  id        String    @id
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  revokedAt DateTime?
+
+  firstipAddress String // the ip address of the first request
+  nodeId         String // the node that issued the session
+
+  // the full refresh token (including the signature) is stored here
+  // if an invalid refresh token, which is associated with this session, is used, the session is revoked (e.g. if the refresh token is leaked)
+  refreshToken String
+
+  identityId String
+  Identity   Identity   @relation(fields: [identityId], references: [id])
+  AuditLog   AuditLog[]
+}
+
+model APIKey {
+  key String @id
+
+  identityId String?
+  Identity   Identity? @relation(fields: [identityId], references: [id])
+
+  // user definable
+  name String
+
+  // what API this key is used for (e.g Auth API)
+  target   String
+  audience String // the intended recipient of the token
+
+  // is this key supposed to be accesable from e.g a public website
+  public Boolean
+
+  // what hostnames can use this key (for public api keys)
+  hostnames String // comma seperated list
 }

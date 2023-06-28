@@ -1,0 +1,19 @@
+syntax = "proto3";
+package v1.api.util;
+
+message Filter {
+  string field = 1;
+  string value = 2;
+}
+
+enum SortOrder {
+  ASC = 0;
+  DESC = 1;
+}
+
+enum SortBy {
+  EMAIL = 0;
+  USERNAME = 1;
+  CREATED_AT = 2;
+  LAST_ACTIVE = 3;
+}

@@ -3,6 +3,7 @@ package v1.api.identity;
 
 import "google/protobuf/empty.proto";
 import "models/models.proto";
+import "util.proto";
 
 service IdentityService {
   rpc Get(GetIdentityRequest) returns (models.Identity) {}
@@ -26,7 +27,13 @@ message DeleteIdentityRequest { string id = 1; }
 message ListIdentitiesRequest {
   int32 page_size = 1;
   string page_token = 2;
+
+  repeated util.Filter filters = 3;
+
+  util.SortOrder sort_order = 5;
+  util.SortBy sort_by = 6;
 }
+
 message ListIdentitiesResponse {
   repeated models.Identity identities = 1;
   string next_page_token = 2;

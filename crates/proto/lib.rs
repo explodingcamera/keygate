@@ -7,6 +7,10 @@ pub mod v1 {
         pub mod auth {
             include!(concat!(env!("OUT_DIR"), "/v1.api.auth.rs"));
         }
+
+        pub mod util {
+            include!(concat!(env!("OUT_DIR"), "/v1.api.util.rs"));
+        }
     }
 
     pub mod models {

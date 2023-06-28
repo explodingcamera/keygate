@@ -16,7 +16,6 @@ message SignupRequest {
   string username = 1;
   string email = 2;
   string password = 3;
-  string device_id = 4;
   string ip_address = 5;
 }
 
@@ -34,7 +33,6 @@ message SignupSuccessResponse { string refresh_token = 1; }
 message LoginStatusRequest { string process_id = 1; }
 
 message InitLoginRequest {
-  string device_id = 2;
   string ip_address = 3;
   string username_or_email = 4;
 }

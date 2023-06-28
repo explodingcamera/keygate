@@ -5,6 +5,7 @@ fn main() -> Result<()> {
         .build_server(cfg!(feature = "server"))
         .compile(
             &[
+                "src/util.proto",
                 "src/ac.proto",
                 "src/admin.proto",
                 "src/identity.proto",
