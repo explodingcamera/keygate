@@ -1879,6 +1879,7 @@ name = "keygate-utils"
 version = "0.1.0"
 dependencies = [
  "argon2",
+ "base64 0.21.2",
  "chrono",
  "hex",
  "keygate-jwt",
@@ -1886,6 +1887,8 @@ dependencies = [
  "regex",
  "reqwest",
  "rusty_paseto",
+ "serde",
+ "serde_json",
  "sha1",
  "thiserror",
  "tokio",

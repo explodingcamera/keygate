@@ -129,9 +129,8 @@ model APIKey {
   // user definable
   name String
 
-  // what API this key is used for (e.g Auth API)
-  target   String
-  audience String // the intended recipient of the token
+  target   String // what API this key is used for (e.g Auth API)
+  audience String // where this key is used (e.g. a specific website or app)
 
   // is this key supposed to be accesable from e.g a public website
   public Boolean
