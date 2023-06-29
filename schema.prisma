@@ -102,15 +102,6 @@ model AuditLog {
   data String?
 }
 
-model Application {
-  id        String   @id
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // the name of the application
-  name String
-}
-
 model Session {
   id        String    @id
   createdAt DateTime  @default(now())
@@ -146,4 +137,15 @@ model APIKey {
 
   // what hostnames can use this key (for public api keys)
   hostnames String // comma seperated list
+}
+
+model Application {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // the name of the application
+  name String
+
+  setting String // json encoded settings
 }

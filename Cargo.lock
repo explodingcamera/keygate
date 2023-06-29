@@ -1908,6 +1908,7 @@ dependencies = [
  "prisma",
  "proto",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tonic",
