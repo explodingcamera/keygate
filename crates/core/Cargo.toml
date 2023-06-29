@@ -11,12 +11,12 @@ arc-swap = "1.6"
 argon2 = "0.5"
 async-trait = "0.1"
 chrono = {version = "0.4"}
+dashmap = "5.4.0"
 keygate-utils = {path = "../utils"}
+prisma = {path = "./prisma"}
 serde = {version = "1.0", features = ["derive"]}
 thiserror = "1.0"
 tokio = {version = "1", default-features = false, features = ["macros"]}
-
-prisma = {path = "./prisma"}
 
 # proto
 proto = {path = "../proto"}

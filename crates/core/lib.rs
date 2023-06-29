@@ -2,6 +2,7 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+use std::cell::OnceCell;
 use std::fmt::Debug;
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -11,6 +12,7 @@ use prisma::PrismaClient;
 pub use proto::models;
 
 mod api;
+mod settings;
 
 pub mod config;
 mod secrets;
@@ -18,6 +20,7 @@ use arc_swap::ArcSwap;
 use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
+use settings::KeygateSettings;
 use thiserror::Error;
 
 #[derive(Clone, Copy, Debug)]
@@ -45,10 +48,11 @@ pub type KeygateSecretsStore = Arc<secrets::SecretStore>;
 pub type KeygateSecrets = secrets::Secrets;
 
 #[derive(Debug)]
-struct KeygateInternal {
+pub(crate) struct KeygateInternal {
     pub config: KeygateConfigInternal,
     pub prisma: PrismaClient,
     pub health: ArcSwap<Health>,
+    pub settings: KeygateSettings,
 }
 
 #[derive(Debug, Clone)]
@@ -70,7 +74,10 @@ impl Keygate {
             config,
             prisma,
             health: ArcSwap::from_pointee(Health::Starting),
+            settings: KeygateSettings::new(),
         });
+
+        internal.settings.set_keygate(internal.clone());
 
         Keygate {
             inner: internal,

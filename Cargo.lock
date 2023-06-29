@@ -819,6 +819,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "5.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
+dependencies = [
+ "cfg-if",
+ "hashbrown 0.12.3",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.8",
+]
+
+[[package]]
 name = "datamodel-renderer"
 version = "0.1.0"
 source = "git+https://github.com/Brendonovich/prisma-engines?branch=new-4.14.0-pcr#45b026c8b64ed0b60cb03deed5f478c457de645b"
@@ -1890,6 +1903,7 @@ dependencies = [
  "argon2",
  "async-trait",
  "chrono",
+ "dashmap",
  "keygate-utils",
  "prisma",
  "proto",

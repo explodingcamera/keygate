@@ -102,6 +102,15 @@ model AuditLog {
   data String?
 }
 
+model Application {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // the name of the application
+  name String
+}
+
 model Session {
   id        String    @id
   createdAt DateTime  @default(now())
