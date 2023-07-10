@@ -20,3 +20,9 @@ impl AtomicDateTime {
         DateTime::from_utc(time, Utc)
     }
 }
+
+impl Default for AtomicDateTime {
+    fn default() -> Self {
+        Self::new()
+    }
+}

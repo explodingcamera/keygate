@@ -144,8 +144,5 @@ model Application {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // the name of the application
-  name String
-
-  setting String // json encoded settings
+  settings Bytes
 }

@@ -40,7 +40,10 @@ impl IdentityService for IdentityServiceImpl {
         unimplemented!()
     }
 
-    async fn list(&self, request: Request<identity::ListIdentitiesRequest>) -> Result<Response<identity::ListIdentitiesResponse>, Status> {
+    async fn list(
+        &self,
+        request: Request<identity::ListIdentitiesRequest>,
+    ) -> Result<Response<identity::ListIdentitiesResponse>, Status> {
         // TODO: Implement list_identities function
         unimplemented!()
     }

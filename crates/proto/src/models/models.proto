@@ -36,3 +36,7 @@ message RefreshToken {
   string identity_id = 8;
   string access_token_id = 9;
 }
+
+message ApplicationSettings {}
+
+message GlobalSettings {}

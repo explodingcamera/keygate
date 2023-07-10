@@ -3,8 +3,8 @@ mod prisma;
 
 use std::future::Future;
 
+pub use self::prisma::*;
 use client::QueryError;
-pub use prisma::*;
 pub use prisma_client_rust as client;
 
 pub async fn connect(url: &str) -> Result<PrismaClient, client::NewClientError> {

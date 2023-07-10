@@ -1,3 +1,5 @@
+pub use prost::Message;
+
 pub mod v1 {
     pub mod api {
         pub mod identity {
