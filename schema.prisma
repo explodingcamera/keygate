@@ -49,7 +49,7 @@ model LoginProcess {
 }
 
 model PublicKey {
-  id        String   @id
+  id        Int      @id @unique @default(autoincrement())
   createdAt DateTime @default(now())
 
   // currently only supports ed25519
@@ -63,6 +63,9 @@ model PublicKey {
 
   // currently unused
   revokedAt DateTime?
+
+  // the public key
+  publicKey Bytes
 }
 
 model Meta {

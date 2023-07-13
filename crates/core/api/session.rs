@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::KeygateInternal;
-use keygate_utils::tokens::PublicKey;
 use prisma::PrismaClient;
 
 use super::APIError;
@@ -21,10 +20,6 @@ impl Session {
     }
 
     async fn create(&self, something: ()) -> Result<(), APIError> {
-        unimplemented!()
-    }
-
-    async fn get_public_key(&self, key_id: String) -> Result<PublicKey, APIError> {
         unimplemented!()
     }
 
