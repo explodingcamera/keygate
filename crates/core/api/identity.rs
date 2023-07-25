@@ -1,54 +1,69 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use crate::KeygateInternal;
-use prisma::{identity, PrismaClient, SortOrder};
-use proto::models;
+use crate::{
+    database::{models::Identity, DatabasePool},
+    KeygateInternal,
+};
+
+use keygate_utils::random::secure_random_id;
 
 use super::{APIError, UserIdentifier};
 
 #[derive(Debug, Clone)]
-pub struct Identity {
+pub struct IdentityAPI {
     keygate: Arc<KeygateInternal>,
 }
 
-impl Identity {
+#[derive(Debug, Clone)]
+pub struct CreateIdentity {
+    pub username: Option<String>,
+    pub primary_email: Option<String>,
+    pub password_hash: Option<String>,
+}
+
+impl IdentityAPI {
     pub(crate) fn new(keygate: Arc<KeygateInternal>) -> Self {
         Self { keygate }
     }
 
-    fn client(&self) -> &PrismaClient {
-        &self.keygate.prisma
+    fn db(&self) -> &DatabasePool {
+        &self.keygate.db
     }
 
-    async fn get(&self, user: UserIdentifier) -> Result<models::Identity, APIError> {
-        let identity = self
-            .client()
-            .identity()
-            .find_unique(match user {
-                UserIdentifier::Email(email) => identity::primary_email::equals(email),
-                UserIdentifier::Username(username) => identity::username::equals(username),
-                UserIdentifier::Id(id) => identity::id::equals(id),
-            })
-            .exec()
-            .await?
-            .ok_or(APIError::not_found("Identity not found"))?;
+    async fn get(&self, user: UserIdentifier) -> Result<Option<Identity>, APIError> {
+        let (field, value) = match user {
+            UserIdentifier::Email(email) => ("primary_email", email),
+            UserIdentifier::Username(username) => ("username", username),
+            UserIdentifier::Id(id) => ("id", id),
+        };
 
-        Ok(models::Identity {
-            id: identity.id,
-            username: identity.username,
-            primary_email: identity.primary_email,
-            created_at: identity.created_at.timestamp(),
-            updated_at: identity.updated_at.timestamp(),
-            emails: HashMap::default(),
-            linked_accounts: HashMap::default(),
-        })
+        let identity = sqlx::query_as!(Identity, "SELECT * FROM Identity WHERE $1 = $2", field, value)
+            .fetch_optional(self.db())
+            .await?;
+
+        Ok(identity)
     }
 
-    async fn create(&self, identity: prisma::identity::Create) -> Result<prisma::identity::Data, APIError> {
-        Ok(identity.to_query(self.client()).exec().await?)
+    async fn create(&self, identity: CreateIdentity) -> Result<Identity, APIError> {
+        let user_id = secure_random_id();
+
+        Ok(sqlx::query_as!(
+            Identity,
+            r#"
+                INSERT INTO Identity (id, username, primary_email, password_hash)
+                VALUES ($1, $2, $3, $4)
+                RETURNING *
+            "#,
+            user_id,
+            identity.username,
+            identity.primary_email,
+            identity.password_hash
+        )
+        .fetch_one(self.db())
+        .await?)
     }
 
-    async fn update(&self, request: models::Identity) -> Result<models::Identity, APIError> {
+    async fn update(&self, request: Identity) -> Result<Identity, APIError> {
         // TODO: Implement update_identity function
         unimplemented!()
     }

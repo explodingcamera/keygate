@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use config::KeygateConfigInternal;
 
-// mod api;
+mod api;
 mod database;
 mod settings;
 

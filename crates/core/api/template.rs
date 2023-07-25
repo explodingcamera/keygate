@@ -16,8 +16,8 @@ impl Template {
         Self { keygate }
     }
 
-    fn client(&self) -> &PrismaClient {
-        &self.keygate.prisma
+    fn db(&self) -> &DatabasePool {
+        &self.keygate.db
     }
 
     async fn get(&self, something: ()) -> Result<(), APIError> {

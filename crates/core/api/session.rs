@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use crate::KeygateInternal;
-use prisma::PrismaClient;
+use crate::{database::DatabasePool, KeygateInternal};
 
 use super::APIError;
 
@@ -15,8 +14,8 @@ impl Session {
         Self { keygate }
     }
 
-    fn client(&self) -> &PrismaClient {
-        &self.keygate.prisma
+    fn db(&self) -> &DatabasePool {
+        &self.keygate.db
     }
 
     async fn create(&self, something: ()) -> Result<(), APIError> {

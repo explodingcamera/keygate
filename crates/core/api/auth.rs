@@ -4,11 +4,9 @@ use keygate_utils::{
     random::secure_random_id,
     validate::{is_valid_email, is_valid_password, is_valid_username},
 };
-use prisma::{identity, login_process, PrismaClient};
-use proto::api::auth::*;
 
 use super::APIError;
-use crate::KeygateInternal;
+use crate::{database::DatabasePool, KeygateInternal};
 
 #[derive(Debug, Clone)]
 pub struct Auth {
@@ -20,8 +18,8 @@ impl Auth {
         Self { keygate }
     }
 
-    fn client(&self) -> &PrismaClient {
-        &self.keygate.prisma
+    fn db(&self) -> &DatabasePool {
+        &self.keygate.db
     }
 
     // create a new login process for the given user
