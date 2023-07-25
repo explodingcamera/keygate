@@ -1,21 +1,24 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
-use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use keygate_utils::atomic::AtomicDateTime;
-use prisma::PrismaClient;
-use proto::models::{ApplicationSettings, GlobalSettings};
-use proto::Message;
 use thiserror::Error;
+use time::OffsetDateTime;
 
-use crate::KeygateInternal;
+use crate::{
+    database::{
+        models::{Application, ApplicationSettings, GlobalSettings},
+        DatabasePool,
+    },
+    KeygateInternal,
+};
 
 #[derive(Debug)]
 pub struct KeygateSettings {
     keygate: OnceLock<Arc<KeygateInternal>>,
     global: Mutex<Option<GlobalSettings>>,
     global_updated_at: AtomicDateTime, // should be a bit more efficient then in the mutex
-    applications: DashMap<String, (ApplicationSettings, DateTime<Utc>)>, // seperate dates here would be too much work lol
+    applications: DashMap<String, (ApplicationSettings, OffsetDateTime)>, // seperate dates here would be too much work lol
 }
 
 const GLOBAL_SETTINGS_UPDATE_INTERVAL: i64 = 60 * 2;
@@ -30,10 +33,10 @@ pub enum SettingsError {
     LockPoisoned(String),
 
     #[error("database error: {0}")]
-    DatabaseError(String),
+    DatabaseError(#[from] sqlx::Error),
 
     #[error("serialization error: {0}")]
-    SerializationError(String),
+    SerializationError(#[from] serde_json::Error),
 
     #[error("unknown error")]
     Unknown,
@@ -49,42 +52,46 @@ impl KeygateSettings {
         }
     }
 
-    fn client(&self) -> &PrismaClient {
-        &self.keygate.get().expect("Keygate not initialized").prisma
+    fn db(&self) -> &DatabasePool {
+        &self.keygate.get().expect("Keygate not initialized").db
     }
 
     pub async fn update_global(&self, settings: GlobalSettings) -> Result<(), SettingsError> {
-        let updated_settings = self
-            .client()
-            .application()
-            .update(
-                prisma::application::UniqueWhereParam::IdEquals("global".to_string()),
-                vec![prisma::application::settings::set(settings.encode_to_vec())],
-            )
-            .exec()
-            .await
-            .map_err(|e| SettingsError::DatabaseError(e.to_string()))?;
+        let new_settings = serde_json::to_string(&settings)?;
+        let now = OffsetDateTime::now_utc();
 
-        self.global_updated_at.set(Utc::now());
+        sqlx::query!(
+            "UPDATE Application SET settings = $1, updated_at = $2 WHERE id = 'global'",
+            new_settings,
+            now
+        )
+        .execute(self.db())
+        .await?;
+
+        self.global_updated_at.set(OffsetDateTime::now_utc());
         self.global
             .lock()
             .map_err(|e| SettingsError::LockPoisoned(e.to_string()))?
-            .replace(GlobalSettings::decode(updated_settings.settings.as_slice()).expect("Invalid global settings"));
+            .replace(settings);
 
         Ok(())
     }
 
     pub async fn update_app(&self, application_id: &str, settings: ApplicationSettings) -> Result<(), SettingsError> {
-        let updated_settings = self
-            .client()
-            .application()
-            .update(
-                prisma::application::UniqueWhereParam::IdEquals(application_id.to_string()),
-                vec![prisma::application::settings::set(settings.encode_to_vec())],
-            )
-            .exec()
-            .await
-            .map_err(|e| SettingsError::DatabaseError(e.to_string()))?;
+        let new_settings = serde_json::to_string(&settings)?;
+        let now = OffsetDateTime::now_utc();
+
+        sqlx::query!(
+            "UPDATE Application SET settings = $1, updated_at = $2 WHERE id = $3",
+            new_settings,
+            now,
+            application_id
+        )
+        .execute(self.db())
+        .await?;
+
+        self.applications
+            .insert(application_id.to_string(), (settings, OffsetDateTime::now_utc()));
 
         Ok(())
     }
@@ -97,43 +104,34 @@ impl KeygateSettings {
                 .clone() // clone so we can drop the lock
         };
 
-        let outdated = self.global_updated_at.get().timestamp() < Utc::now().timestamp() - GLOBAL_SETTINGS_UPDATE_INTERVAL;
+        let outdated = self.global_updated_at.get().unix_timestamp()
+            < OffsetDateTime::now_utc().unix_timestamp() - GLOBAL_SETTINGS_UPDATE_INTERVAL;
 
         if global.is_none() || outdated {
-            let app = self
-                .client()
-                .application()
-                .find_unique(prisma::application::UniqueWhereParam::IdEquals("global".to_string()))
-                .exec()
-                .await
-                .map_err(|e| SettingsError::DatabaseError(e.to_string()))?;
+            let app = sqlx::query_as!(Application, "SELECT * FROM Application WHERE id = 'global'")
+                .fetch_optional(self.db())
+                .await?;
 
             let new_global = match app {
                 Some(app) => {
                     if app.id != "global" {
-                        return Err(SettingsError::DatabaseError(format!("Application {} not found", "global")));
+                        panic!("Global settings not found, this should not be possible");
                     }
-                    GlobalSettings::decode(app.settings.as_slice())
-                        .map_err(|e| SettingsError::SerializationError(e.to_string()))?
+                    serde_json::from_str(app.settings.as_str())?
                 }
                 None => {
                     let new_global = default_global_settings();
-                    let app = prisma::application::Create {
-                        id: "global".to_string(),
-                        settings: new_global.encode_to_vec(),
-                        _params: Default::default(),
-                    };
+                    let settings = serde_json::to_string(&new_global)?;
 
-                    app.to_query(self.client())
-                        .exec()
-                        .await
-                        .map_err(|e| SettingsError::DatabaseError(e.to_string()))?;
+                    sqlx::query!("INSERT INTO Application (id, settings) VALUES ('global', $1)", settings)
+                        .execute(self.db())
+                        .await?;
 
                     new_global
                 }
             };
 
-            self.global_updated_at.set(Utc::now());
+            self.global_updated_at.set(OffsetDateTime::now_utc());
             return Ok(new_global);
         }
 
@@ -144,27 +142,24 @@ impl KeygateSettings {
         let outdated = self
             .applications
             .get(application_id)
-            .map(|d| d.1.timestamp() < Utc::now().timestamp() - APPLICATION_SETTINGS_UPDATE_INTERVAL)
+            .map(|d| d.1.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() - APPLICATION_SETTINGS_UPDATE_INTERVAL)
             .unwrap_or(true);
 
         if outdated {
-            let Some(app) = self
-                .client()
-                .application()
-                .find_unique(prisma::application::UniqueWhereParam::IdEquals(application_id.to_string()))
-                .exec()
-                .await
-                .map_err(|e| SettingsError::DatabaseError(e.to_string()))? else {
-                    return Ok(None);
-                };
+            let app = match sqlx::query_as!(Application, "SELECT * FROM Application WHERE id = $1", application_id)
+                .fetch_optional(self.db())
+                .await?
+            {
+                Some(app) => app,
+                None => return Ok(None),
+            };
 
-            let new_app = ApplicationSettings::decode(app.settings.as_slice())
-                .map_err(|e| SettingsError::SerializationError(e.to_string()))?;
+            let new_settings: ApplicationSettings = serde_json::from_str(app.settings.as_str())?;
 
             self.applications
-                .insert(application_id.to_string(), (new_app.clone(), Utc::now()));
+                .insert(application_id.to_string(), (new_settings.clone(), OffsetDateTime::now_utc()));
 
-            return Ok(Some(new_app));
+            return Ok(Some(new_settings));
         }
 
         Ok(Some(

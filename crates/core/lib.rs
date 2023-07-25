@@ -4,13 +4,11 @@
 
 use std::fmt::Debug;
 use std::sync::Arc;
-use std::sync::RwLock;
 
 use config::KeygateConfigInternal;
-use prisma::PrismaClient;
-pub use proto::models;
 
-mod api;
+// mod api;
+mod database;
 mod settings;
 
 pub mod config;
@@ -19,6 +17,7 @@ use arc_swap::ArcSwap;
 use config::Configuration;
 pub use config::Configuration as KeygateConfig;
 
+use database::DatabasePool;
 use settings::KeygateSettings;
 use thiserror::Error;
 
@@ -39,6 +38,9 @@ pub enum KeygateError {
 
     #[error("unknown error")]
     Unknown,
+
+    #[error(transparent)]
+    DatabaseError(#[from] sqlx::Error),
 }
 
 pub type KeygateResult<T> = Result<T, KeygateError>;
@@ -49,7 +51,7 @@ pub type KeygateSecrets = secrets::Secrets;
 #[derive(Debug)]
 pub(crate) struct KeygateInternal {
     pub config: KeygateConfigInternal,
-    pub prisma: PrismaClient,
+    pub db: DatabasePool,
     pub health: ArcSwap<Health>,
     pub settings: KeygateSettings,
 }
@@ -62,16 +64,18 @@ pub struct Keygate {
 
 impl Keygate {
     pub async fn new(config: Configuration) -> Result<Self, KeygateError> {
-        let config = Arc::new(RwLock::new(config));
-        unimplemented!();
-        // Keygate::new_with_storage(config, storage, secrets).await
-        // Ok(res.await)
+        let config = Arc::new(config);
+        sqlx::any::install_default_drivers();
+        let db = DatabasePool::connect("sqlite://:memory:").await?;
+        sqlx::migrate!().run(&db).await.expect("Failed to run migrations");
+
+        Ok(Keygate::new_with_storage(config, db).await)
     }
 
-    pub async fn new_with_storage(config: KeygateConfigInternal, prisma: PrismaClient) -> Self {
+    pub async fn new_with_storage(config: KeygateConfigInternal, db: DatabasePool) -> Self {
         let internal = Arc::new(KeygateInternal {
             config,
-            prisma,
+            db,
             health: ArcSwap::from_pointee(Health::Starting),
             settings: KeygateSettings::new(),
         });

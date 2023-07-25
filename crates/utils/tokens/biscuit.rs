@@ -28,19 +28,19 @@ impl KeygateKeypair<32, 32> for KeyPair {
 }
 
 impl KeygateToken<32, 32> for KeyPair {
-    fn generate_access_token(&self, id: u32, exp: u64) -> Result<super::AccessToken, super::TokenError> {
+    fn generate_access_token(&self, _id: u32, _exp: u64) -> Result<super::AccessToken, super::TokenError> {
         todo!()
     }
 
-    fn generate_refresh_token(&self, id: u32, exp: u64) -> Result<super::RefreshToken, super::TokenError> {
+    fn generate_refresh_token(&self, _id: u32, _exp: u64) -> Result<super::RefreshToken, super::TokenError> {
         todo!()
     }
 
-    fn verify_access_token(token: &str) -> Result<Self, super::TokenError> {
+    fn verify_access_token(_token: &str) -> Result<Self, super::TokenError> {
         todo!()
     }
 
-    fn verify_refresh_token(token: &str) -> Result<Self, super::TokenError> {
+    fn verify_refresh_token(_token: &str) -> Result<Self, super::TokenError> {
         todo!()
     }
 }

@@ -8,20 +8,21 @@ path = "lib.rs"
 
 [dependencies]
 arc-swap = "1.6"
-argon2 = "0.5"
 async-trait = "0.1"
-chrono = {version = "0.4"}
 dashmap = "5.4.0"
 keygate-utils = {path = "../utils"}
-prisma = {path = "./prisma"}
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 thiserror = "1.0"
 tokio = {version = "1", default-features = false, features = ["macros"]}
 
-# proto
-proto = {path = "../proto"}
-tonic = {version = "0.9", features = ["tls"]}
-
+sqlx = {version = "0.7", features = ["runtime-tokio", "tls-rustls", "time", "uuid", "migrate" ]}
+uuid = {version = "1.3", features = ["serde", "v7"]}
+time = {version = "0.3", features = ["serde"]}
+ 
 [features]
-default = []
+default = ["sqlite"]
+
+sqlite = ["sqlx/sqlite"]
+postgres = ["sqlx/postgres"]
+mysql = ["sqlx/mysql"]

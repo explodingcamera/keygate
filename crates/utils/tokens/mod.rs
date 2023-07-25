@@ -40,7 +40,7 @@ fn to_array<const N: usize>(slice: &[u8]) -> Result<[u8; N], TokenError> {
         .map_err(|_| TokenError::Other("Failed to parse private key".to_string()))
 }
 
-trait KeygateKeypair<const PUBLIC_KEY_LENGTH: usize, const SECRET_KEY_LENGTH: usize>: Sized {
+pub trait KeygateKeypair<const PUBLIC_KEY_LENGTH: usize, const SECRET_KEY_LENGTH: usize>: Sized {
     fn try_from_json(data: &str) -> Result<(Self, u32), TokenError> {
         let data = serde_json::from_str::<KeypairJson>(data).expect("invalid keypair json");
         let private_key = to_array::<SECRET_KEY_LENGTH>(&data.private_key.decode_base64().expect("invalid private key base64"))
