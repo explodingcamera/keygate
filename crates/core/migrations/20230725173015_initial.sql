@@ -86,6 +86,7 @@ CREATE TABLE Session (
     node_id VARCHAR(255) NOT NULL,
     refresh_token VARCHAR(255) NOT NULL,
     identity_id VARCHAR(36) NOT NULL
+    token_type VARCHAR(255) NOT NULL,
 );
 
 CREATE TABLE APIKey (

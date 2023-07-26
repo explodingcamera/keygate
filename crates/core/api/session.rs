@@ -1,5 +1,10 @@
 use std::sync::Arc;
 
+use keygate_utils::{
+    random::secure_random_id,
+    tokens::{AccessToken, RefreshToken},
+};
+
 use crate::{database::DatabasePool, KeygateInternal};
 
 use super::APIError;
@@ -8,6 +13,8 @@ use super::APIError;
 pub struct Session {
     keygate: Arc<KeygateInternal>,
 }
+
+// pub static KEYPAIR: KeygateKeypair = KeygateKeypair::generate(keygate_utils::tokens::Algorithm::Ed25519);
 
 impl Session {
     pub(crate) fn new(keygate: Arc<KeygateInternal>) -> Self {
@@ -18,7 +25,22 @@ impl Session {
         &self.keygate.db
     }
 
-    async fn create(&self, something: ()) -> Result<(), APIError> {
+    async fn create(&self, something: ()) -> Result<(RefreshToken, AccessToken), APIError> {
+        let session_id = secure_random_id();
+        let exp = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
+        // let refresh_token = KEYPAIR;
+
+        // sqlx::query!(
+        //     r#"
+        //     INSERT INTO Sessions (
+
+        //     )
+        //     VALUES (?, ?, ?, ?, ?, ?)
+        // "#,
+        // )
+        // .execute(self.db())
+        // .await?;
+
         unimplemented!()
     }
 

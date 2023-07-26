@@ -89,6 +89,7 @@ pub struct Session {
     pub initial_ip_address: String,
     pub node_id: String,
     pub refresh_token: String,
+    pub token_type: String,
     pub identity_id: String,
 }
 
