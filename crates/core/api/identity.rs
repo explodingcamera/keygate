@@ -7,7 +7,7 @@ use crate::{
 
 use keygate_utils::random::secure_random_id;
 
-use super::{APIError, UserIdentifier};
+use super::{APIError, Filter, SortBy, SortOrder, UserIdentifier};
 
 #[derive(Debug, Clone)]
 pub struct IdentityAPI {
@@ -75,47 +75,58 @@ impl IdentityAPI {
 
     async fn list(
         &self,
-        filters: Vec<proto::api::util::Filter>,
-        sort_by: proto::api::util::SortBy,
-        sort_order: proto::api::util::SortOrder,
+        filter: Filter,
+        sort_by: SortBy,
+        sort_order: SortOrder,
         offset: u32,
         count: u32,
-    ) -> Result<Vec<models::Identity>, APIError> {
+    ) -> Result<Vec<Identity>, APIError> {
         if count > 100 {
             return Err(APIError::invalid_argument("Count cannot be greater than 100"));
         }
 
-        let params = filters
-            .iter()
-            .map(|filter| match filter.field.as_str() {
-                "username" => Ok(identity::username::contains(filter.value.clone())),
-                "email" => Ok(identity::primary_email::contains(filter.value.clone())),
-                _ => Err(APIError::invalid_argument(format!("Invalid filter field: {}", filter.field))),
-            })
-            .collect::<Result<Vec<prisma::identity::WhereParam>, _>>()?;
-
-        let direction = match sort_order {
-            proto::api::util::SortOrder::Asc => SortOrder::Asc,
-            proto::api::util::SortOrder::Desc => SortOrder::Desc,
+        let order_field = match sort_by {
+            SortBy::Email => "primary_email",
+            SortBy::Username => "username",
+            SortBy::CreatedAt => "created_at",
+            SortBy::LastActive => "last_active",
         };
 
-        let order_by = match sort_by {
-            proto::api::util::SortBy::Email => identity::primary_email::order,
-            proto::api::util::SortBy::Username => identity::username::order,
-            proto::api::util::SortBy::CreatedAt => identity::created_at::order,
-            proto::api::util::SortBy::LastActive => identity::last_active::order,
+        let (filter_field, filter_value) = match filter {
+            Filter { ref field, value } if field == "username" => ("username", value),
+            Filter { ref field, value } if field == "primary_email" => ("primary_email", value),
+            _ => ("id", "".to_string()),
         };
 
-        let identities = self
-            .client()
-            .identity()
-            .find_many(params)
-            .order_by(order_by(direction))
-            .take(count as i64)
-            .skip(offset as i64)
-            .exec()
-            .await?;
+        let identities = match sort_order {
+            SortOrder::Asc => {
+                sqlx::query_as!(
+                    Identity,
+                    r#"SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 ASC LIMIT $4 OFFSET $5"#,
+                    filter_field,
+                    filter_value,
+                    order_field,
+                    count,
+                    offset
+                )
+                .fetch_all(self.db())
+                .await?
+            }
+            SortOrder::Desc => {
+                sqlx::query_as!(
+                    Identity,
+                    "SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 DESC LIMIT $4 OFFSET $5",
+                    filter_field,
+                    filter_value,
+                    order_field,
+                    count,
+                    offset
+                )
+                .fetch_all(self.db())
+                .await?
+            }
+        };
 
-        unimplemented!()
+        Ok(identities)
     }
 }

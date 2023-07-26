@@ -60,3 +60,23 @@ pub enum UserIdentifier {
     Username(String),
     Id(String),
 }
+
+#[derive(Debug, Clone)]
+pub enum SortOrder {
+    Asc,
+    Desc,
+}
+
+#[derive(Debug, Clone)]
+pub enum SortBy {
+    Email,
+    Username,
+    CreatedAt,
+    LastActive,
+}
+
+#[derive(Debug, Clone)]
+pub struct Filter {
+    pub field: String,
+    pub value: String,
+}
