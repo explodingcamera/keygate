@@ -12,7 +12,7 @@ CREATE TABLE Identity (
 
 CREATE TABLE Email (
     email VARCHAR(255) PRIMARY KEY NOT NULL,
-    verified INTEGER CHECK (verified IN (0, 1)) NOT NULL,
+    verified BOOLEAN CHECK (verified IN (0, 1)) NOT NULL,
     verified_at TIMESTAMP
 );
 
@@ -28,7 +28,7 @@ CREATE TABLE LoginProcess (
     identity_id VARCHAR(36) NOT NULL,
     ip_address VARCHAR(255),
     expires_at TIMESTAMP,
-    completed INTEGER CHECK (completed IN (0, 1)) NOT NULL,
+    completed BOOLEAN CHECK (completed IN (0, 1)) NOT NULL,
     current_step VARCHAR(255) NOT NULL,
     magic_link VARCHAR(255)
 );
@@ -49,7 +49,7 @@ CREATE TABLE Meta (
     value VARCHAR(255) NOT NULL,
     value_date TIMESTAMP,
     value_int INTEGER,
-    value_bool INTEGER CHECK (value_bool IN (0, 1)),
+    value_bool BOOLEAN CHECK (value_bool IN (0, 1)),
     value_byte BLOB
 );
 
@@ -82,7 +82,7 @@ CREATE TABLE APIKey (
     name VARCHAR(255),
     target VARCHAR(255) NOT NULL,
     audience VARCHAR(255) NOT NULL,
-    public INTEGER CHECK (public IN (0, 1)) NOT NULL,
+    public BOOLEAN CHECK (public IN (0, 1)) NOT NULL,
     hostnames VARCHAR(255) NOT NULL
 );
 

@@ -43,6 +43,18 @@ pub enum APIError {
     Unauthenticated(String),
 }
 
+impl APIError {
+    fn not_found(text: &str) -> Self {
+        Self::NotFound(text.to_string())
+    }
+    fn invalid_argument(text: &str) -> Self {
+        Self::InvalidArgument(text.to_string())
+    }
+    fn internal(text: &str) -> Self {
+        Self::Internal(text.to_string())
+    }
+}
+
 pub enum UserIdentifier {
     Email(String),
     Username(String),

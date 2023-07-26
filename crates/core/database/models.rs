@@ -34,7 +34,7 @@ pub struct LoginProcess {
     pub updated_at: OffsetDateTime,
     pub identity_id: String,
     pub ip_address: Option<String>,
-    pub expires_at: OffsetDateTime,
+    pub expires_at: Option<OffsetDateTime>,
     pub completed: bool,
     pub current_step: String,
     pub magic_link: Option<String>,
