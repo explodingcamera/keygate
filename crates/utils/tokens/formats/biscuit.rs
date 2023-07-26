@@ -1,21 +1,24 @@
-use biscuit_auth::{KeyPair, PrivateKey, UnverifiedBiscuit};
+use crate::tokens::*;
+pub use biscuit_auth::error::Token as BiscuitError;
 
-use super::{KeygateKeypair, KeygateToken};
+struct Biscuit();
 
-impl KeygateToken<32, 32> for KeyPair {
-    fn generate_access_token(&self, _id: u32, _exp: time::OffsetDateTime) -> Result<super::AccessToken, super::TokenError> {
+impl Biscuit {}
+
+impl TokenFormat for Biscuit {
+    fn generate_access_token(keypair: KeygateKeypair, token: AccessToken) -> Result<RawAccessToken, TokenError> {
         todo!()
     }
 
-    fn generate_refresh_token(&self, _id: u32, _exp: time::OffsetDateTime) -> Result<super::RefreshToken, super::TokenError> {
+    fn generate_refresh_token(keypair: KeygateKeypair, token: RefreshToken) -> Result<RawRefreshToken, TokenError> {
         todo!()
     }
 
-    fn verify_access_token(_token: &str) -> Result<Self, super::TokenError> {
+    fn verify_access_token(public_key: &[u8], token: &str) -> Result<(), TokenError> {
         todo!()
     }
 
-    fn verify_refresh_token(_token: &str) -> Result<Self, super::TokenError> {
+    fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<(), TokenError> {
         todo!()
     }
 }

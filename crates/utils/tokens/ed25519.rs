@@ -16,7 +16,7 @@ impl SignatureAlgorithm<32, 32> for Ed25519Keypair {
         )))
     }
 
-    fn secret_key(&self) -> [u8; 32] {
+    fn private_key(&self) -> [u8; 32] {
         self.0.to_bytes()
     }
 
