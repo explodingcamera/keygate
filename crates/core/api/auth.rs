@@ -123,7 +123,7 @@ impl Auth {
         let next_steps: Option<Vec<LoginStep>> = {
             let mut tx = self.db().begin().await?;
 
-            let current_process = sqlx::query!("SELECT current_step FROM LoginProcess WHERE id = $1", process_id)
+            let current_process = sqlx::query!("SELECT current_step, identity_id FROM LoginProcess WHERE id = $1", process_id)
                 .fetch_one(&mut *tx)
                 .await?;
 
@@ -132,7 +132,17 @@ impl Auth {
 
             match (current_step, step_type) {
                 (LoginStep::Email, LoginStep::Password) | (LoginStep::Username, LoginStep::Password) => {
-                    // TODO: Implement password login
+                    let identity = sqlx::query_as!(Identity, "SELECT * FROM Identity WHERE id = $1", current_process.identity_id)
+                        .fetch_one(&mut *tx)
+                        .await?;
+
+                    let password_hash = identity.password_hash.ok_or(APIError::invalid_argument("Password not set"))?;
+                    if !keygate_utils::hash::verify(data, &password_hash)
+                        .map_err(|e| APIError::internal(&format!("Failed to verify password: {}", e)))?
+                    {
+                        return Err(APIError::invalid_argument("Invalid password"));
+                    }
+
                     // TODO: Check if more steps are required (e.g. 2FA)
                     None
                 }

@@ -17,8 +17,13 @@ pub struct Identity {
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct Email {
     pub email: String,
+    pub identity_id: String,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
     pub verified: bool,
-    pub verified_at: Option<OffsetDateTime>,
+    pub last_verification_request: Option<OffsetDateTime>,
+    pub verification_code: Option<String>,
+    pub verification_code_expires_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]

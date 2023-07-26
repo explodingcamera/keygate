@@ -5,7 +5,10 @@ use crate::{
     KeygateInternal,
 };
 
-use keygate_utils::random::secure_random_id;
+use keygate_utils::{
+    random::secure_random_id,
+    validate::{is_valid_email, is_valid_password, is_valid_username, validate_field},
+};
 
 use super::{APIError, Filter, SortBy, SortOrder, UserIdentifier};
 
@@ -20,6 +23,10 @@ pub struct CreateIdentity {
     pub primary_email: Option<String>,
     pub password_hash: Option<String>,
 }
+
+const USERNAME_REQUIRED: bool = true;
+const EMAIL_REQUIRED: bool = true;
+const PASSWORD_REQUIRED: bool = true;
 
 impl IdentityAPI {
     pub(crate) fn new(keygate: Arc<KeygateInternal>) -> Self {
@@ -46,31 +53,90 @@ impl IdentityAPI {
 
     async fn create(&self, identity: CreateIdentity) -> Result<Identity, APIError> {
         let user_id = secure_random_id();
+        let email_token = secure_random_id();
+        let email_expires_at = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
+
+        validate_field(
+            &identity.username,
+            USERNAME_REQUIRED,
+            is_valid_username,
+            APIError::invalid_argument("Invalid username"),
+        )?;
+        validate_field(
+            &identity.primary_email,
+            EMAIL_REQUIRED,
+            is_valid_email,
+            APIError::invalid_argument("Invalid email"),
+        )?;
+        validate_field(
+            &identity.password_hash,
+            PASSWORD_REQUIRED,
+            is_valid_password,
+            APIError::invalid_argument("Invalid password"),
+        )?;
 
         Ok(sqlx::query_as!(
             Identity,
             r#"
                 INSERT INTO Identity (id, username, primary_email, password_hash)
-                VALUES ($1, $2, $3, $4)
-                RETURNING *
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING *;
+                    
+                INSERT INTO Email (email, identity_id, verified, verification_code, verification_code_expires_at)
+                    VALUES ($5, $6, false, $7, $8);
             "#,
             user_id,
             identity.username,
             identity.primary_email,
-            identity.password_hash
+            identity.password_hash,
+            identity.primary_email,
+            user_id,
+            email_token,
+            email_expires_at
         )
         .fetch_one(self.db())
         .await?)
     }
 
-    async fn update(&self, request: Identity) -> Result<Identity, APIError> {
-        // TODO: Implement update_identity function
-        unimplemented!()
+    async fn update(&self, update: impl FnOnce(Identity) -> Identity, id: &str) -> Result<Identity, APIError> {
+        let now = time::OffsetDateTime::now_utc();
+        let mut tx = self.db().begin().await?;
+
+        let identity = sqlx::query_as!(Identity, "SELECT * FROM Identity WHERE id = $1", id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or(APIError::not_found("User not found"))?;
+
+        let identity = update(identity.clone());
+
+        if USERNAME_REQUIRED && identity.username.is_none() {
+            return Err(APIError::invalid_argument("Invalid username"));
+        }
+
+        if identity.username.clone().is_some_and(|u| !is_valid_username(&u)) {
+            return Err(APIError::invalid_argument("Invalid username"));
+        }
+
+        sqlx::query!(
+            "UPDATE Identity SET updated_at = $1, username = $2 WHERE id = $4",
+            now,
+            identity.username,
+            id
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(identity)
     }
 
-    async fn delete(&self, id: &str) -> Result<(), APIError> {
-        // TODO: Implement delete_identity function
-        unimplemented!()
+    async fn delete_permanent(&self, id: &str) -> Result<(), APIError> {
+        sqlx::query!("DELETE FROM Identity WHERE id = $1", id)
+            .execute(self.db())
+            .await?;
+
+        Ok(())
     }
 
     async fn list(

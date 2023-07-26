@@ -1,4 +1,6 @@
--- Add migration script here
+-- Enable foreign key constraints
+PRAGMA foreign_keys = ON;
+
 CREATE TABLE Identity (
     id VARCHAR(36) PRIMARY KEY NOT NULL,
     created_at TIMESTAMP NOT NULL,
@@ -6,14 +8,24 @@ CREATE TABLE Identity (
     last_active TIMESTAMP NOT NULL,
 
     username VARCHAR(255) UNIQUE,
-    primary_email VARCHAR(255) UNIQUE,
-    password_hash VARCHAR(255)
+    primary_email VARCHAR(255),
+
+    password_hash VARCHAR(255),
+
+    FOREIGN KEY (primary_email) REFERENCES Email (email)
 );
 
 CREATE TABLE Email (
-    email VARCHAR(255) PRIMARY KEY NOT NULL,
+    email TEXT PRIMARY KEY NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     verified BOOLEAN CHECK (verified IN (0, 1)) NOT NULL,
-    verified_at TIMESTAMP
+    last_verification_request TIMESTAMP,
+    verification_code VARCHAR(255),
+    verification_code_expires_at TIMESTAMP,
+    identity_id VARCHAR(36) NOT NULL,
+
+    FOREIGN KEY (identity_id) REFERENCES Identity (id)
 );
 
 CREATE TABLE LinkedAccount (
