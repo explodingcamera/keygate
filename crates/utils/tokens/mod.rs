@@ -54,5 +54,17 @@ pub enum Algorithm {
 pub struct RawAccessToken(pub String);
 pub struct RawRefreshToken(pub String);
 
+impl From<String> for RawAccessToken {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+
+impl From<String> for RawRefreshToken {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+
 pub struct AccessToken {}
 pub struct RefreshToken {}
