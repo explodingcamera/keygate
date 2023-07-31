@@ -1,53 +1,76 @@
-use crate::{encode::FromBase64, random::secure_random_id, tokens::*};
+use crate::{encode::FromBase64, tokens::*};
 use rusty_paseto::prelude::*;
 
 pub use rusty_paseto::prelude::{PasetoClaimError, PasetoError};
 use time::{format_description::well_known::Rfc3339, Duration};
 
-struct Paseto();
+pub struct Paseto();
 
 impl TokenFormat for Paseto {
-    fn generate_access_token(keypair: KeygateKeypair, token: AccessToken) -> Result<RawAccessToken, TokenError> {
-        let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(keypair.private_key().as_slice());
+    fn generate_access_token(keypair: KeygateKeypair, token: GenerateAccessToken) -> Result<RawAccessToken, TokenError> {
+        let key = keypair.private_key();
+        let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(key.as_slice());
 
-        // let access_token = PasetoBuilder::<V4, Public>::default()
-        //     .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(duration))?)
-        //     .set_claim(AudienceClaim::from(audience))
-        //     .set_claim(SubjectClaim::from(subject))
-        //     .set_claim(IssuerClaim::from(issuer))
-        //     .set_claim(CustomClaim::try_from(("sid", session_id))?)
-        //     .set_claim(CustomClaim::try_from(("kind", "access"))?)
-        //     .set_footer(Footer::from(self.id.as_str()))
-        //     .build(&self.paseto_private_key())
-        //     .map_err(|_| TokenError::FailedToGenerateToken)?;
-        unimplemented!()
+        let access_token = PasetoBuilder::<V4, Public>::default()
+            .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(token.duration))?)
+            .set_claim(AudienceClaim::from(token.audience.as_str()))
+            .set_claim(SubjectClaim::from(token.subject.as_str()))
+            .set_claim(IssuerClaim::from(token.issuer.as_str()))
+            .set_claim(CustomClaim::try_from(("sid", token.session_id))?)
+            .set_claim(CustomClaim::try_from(("kind", "access"))?)
+            .set_footer(Footer::from(keypair.id.as_str()))
+            .build(&key)
+            .map_err(|_| TokenError::FailedToGenerateToken)?;
+
+        Ok(RawAccessToken(access_token))
     }
 
-    fn generate_refresh_token(keypair: KeygateKeypair, token: RefreshToken) -> Result<RawRefreshToken, TokenError> {
-        let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(keypair.private_key().as_slice());
+    fn generate_refresh_token(keypair: KeygateKeypair, token: GenerateRefreshToken) -> Result<RawRefreshToken, TokenError> {
+        let key = keypair.private_key();
+        let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(key.as_slice());
 
-        // let token_id = secure_random_id();
-        // let refresh_token = PasetoBuilder::<V4, Public>::default()
-        //     .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(duration))?)
-        //     .set_claim(AudienceClaim::from("rft"))
-        //     // this is the actual refresh token, the rest is used to prevent replay attacks from old refresh tokens
-        //     .set_claim(TokenIdentifierClaim::from(token_id.as_str()))
-        //     .set_claim(SubjectClaim::from(session_id))
-        //     .set_footer(Footer::from(self.id.as_str()))
-        //     .build(&self.paseto_private_key())
-        //     .map_err(|e| {
-        //         println!("Failed to generate refresh token: {:?}", e);
-        //         TokenError::FailedToGenerateToken
-        //     })?;
-        unimplemented!()
+        let refresh_token = PasetoBuilder::<V4, Public>::default()
+            .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(token.duration))?)
+            .set_claim(AudienceClaim::from(token.audience.as_str()))
+            .set_claim(SubjectClaim::from(token.subject.as_str()))
+            .set_claim(IssuerClaim::from(token.issuer.as_str()))
+            .set_claim(CustomClaim::try_from(("sid", token.session_id))?)
+            .set_claim(CustomClaim::try_from(("kind", "refresh"))?)
+            .set_footer(Footer::from(keypair.id.as_str()))
+            .build(&key)
+            .map_err(|_| TokenError::FailedToGenerateToken)?;
+
+        Ok(RawRefreshToken(refresh_token))
     }
 
-    fn verify_access_token(public_key: &[u8], token: &str) -> Result<(), TokenError> {
-        todo!()
+    fn verify_access_token(public_key: &[u8], token: &str) -> Result<AccessToken, TokenError> {
+        let key: Key<32> = public_key.try_into().map_err(|_| TokenError::InvalidToken)?;
+        let key = PasetoAsymmetricPublicKey::<V4, Public>::from(&key);
+
+        let claims = PasetoParser::<V4, Public>::default()
+            .check_claim(CustomClaim::try_from(("kind", "access"))?)
+            .parse(token, &key)
+            .map_err(|_| TokenError::InvalidToken)?;
+
+        Ok(AccessToken {
+            audience: claims["aud"].to_string(),
+            subject: claims["sub"].to_string(),
+            issuer: claims["iss"].to_string(),
+            session_id: claims["sid"].to_string(),
+            key_id: claims["kid"].to_string(),
+        })
     }
 
-    fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<(), TokenError> {
-        todo!()
+    fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<RefreshToken, TokenError> {
+        let key: Key<32> = public_key.try_into().map_err(|_| TokenError::InvalidToken)?;
+        let key = PasetoAsymmetricPublicKey::<V4, Public>::from(&key);
+
+        PasetoParser::<V4, Public>::default()
+            .check_claim(CustomClaim::try_from(("kind", "refresh"))?)
+            .parse(token, &key)
+            .map_err(|_| TokenError::InvalidToken)?;
+
+        Ok(RefreshToken {})
     }
 }
 

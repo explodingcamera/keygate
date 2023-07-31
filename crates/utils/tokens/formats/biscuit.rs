@@ -2,7 +2,7 @@ use crate::tokens::*;
 pub use biscuit_auth::error::Token as BiscuitError;
 use biscuit_auth::macros::biscuit;
 
-struct Biscuit();
+pub struct Biscuit();
 
 impl Biscuit {
     fn to_biscuit_keypair(keypair: KeygateKeypair) -> biscuit_auth::KeyPair {
@@ -13,23 +13,23 @@ impl Biscuit {
 }
 
 impl TokenFormat for Biscuit {
-    fn generate_access_token(keypair: KeygateKeypair, _token: AccessToken) -> Result<RawAccessToken, TokenError> {
+    fn generate_access_token(keypair: KeygateKeypair, _token: GenerateAccessToken) -> Result<RawAccessToken, TokenError> {
         let keypair = Self::to_biscuit_keypair(keypair);
         let biscuit = biscuit!(r#""#).build(&keypair)?;
         Ok(biscuit.to_string().into())
     }
 
-    fn generate_refresh_token(keypair: KeygateKeypair, _token: RefreshToken) -> Result<RawRefreshToken, TokenError> {
+    fn generate_refresh_token(keypair: KeygateKeypair, _token: GenerateRefreshToken) -> Result<RawRefreshToken, TokenError> {
         let keypair = Self::to_biscuit_keypair(keypair);
         let biscuit = biscuit!(r#""#).build(&keypair)?;
         Ok(biscuit.to_string().into())
     }
 
-    fn verify_access_token(public_key: &[u8], token: &str) -> Result<(), TokenError> {
+    fn verify_access_token(_public_key: &[u8], _token: &str) -> Result<AccessToken, TokenError> {
         todo!()
     }
 
-    fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<(), TokenError> {
+    fn verify_refresh_token(_public_key: &[u8], _token: &str) -> Result<RefreshToken, TokenError> {
         todo!()
     }
 }

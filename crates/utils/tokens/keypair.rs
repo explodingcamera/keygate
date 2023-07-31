@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{encode::ToBase64, random::secure_random_id};
 use serde::{Deserialize, Serialize};
-use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct KeygateKeypair {
@@ -70,15 +70,15 @@ impl KeygateKeypair {
         }
     }
 
-    pub fn private_key(&self) -> Zeroizing<Vec<u8>> {
+    pub fn private_key(&self) -> Vec<u8> {
         match &self.inner {
-            InnerKeygateKeypair::Ed25519(keypair) => keypair.private_key().to_vec().into(),
+            InnerKeygateKeypair::Ed25519(keypair) => keypair.private_key().to_vec(),
         }
     }
 
-    pub fn public_key(&self) -> Zeroizing<Vec<u8>> {
+    pub fn public_key(&self) -> Vec<u8> {
         match &self.inner {
-            InnerKeygateKeypair::Ed25519(keypair) => keypair.public_key().to_vec().into(),
+            InnerKeygateKeypair::Ed25519(keypair) => keypair.public_key().to_vec(),
         }
     }
 }

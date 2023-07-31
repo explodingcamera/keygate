@@ -5,6 +5,7 @@ pub mod ed25519;
 pub mod formats;
 mod keypair;
 pub use keypair::*;
+use time::Duration;
 
 #[derive(Error, Debug)]
 pub enum TokenError {
@@ -38,11 +39,11 @@ pub trait SignatureAlgorithm<const PUBLIC_KEY_SIZE: usize, const PRIVATE_KEY_SIZ
 }
 
 pub trait TokenFormat {
-    fn generate_access_token(keypair: KeygateKeypair, token: AccessToken) -> Result<RawAccessToken, TokenError>;
-    fn generate_refresh_token(keypair: KeygateKeypair, token: RefreshToken) -> Result<RawRefreshToken, TokenError>;
+    fn generate_access_token(keypair: KeygateKeypair, token: GenerateAccessToken) -> Result<RawAccessToken, TokenError>;
+    fn generate_refresh_token(keypair: KeygateKeypair, token: GenerateRefreshToken) -> Result<RawRefreshToken, TokenError>;
 
-    fn verify_access_token(public_key: &[u8], token: &str) -> Result<(), TokenError>;
-    fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<(), TokenError>;
+    fn verify_access_token(public_key: &[u8], token: &str) -> Result<AccessToken, TokenError>;
+    fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<RefreshToken, TokenError>;
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -66,5 +67,28 @@ impl From<String> for RawRefreshToken {
     }
 }
 
-pub struct AccessToken {}
+#[allow(dead_code)]
+pub struct AccessToken {
+    audience: String,
+    subject: String,
+    issuer: String,
+    session_id: String,
+    key_id: String,
+}
+
+pub struct GenerateAccessToken {
+    duration: Duration,
+    audience: String,
+    subject: String,
+    issuer: String,
+    session_id: String,
+}
+
 pub struct RefreshToken {}
+pub struct GenerateRefreshToken {
+    duration: Duration,
+    audience: String,
+    subject: String,
+    issuer: String,
+    session_id: String,
+}
