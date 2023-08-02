@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use dashmap::DashMap;
 use keygate_utils::atomic::AtomicDateTime;
 use thiserror::Error;
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::{
     database::{
@@ -176,5 +176,25 @@ impl KeygateSettings {
 }
 
 fn default_global_settings() -> GlobalSettings {
-    GlobalSettings {}
+    GlobalSettings {
+        login_identifier: crate::database::models::AccountNaming::UsernameOrEmail,
+        check_haveibeenpwned: false,
+
+        login_process_expires_in: Duration::minutes(5),
+        signup_process_expires_in: Duration::minutes(5),
+
+        default_refresh_token_expires_in: Duration::days(14),
+        default_access_token_expires_in: Duration::minutes(5),
+
+        email_verification: crate::database::models::EmailVerification::None,
+        enable_multiple_emails_per_account: false,
+        magic_link: None,
+
+        minimum_age: None,
+        require_birthdate: false,
+        store_birthdate: false,
+
+        require_full_name: false,
+        signup_flow: crate::database::models::SignupFlow::UsernamePasswordAndEmail,
+    }
 }

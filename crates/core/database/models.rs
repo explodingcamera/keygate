@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, FromRow};
+use time::Duration;
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct Identity {
@@ -113,7 +114,69 @@ pub struct Application {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GlobalSettings {}
+pub enum AccountNaming {
+    Username,
+    Email,
+    UsernameOrEmail,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApplicationSettings {}
+pub struct MagicLinkSettings {
+    pub token_expires_in: Duration,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum EmailVerification {
+    None,
+    Optional { token_expires_in: Duration },
+    RequiredForLogin { token_expires_in: Duration },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SignupFlow {
+    UsernamePasswordAndEmail,
+    UsernamePassword,
+    EmailPassword,
+    EmailOnly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GlobalSettings {
+    pub default_access_token_expires_in: Duration,
+    pub default_refresh_token_expires_in: Duration,
+
+    pub login_process_expires_in: Duration,
+    pub signup_process_expires_in: Duration,
+
+    pub signup_flow: SignupFlow,
+
+    // if this is false, and minimum_age is set, the user will be asked if they are over the minimum age
+    pub require_birthdate: bool,
+    pub store_birthdate: bool,
+    pub minimum_age: Option<i32>,
+
+    pub require_full_name: bool,
+
+    pub email_verification: EmailVerification,
+    pub enable_multiple_emails_per_account: bool,
+    pub check_haveibeenpwned: bool,
+
+    /// What identifier to use for login
+    pub login_identifier: AccountNaming,
+
+    pub magic_link: Option<MagicLinkSettings>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TokenFormat {
+    JWT,
+    PASETOV4,
+    Biscuit,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApplicationSettings {
+    pub access_token_format: TokenFormat,
+    pub access_token_expires_in: Option<Duration>,
+    pub refresh_token_expires_in: Option<Duration>,
+}

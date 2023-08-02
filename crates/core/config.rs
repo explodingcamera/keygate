@@ -25,25 +25,7 @@ pub struct IdentityConfig {
 
 #[derive(Clone, Debug)]
 pub enum StorageOptions {
-    SQL { storage_path: String, sql_url: String },
-}
-
-#[derive(Clone, Debug)]
-pub struct RedisStorageOptions {
-    pub storage_path: String,
-    pub redis_url: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct TokenConfig {
-    /// Sign JWT tokens
-    pub sign_jwt: bool,
-
-    /// access token lifetime in seconds
-    pub access_token_lifetime: i64,
-
-    /// refresh token lifetime in seconds
-    pub refresh_token_lifetime: i64,
+    Sqlite { database_path: String },
 }
 
 #[derive(Clone, Debug)]
@@ -84,12 +66,6 @@ pub struct Configuration {
 
     /// server configuration
     pub server: ServerConfig,
-
-    /// token configuration
-    pub token: TokenConfig,
-
-    /// identity configuration
-    pub identity: IdentityConfig,
 }
 
 impl Default for ServerConfig {
@@ -125,33 +101,10 @@ impl Default for IdentityConfig {
     }
 }
 
-impl Default for TokenConfig {
-    fn default() -> Self {
-        Self {
-            sign_jwt: false,
-            access_token_lifetime: 30 * 60,
-            refresh_token_lifetime: 14 * 24 * 3600,
-        }
-    }
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            storage_options: StorageOptions::default(),
-            environment: Environment::Development,
-            server: ServerConfig::default(),
-            token: TokenConfig::default(),
-            identity: IdentityConfig::default(),
-        }
-    }
-}
-
 impl Default for StorageOptions {
     fn default() -> Self {
-        StorageOptions::SQL {
-            storage_path: "./data".to_string(),
-            sql_url: "sqlite://data.db".to_string(),
+        StorageOptions::Sqlite {
+            database_path: "db.sql".into(),
         }
     }
 }
