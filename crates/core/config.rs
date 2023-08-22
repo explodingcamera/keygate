@@ -1,34 +1,17 @@
-#[derive(Clone, Debug, PartialEq, Eq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Environment {
     Development,
     Production,
 }
 
-#[derive(Clone, Debug)]
-pub struct IdentityConfig {
-    pub signup_with_email: bool,
-    pub signup_with_username: bool,
-    pub signup_require_username: bool,
-    pub signup_require_email: bool,
-    pub signup_require_email_verification: bool,
-    pub signup_process_lifetime: i64,
-
-    pub login_with_username: bool,
-    pub login_with_email: bool,
-    pub login_process_lifetime: i64,
-
-    pub allow_multiple_emails: bool,
-
-    pub password_min_length: usize,
-    pub check_leaked_passwords: bool,
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum StorageOptions {
     Sqlite { database_path: String },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ServerConfig {
     /// the domain keygate is running on, e.g `accounts.example.com`
     /// refresh tokens are only valid for this domain
@@ -55,10 +38,8 @@ pub struct ServerConfig {
     pub public_prefix: Option<String>,
 }
 
-pub type KeygateConfigInternal = std::sync::Arc<Configuration>;
-
-#[derive(Clone, Debug)]
-pub struct Configuration {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Config {
     pub environment: Environment,
 
     /// Options for the storage backend
@@ -78,25 +59,6 @@ impl Default for ServerConfig {
             keygate_domain: "auth.localhost".to_string(),
             admin_prefix: None,
             public_prefix: None,
-        }
-    }
-}
-
-impl Default for IdentityConfig {
-    fn default() -> Self {
-        Self {
-            allow_multiple_emails: false,
-            signup_with_email: false,
-            signup_with_username: true,
-            signup_require_username: true,
-            signup_require_email: false,
-            signup_require_email_verification: false,
-            signup_process_lifetime: 60 * 60,
-            login_with_email: true,
-            login_with_username: true,
-            login_process_lifetime: 60 * 60,
-            check_leaked_passwords: true,
-            password_min_length: 8,
         }
     }
 }

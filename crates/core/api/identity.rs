@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    database::{models::Identity, DatabasePool},
+    database::{models, DatabasePool},
     KeygateInternal,
 };
 
@@ -13,7 +13,7 @@ use keygate_utils::{
 use super::{APIError, Filter, SortBy, SortOrder, UserIdentifier};
 
 #[derive(Debug, Clone)]
-pub struct IdentityAPI {
+pub struct Identity {
     keygate: Arc<KeygateInternal>,
 }
 
@@ -28,7 +28,7 @@ const USERNAME_REQUIRED: bool = true;
 const EMAIL_REQUIRED: bool = true;
 const PASSWORD_REQUIRED: bool = true;
 
-impl IdentityAPI {
+impl Identity {
     pub(crate) fn new(keygate: Arc<KeygateInternal>) -> Self {
         Self { keygate }
     }
@@ -37,21 +37,21 @@ impl IdentityAPI {
         &self.keygate.db
     }
 
-    async fn get(&self, user: UserIdentifier) -> Result<Option<Identity>, APIError> {
+    async fn get(&self, user: UserIdentifier) -> Result<Option<models::Identity>, APIError> {
         let (field, value) = match user {
             UserIdentifier::Email(email) => ("primary_email", email),
             UserIdentifier::Username(username) => ("username", username),
             UserIdentifier::Id(id) => ("id", id),
         };
 
-        let identity = sqlx::query_as!(Identity, "SELECT * FROM Identity WHERE $1 = $2", field, value)
+        let identity = sqlx::query_as!(models::Identity, "SELECT * FROM Identity WHERE $1 = $2", field, value)
             .fetch_optional(self.db())
             .await?;
 
         Ok(identity)
     }
 
-    async fn create(&self, identity: CreateIdentity) -> Result<Identity, APIError> {
+    async fn create(&self, identity: CreateIdentity) -> Result<models::Identity, APIError> {
         let user_id = secure_random_id();
         let email_token = secure_random_id();
         let email_expires_at = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
@@ -76,7 +76,7 @@ impl IdentityAPI {
         )?;
 
         Ok(sqlx::query_as!(
-            Identity,
+            models::Identity,
             r#"
                 INSERT INTO Identity (id, username, primary_email, password_hash)
                     VALUES ($1, $2, $3, $4)
@@ -98,11 +98,15 @@ impl IdentityAPI {
         .await?)
     }
 
-    async fn update(&self, update: impl FnOnce(Identity) -> Identity, id: &str) -> Result<Identity, APIError> {
+    async fn update(
+        &self,
+        update: impl FnOnce(models::Identity) -> models::Identity,
+        id: &str,
+    ) -> Result<models::Identity, APIError> {
         let now = time::OffsetDateTime::now_utc();
         let mut tx = self.db().begin().await?;
 
-        let identity = sqlx::query_as!(Identity, "SELECT * FROM Identity WHERE id = $1", id)
+        let identity = sqlx::query_as!(models::Identity, "SELECT * FROM Identity WHERE id = $1", id)
             .fetch_optional(&mut *tx)
             .await?
             .ok_or(APIError::not_found("User not found"))?;
@@ -146,7 +150,7 @@ impl IdentityAPI {
         sort_order: SortOrder,
         offset: u32,
         count: u32,
-    ) -> Result<Vec<Identity>, APIError> {
+    ) -> Result<Vec<models::Identity>, APIError> {
         if count > 100 {
             return Err(APIError::invalid_argument("Count cannot be greater than 100"));
         }
@@ -167,7 +171,7 @@ impl IdentityAPI {
         let identities = match sort_order {
             SortOrder::Asc => {
                 sqlx::query_as!(
-                    Identity,
+                    models::Identity,
                     r#"SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 ASC LIMIT $4 OFFSET $5"#,
                     filter_field,
                     filter_value,
@@ -180,7 +184,7 @@ impl IdentityAPI {
             }
             SortOrder::Desc => {
                 sqlx::query_as!(
-                    Identity,
+                    models::Identity,
                     "SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 DESC LIMIT $4 OFFSET $5",
                     filter_field,
                     filter_value,

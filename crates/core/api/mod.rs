@@ -3,7 +3,7 @@ mod identity;
 mod session;
 
 pub use auth::Auth;
-pub use identity::IdentityAPI;
+pub use identity::Identity;
 pub use session::Session;
 
 use thiserror::Error;

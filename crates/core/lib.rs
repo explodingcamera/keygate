@@ -5,8 +5,6 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use config::KeygateConfigInternal;
-
 mod api;
 mod database;
 mod settings;
@@ -14,8 +12,8 @@ mod settings;
 pub mod config;
 mod secrets;
 use arc_swap::ArcSwap;
-use config::Configuration;
-pub use config::Configuration as KeygateConfig;
+use config::Config;
+pub use config::Config as KeygateConfig;
 
 use database::DatabasePool;
 use settings::KeygateSettings;
@@ -50,7 +48,7 @@ pub type KeygateSecrets = secrets::Secrets;
 
 #[derive(Debug)]
 pub(crate) struct KeygateInternal {
-    pub config: KeygateConfigInternal,
+    pub config: Arc<Config>,
     pub db: DatabasePool,
     pub health: ArcSwap<Health>,
     pub settings: KeygateSettings,
@@ -59,12 +57,13 @@ pub(crate) struct KeygateInternal {
 #[derive(Debug, Clone)]
 pub struct Keygate {
     inner: Arc<KeygateInternal>,
-    // pub identity: Arc<api::Identity>,
+    pub auth: Arc<api::Auth>,
+    pub session: Arc<api::Session>,
+    pub identity: Arc<api::Identity>,
 }
 
 impl Keygate {
-    pub async fn new(config: Configuration) -> Result<Self, KeygateError> {
-        let config = Arc::new(config);
+    pub async fn new(config: Config) -> Result<Self, KeygateError> {
         sqlx::any::install_default_drivers();
         let db = DatabasePool::connect("sqlite://:memory:").await?;
         sqlx::migrate!().run(&db).await.expect("Failed to run migrations");
@@ -72,9 +71,9 @@ impl Keygate {
         Ok(Keygate::new_with_storage(config, db).await)
     }
 
-    pub async fn new_with_storage(config: KeygateConfigInternal, db: DatabasePool) -> Self {
+    pub async fn new_with_storage(config: Config, db: DatabasePool) -> Self {
         let internal = Arc::new(KeygateInternal {
-            config,
+            config: Arc::new(config),
             db,
             health: ArcSwap::from_pointee(Health::Starting),
             settings: KeygateSettings::new(),
@@ -83,8 +82,10 @@ impl Keygate {
         internal.settings.set_keygate(internal.clone());
 
         Keygate {
-            inner: internal,
-            // identity: Arc::new(api::Identity::new(internal)),
+            inner: internal.clone(),
+            identity: Arc::new(api::Identity::new(internal.clone())),
+            auth: Arc::new(api::Auth::new(internal.clone())),
+            session: Arc::new(api::Session::new(internal)),
         }
     }
 }
