@@ -1,0 +1,5 @@
+{
+  "name": "@keygate/client",
+  "module": "index.ts",
+  "type": "module"
+}
