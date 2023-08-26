@@ -169,9 +169,9 @@ pub struct GlobalSettings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TokenFormat {
-    JWT,
-    PASETOV4,
-    Biscuit,
+    Jwt25519,
+    PasetoV4,
+    BiscuitV2,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
