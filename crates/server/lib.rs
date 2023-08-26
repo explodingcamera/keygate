@@ -8,49 +8,33 @@ mod private;
 mod public;
 
 use keygate_core::{config::Environment, Keygate, KeygateConfig};
-use poem::{listener::TcpListener, Route};
-use poem_openapi::{LicenseObject, OpenApiService};
+use poem::listener::TcpListener;
+use poem_openapi::LicenseObject;
+use tracing::warn;
 
-pub async fn run(config: KeygateConfig) -> eyre::Result<()> {
+pub fn license() -> LicenseObject {
+    LicenseObject::new("Apache-2.0")
+        .identifier("Apache-2.0")
+        .url("https://www.apache.org/licenses/LICENSE-2.0.html")
+}
+
+pub async fn run(config: KeygateConfig) -> color_eyre::Result<()> {
     if config.environment == Environment::Development {
-        println!("\nWARNING: Running in development mode. CORS is enabled for all origins.\n");
+        warn!("\nWARNING: Running in development mode. CORS is enabled for all origins.\n");
     }
 
     let keygate = Keygate::new(config).await?;
 
-    let private_api = OpenApiService::new(private::PrivateApi, "Keygate Private API", "v0")
-        .description("The private API for Keygate, used for backend communication.")
-        .license(
-            LicenseObject::new("Apache-2.0")
-                .identifier("Apache-2.0")
-                .url("https://www.apache.org/licenses/LICENSE-2.0.html"),
-        )
-        .server("/api/private/v0");
-
-    let public_api = OpenApiService::new(public::PublicApi, "Keygate Public API", "v0")
-        .description("The public API for Keygate, used for frontend communication.")
-        .license(
-            LicenseObject::new("Apache-2.0")
-                .identifier("Apache-2.0")
-                .url("https://www.apache.org/licenses/LICENSE-2.0.html"),
-        )
-        .server("/api/public/v0");
-
-    let private_api_swagger = private_api.swagger_ui();
-    let public_api_swagger = public_api.swagger_ui();
-
-    let private_app = Route::new()
-        .nest("/api/private/v0", private_api)
-        .nest("/openapi", private_api_swagger);
-
-    let public_app = Route::new()
-        .nest("/api/public/v0", public_api)
-        .nest("/openapi", public_api_swagger);
+    let private_app = private::PrivateApi::create_app(keygate.clone());
+    let public_app = public::PublicApi::create_app(keygate.clone());
 
     let private_server = poem::Server::new(TcpListener::bind("127.0.0.1:3000")).run(private_app);
     let public_server = poem::Server::new(TcpListener::bind("127.0.0.1:3001")).run(public_app);
 
+    let keygate_tasks = keygate.run();
+
     tokio::select! {
+        res = keygate_tasks => res?,
         res = private_server => res?,
         res = public_server => res?,
     }

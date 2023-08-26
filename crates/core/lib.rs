@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 use std::fmt::Debug;
+use std::future::pending;
 use std::sync::Arc;
 
 mod api;
@@ -18,6 +19,7 @@ pub use config::Config as KeygateConfig;
 use database::DatabasePool;
 use settings::KeygateSettings;
 use thiserror::Error;
+use tokio::select;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Health {
@@ -63,6 +65,13 @@ pub struct Keygate {
 }
 
 impl Keygate {
+    pub async fn run(&self) -> KeygateResult<()> {
+        let busy = pending();
+        select! {
+            _  = busy => Ok(()),
+        }
+    }
+
     pub async fn new(config: Config) -> Result<Self, KeygateError> {
         sqlx::any::install_default_drivers();
         let db = DatabasePool::connect("sqlite://:memory:").await?;

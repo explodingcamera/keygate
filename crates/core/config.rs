@@ -39,6 +39,7 @@ pub struct ServerConfig {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Config {
     pub environment: Environment,
 
@@ -47,6 +48,20 @@ pub struct Config {
 
     /// server configuration
     pub server: ServerConfig,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            environment: if cfg!(debug_assertions) {
+                Environment::Development
+            } else {
+                Environment::Production
+            },
+            storage_options: StorageOptions::default(),
+            server: ServerConfig::default(),
+        }
+    }
 }
 
 impl Default for ServerConfig {
