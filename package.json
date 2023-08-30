@@ -2,9 +2,13 @@
   "name": "@keygate/root",
   "module": "index.ts",
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "@biomejs/biome": "1.0.0",
+    "@biomejs/cli-linux-x64": "^1.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

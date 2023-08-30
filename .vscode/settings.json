@@ -1,11 +1,11 @@
 {
-  "editor.codeActionsOnSave": {
-    "source.fixAll": true
-  },
-  "editor.formatOnSave": true,
-  "[javascript][javascriptreact][typescript][typescriptreact]": {
-    "editor.defaultFormatter": "rome.rome",
-    "editor.formatOnSave": true
-  },
-  "rust-analyzer.cargo.buildScripts.enable": true
+	"editor.codeActionsOnSave": {
+		"source.fixAll": true
+	},
+	"editor.formatOnSave": true,
+	"[javascript][javascriptreact][typescript][typescriptreact]": {
+		"editor.defaultFormatter": "rome.rome",
+		"editor.formatOnSave": true
+	},
+	"rust-analyzer.cargo.buildScripts.enable": true
 }
