@@ -1,40 +1,73 @@
-use std::{fmt::Debug, sync::RwLock};
+use std::{
+    fmt::Debug,
+    sync::{Arc, OnceLock},
+};
 
-pub struct SecretStore {
-    storage: RwLock<SecretsInner>,
+use dashmap::DashMap;
+use keygate_utils::{
+    random::secure_random_id,
+    tokens::{ed25519, SignatureAlgorithm},
+};
+use time::OffsetDateTime;
+
+use crate::KeygateInternal;
+
+pub enum Keypair {
+    Ed25519(ed25519::Ed25519Keypair),
 }
 
-impl Debug for SecretStore {
+pub enum PublicKey {
+    Ed25519(ed25519::VerifyingKey),
+}
+
+pub struct PublicKeyData {
+    pub node_id: String,
+    pub valid_until: OffsetDateTime,
+    pub revoked_at: Option<OffsetDateTime>,
+    pub key: PublicKey,
+}
+
+pub struct Secrets {
+    keygate: OnceLock<Arc<KeygateInternal>>,
+    owned_keys: DashMap<String, Keypair>,
+    public_keys: DashMap<String, PublicKeyData>,
+}
+
+impl Debug for Secrets {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SecretStore").finish()
+        f.debug_struct("Secrets")
+            .field("keygate", &self.keygate)
+            .field("owned_keys", &format!("{:?} entries", self.owned_keys.len()))
+            .field("public_keys", &format!("{:?} entries", self.public_keys.len()))
+            .finish()
     }
 }
 
-pub struct Ed25519KeyPair(String);
-
-pub struct Secrets {
-    pub jwt_ed25519_keypair: Ed25519KeyPair,
-}
-
-struct SecretsInner {
-    jwt_ed25519_keypair: Ed25519KeyPair,
-}
-
-impl SecretStore {
-    pub fn new(secrets: Secrets) -> Self {
+impl Secrets {
+    pub(crate) fn new() -> Self {
         Self {
-            storage: RwLock::new(SecretsInner {
-                jwt_ed25519_keypair: secrets.jwt_ed25519_keypair,
-            }),
+            keygate: OnceLock::new(),
+            owned_keys: DashMap::new(),
+            public_keys: DashMap::new(),
         }
     }
 
-    // pub fn jwt_ed25519_keypair(&self) -> Result<Ed25519KeyPair, KeygateError> {
-    //     Ok(self
-    //         .storage
-    //         .read()
-    //         .map_err(|_| KeygateError::LockPoisoned("secret store".to_string()))?
-    //         .jwt_ed25519_keypair
-    //         .clone())
-    // }
+    pub(crate) fn set_keygate(&self, keygate: Arc<KeygateInternal>) {
+        self.keygate.set(keygate).unwrap();
+    }
+
+    pub(crate) async fn run(&self) {
+        if self.owned_keys.is_empty() {
+            tracing::warn!("No signing keys are configured, generating a new one");
+            let new_key_id = self.generate_signing_key();
+        }
+    }
+
+    fn generate_signing_key(&self) -> String {
+        let keypair = ed25519::Ed25519Keypair::generate();
+        let public_key = keypair.public_key();
+        let key_id = secure_random_id();
+        self.owned_keys.insert(key_id.clone(), Keypair::Ed25519(keypair));
+        key_id
+    }
 }

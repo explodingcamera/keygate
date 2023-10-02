@@ -1,5 +1,7 @@
 use super::{SignatureAlgorithm, TokenError};
 
+pub use ed25519_dalek::VerifyingKey;
+
 #[derive(Debug, Clone)]
 pub struct Ed25519Keypair(ed25519_dalek::SigningKey);
 

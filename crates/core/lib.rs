@@ -17,6 +17,7 @@ use config::Config;
 pub use config::Config as KeygateConfig;
 
 use database::DatabasePool;
+use secrets::Secrets;
 use settings::KeygateSettings;
 use thiserror::Error;
 use tokio::select;
@@ -45,15 +46,20 @@ pub enum KeygateError {
 
 pub type KeygateResult<T> = Result<T, KeygateError>;
 
-pub type KeygateSecretsStore = Arc<secrets::SecretStore>;
-pub type KeygateSecrets = secrets::Secrets;
-
 #[derive(Debug)]
 pub(crate) struct KeygateInternal {
     pub config: Arc<Config>,
+    pub secrets: Arc<Secrets>,
     pub db: DatabasePool,
     pub health: ArcSwap<Health>,
     pub settings: KeygateSettings,
+}
+
+impl KeygateInternal {
+    pub async fn run(&self) -> KeygateResult<()> {
+        self.secrets.run().await;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,10 +72,7 @@ pub struct Keygate {
 
 impl Keygate {
     pub async fn run(&self) -> KeygateResult<()> {
-        let busy = pending();
-        select! {
-            _  = busy => Ok(()),
-        }
+        self.inner.run().await
     }
 
     pub async fn new(config: Config) -> Result<Self, KeygateError> {
@@ -83,12 +86,14 @@ impl Keygate {
     pub async fn new_with_storage(config: Config, db: DatabasePool) -> Self {
         let internal = Arc::new(KeygateInternal {
             config: Arc::new(config),
+            secrets: Arc::new(Secrets::new()),
             db,
             health: ArcSwap::from_pointee(Health::Starting),
             settings: KeygateSettings::new(),
         });
 
         internal.settings.set_keygate(internal.clone());
+        internal.secrets.set_keygate(internal.clone());
 
         Keygate {
             inner: internal.clone(),
