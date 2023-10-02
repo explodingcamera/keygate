@@ -1,0 +1,33 @@
+.__keygate fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.__keygate button {
+  cursor: pointer;
+}
+
+.__keygate__form {
+  width: 23rem;
+}
+
+.__keygate__seperator {
+  text-align: center;
+  position: relative;
+}
+
+.__keygate__seperator > * {
+  padding: 0 1rem;
+  background-color: var(--color-page-background);
+  z-index: 1;
+}
+
+.__keygate__seperator::before {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background: var(--gray-6);
+  vertical-align: middle;
+}
