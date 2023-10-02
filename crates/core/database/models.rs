@@ -48,7 +48,7 @@ pub struct LoginProcess {
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct PublicKey {
-    pub id: i32,
+    pub id: String,
     pub created_at: OffsetDateTime,
     pub key_type: String,
     pub node_id: String,

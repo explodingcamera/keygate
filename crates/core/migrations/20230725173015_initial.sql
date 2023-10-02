@@ -47,7 +47,7 @@ CREATE TABLE
 
 CREATE TABLE
     PublicKey (
-        id INTEGER PRIMARY KEY NOT NULL,
+        id VARCHAR(36) PRIMARY KEY NOT NULL,
         created_at TIMESTAMP NOT NULL,
         key_type VARCHAR(255) NOT NULL,
         node_id VARCHAR(255) NOT NULL,

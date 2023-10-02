@@ -3,7 +3,6 @@
 #![allow(dead_code)]
 
 use std::fmt::Debug;
-use std::future::pending;
 use std::sync::Arc;
 
 mod api;
@@ -20,7 +19,6 @@ use database::DatabasePool;
 use secrets::Secrets;
 use settings::KeygateSettings;
 use thiserror::Error;
-use tokio::select;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Health {
@@ -78,7 +76,10 @@ impl Keygate {
     pub async fn new(config: Config) -> Result<Self, KeygateError> {
         sqlx::any::install_default_drivers();
         let db = DatabasePool::connect("sqlite://:memory:").await?;
-        sqlx::migrate!().run(&db).await.expect("Failed to run migrations");
+        sqlx::migrate!("./migrations")
+            .run(&db)
+            .await
+            .expect("Failed to run migrations");
 
         Ok(Keygate::new_with_storage(config, db).await)
     }
