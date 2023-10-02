@@ -42,6 +42,7 @@ pub struct ServerConfig {
 #[serde(default)]
 pub struct Config {
     pub environment: Environment,
+    pub node_id: String,
 
     /// Options for the storage backend
     pub storage_options: StorageOptions,
@@ -53,6 +54,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            node_id: "__unset__".to_string(),
             environment: if cfg!(debug_assertions) {
                 Environment::Development
             } else {
