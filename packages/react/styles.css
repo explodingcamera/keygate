@@ -17,16 +17,15 @@
   position: relative;
 }
 
-.__keygate__seperator > * {
+.__keygate__seperator > *:not(.__keygate__seperator_bar) {
   padding: 0 1rem;
-  background-color: var(--color-page-background);
   z-index: 1;
+  flex: 1,
 }
 
-.__keygate__seperator::before {
+.__keygate__seperator_bar {
   content: "";
-  position: absolute;
-  width: 100%;
+  flex-grow: 1;
   height: 1px;
   background: var(--gray-6);
   vertical-align: middle;

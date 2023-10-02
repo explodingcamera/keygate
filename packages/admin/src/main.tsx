@@ -12,8 +12,9 @@ const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
 
 import "./global.scss";
+import { DashboardRoutes } from "./pages/dashboard";
 
-const base = "";
+const base = "/asdf";
 
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
@@ -21,11 +22,8 @@ ReactDOM.createRoot(root).render(
 			<Flex p={"4"} direction={"column"} className={styles.base}>
 				<Router base={base}>
 					<Switch>
-						<Route path="/">
-							<Redirect to="/auth/login" />
-						</Route>
 						<Route path="/auth/:path*" component={AuthRoutes} />
-						<Route component={() => <div>404</div>} />
+						<Route path="/:path*" component={DashboardRoutes} />
 					</Switch>
 				</Router>
 			</Flex>
