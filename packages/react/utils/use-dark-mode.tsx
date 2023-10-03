@@ -21,8 +21,12 @@ export function useDarkMode(defaultValue?: boolean): {
 	}, [isDarkOS]);
 
 	useEffect(() => {
-		document.body.classList.toggle("dark", isDarkOS);
-	}, [isDarkOS]);
+		console.log(isDarkMode);
+
+		if (!isDarkMode) {
+			document.body.classList.remove("dark");
+		} else document.body.classList.add("dark");
+	}, [isDarkMode]);
 
 	return {
 		isDarkMode,

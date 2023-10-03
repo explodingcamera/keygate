@@ -27,6 +27,6 @@
   content: "";
   flex-grow: 1;
   height: 1px;
-  background: var(--gray-6);
+  background: var(--gray-11);
   vertical-align: middle;
 }

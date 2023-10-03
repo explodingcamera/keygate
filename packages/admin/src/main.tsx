@@ -14,12 +14,12 @@ if (!root) throw new Error("Root element not found");
 import "./global.scss";
 import { DashboardRoutes } from "./pages/dashboard";
 
-const base = "/asdf";
+const base = "";
 
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
 		<KeygateProvider>
-			<Flex p={"4"} direction={"column"} className={styles.base}>
+			<Flex direction={"column"} className={styles.base}>
 				<Router base={base}>
 					<Switch>
 						<Route path="/auth/:path*" component={AuthRoutes} />
