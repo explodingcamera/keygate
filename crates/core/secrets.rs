@@ -114,7 +114,7 @@ impl Secrets {
 
     pub(crate) async fn run(&self) {
         if self.active_keypairs.is_empty() {
-            tracing::warn!("No signing keys are configured, generating a new one");
+            tracing::debug!("No signing keys are configured, generating a new one");
             let new_key_id = self.generate_signing_key();
         }
     }

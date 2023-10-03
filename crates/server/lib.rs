@@ -7,23 +7,20 @@ mod errors;
 mod private;
 mod public;
 
-use keygate_core::{config::Environment, Keygate, KeygateConfig};
-use poem::listener::TcpListener;
-use poem_openapi::LicenseObject;
-use tracing::{error, warn};
+use std::net::SocketAddr;
 
-pub fn license() -> LicenseObject {
-    LicenseObject::new("Apache-2.0")
-        .identifier("Apache-2.0")
-        .url("https://www.apache.org/licenses/LICENSE-2.0.html")
-}
+use axum::Router;
+use keygate_core::{config::Environment, Keygate, KeygateConfig};
+use tracing::{error, info, warn};
 
 pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
+    let now = std::time::Instant::now();
+
     if config.environment == Environment::Development {
-        warn!("\nWARNING: Running in development mode. CORS is enabled for all origins.\n");
+        warn!("Running in development mode. CORS is enabled for all origins.");
 
         if config.node_id == "__unset__" {
-            warn!("WARNING: Node ID is not set. Defaulting to 'development'.");
+            warn!("Node ID is not set. Defaulting to 'development'.");
             config.node_id = "development".to_string();
         }
     }
@@ -35,19 +32,26 @@ pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
 
     let keygate = Keygate::new(config).await?;
 
-    let private_app = private::PrivateApi::create_app(keygate.clone());
-    let public_app = public::PublicApi::create_app(keygate.clone());
+    let private_app = Router::new().merge(private::new()).with_state(keygate.clone());
+    let public_app = Router::new().merge(public::new()).with_state(keygate.clone());
 
-    let private_server = poem::Server::new(TcpListener::bind("127.0.0.1:3000")).run(private_app);
-    let public_server = poem::Server::new(TcpListener::bind("127.0.0.1:3001")).run(public_app);
+    let private_server = axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
+        .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
+
+    let public_server = axum::Server::bind(&"127.0.0.1:3001".parse().unwrap())
+        .serve(public_app.into_make_service_with_connect_info::<SocketAddr>());
+
+    info!("Keygate started in {}ms", now.elapsed().as_millis());
+    info!("Private API listening on {}", "http://localhost:3000");
+    info!("Public API listening on {}", "http://localhost:3001");
 
     let keygate_tasks = keygate.run();
 
-    tokio::select! {
+    let e = tokio::select! {
         res = keygate_tasks => res?,
         res = private_server => res?,
         res = public_server => res?,
-    }
+    };
 
     Ok(())
 }

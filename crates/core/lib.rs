@@ -5,9 +5,9 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-mod api;
-mod database;
-mod settings;
+pub mod api;
+pub mod database;
+pub mod settings;
 
 pub mod config;
 mod secrets;
@@ -70,7 +70,11 @@ pub struct Keygate {
 
 impl Keygate {
     pub async fn run(&self) -> KeygateResult<()> {
-        self.inner.run().await
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        loop {
+            interval.tick().await;
+            self.inner.run().await?;
+        }
     }
 
     pub async fn new(config: Config) -> Result<Self, KeygateError> {

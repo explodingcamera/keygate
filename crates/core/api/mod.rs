@@ -1,6 +1,6 @@
-mod auth;
-mod identity;
-mod session;
+pub mod auth;
+pub mod identity;
+pub mod session;
 
 pub use auth::Auth;
 pub use identity::Identity;

@@ -19,7 +19,7 @@ pub struct Auth {
     keygate: Arc<KeygateInternal>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub enum LoginStep {
     Email,
     Username,
@@ -45,6 +45,7 @@ impl LoginStep {
     }
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
 pub enum LoginResponse {
     NextStep { step_type: Vec<LoginStep>, process_id: String },
     Success { refresh_token: String },
@@ -65,17 +66,17 @@ impl Auth {
     }
 
     // create a new login process for the given user
-    async fn login(
+    pub async fn login_create(
         &self,
         // everything with an @ is considered an email
         username_or_email: &str,
         // ip_address has to be validated by the caller, can be empty (0.0.0.0) if not available
-        ip_address: IpAddr,
+        ip_address: Option<IpAddr>,
     ) -> Result<LoginResponse, APIError> {
         let login_process_id = secure_random_id();
         let now = time::OffsetDateTime::now_utc();
         let is_email = username_or_email.contains('@');
-        let ip_address = ip_address.to_string();
+        let ip_address = ip_address.map(|ip| ip.to_string());
         let current_step = match is_email {
             true => LoginStep::Email,
             false => LoginStep::Username,

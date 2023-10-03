@@ -1,30 +1,28 @@
-use keygate_core::Keygate;
-use poem::{web::Query, Route};
-use poem_openapi::{payload::PlainText, OpenApi, OpenApiService};
+use std::net::SocketAddr;
 
-pub struct PublicApi {
-    pub keygate: Keygate,
+use axum::{
+    extract::{ConnectInfo, State},
+    routing::post,
+    Json, Router,
+};
+use keygate_core::{api::auth::LoginResponse, Keygate};
+
+use crate::errors::AppError;
+
+pub fn new() -> Router<Keygate> {
+    Router::new().route("/login", post(login))
 }
 
-impl PublicApi {
-    pub fn create_app(keygate: Keygate) -> Route {
-        let service = OpenApiService::new(Self { keygate }, "Keygate Public API", "v0")
-            .description("The public API for Keygate, used for frontend communication.")
-            .license(crate::license())
-            .server("/api/public/v0");
-        let swagger = service.swagger_ui();
-
-        Route::new().nest("/api/public/v0", service).nest("/openapi", swagger)
-    }
+#[derive(serde::Deserialize)]
+struct LoginRequest {
+    username_or_email: String,
 }
 
-#[OpenApi]
-impl PublicApi {
-    #[oai(path = "/hello", method = "get")]
-    async fn index(&self, name: Query<Option<String>>) -> PlainText<String> {
-        match name.0 {
-            Some(name) => PlainText(format!("hello, {}!", name)),
-            None => PlainText("hello!".to_string()),
-        }
-    }
+async fn login(
+    State(keygate): State<Keygate>,
+    ConnectInfo(ip): ConnectInfo<SocketAddr>,
+    Json(data): Json<LoginRequest>,
+) -> Result<Json<LoginResponse>, AppError> {
+    let res = keygate.auth.login_create(&data.username_or_email, Some(ip.ip())).await?;
+    Ok(Json(res))
 }
