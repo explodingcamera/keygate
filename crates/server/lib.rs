@@ -1,6 +1,7 @@
 #![deny(unsafe_code)]
 
 mod errors;
+mod middleware;
 mod private;
 mod public;
 

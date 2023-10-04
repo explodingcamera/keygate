@@ -8,6 +8,7 @@ use serde_json::json;
 
 pub enum AppError {
     APIError(APIError),
+    Generic(StatusCode, &'static str),
 }
 
 impl From<APIError> for AppError {
@@ -19,6 +20,7 @@ impl From<APIError> for AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
+            Self::Generic(status, message) => (status, message),
             Self::APIError(e) => match e {
                 APIError::DatabaseError(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error"),
                 APIError::Cancelled(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Cancelled"),

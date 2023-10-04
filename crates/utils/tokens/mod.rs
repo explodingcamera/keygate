@@ -73,26 +73,26 @@ impl From<String> for RawRefreshToken {
 
 #[allow(dead_code)]
 pub struct AccessToken {
-    audience: String,
-    subject: String,
-    issuer: String,
-    session_id: String,
-    key_id: String,
+    pub audience: String,
+    pub subject: String,
+    pub issuer: String,
+    pub session_id: String,
+    pub key_id: String,
 }
 
 pub struct GenerateAccessToken {
-    duration: Duration,
-    audience: String,
-    subject: String,
-    issuer: String,
-    session_id: String,
+    pub duration: Duration,
+    pub audience: String,
+    pub subject: String,
+    pub issuer: String,
+    pub session_id: String,
 }
 
 pub struct RefreshToken {}
 pub struct GenerateRefreshToken {
-    duration: Duration,
-    audience: String,
-    subject: String,
-    issuer: String,
-    session_id: String,
+    pub duration: Duration,
+    pub audience: String,
+    pub subject: String,
+    pub issuer: String,
+    pub session_id: String,
 }

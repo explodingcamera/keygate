@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use keygate_utils::{
     random::secure_random_id,
-    tokens::{AccessToken, RawAccessToken, RawRefreshToken, RefreshToken},
+    tokens::{RawAccessToken, RawRefreshToken},
 };
+pub use keygate_utils::{tokens::AccessToken, tokens::RefreshToken};
 
 use crate::{database::DatabasePool, KeygateInternal};
 

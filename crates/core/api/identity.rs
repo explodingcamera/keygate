@@ -54,7 +54,7 @@ impl Identity {
             .map_err(APIError::from)
     }
 
-    async fn get(&self, user: UserIdentifier) -> Result<Option<models::Identity>, APIError> {
+    pub async fn get(&self, user: UserIdentifier) -> Result<Option<models::Identity>, APIError> {
         let (field, value) = match user {
             UserIdentifier::Email(email) => ("primary_email", email),
             UserIdentifier::Username(username) => ("username", username),

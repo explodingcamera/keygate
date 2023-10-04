@@ -1,4 +1,4 @@
-use axum::extract::{ConnectInfo, Path, State};
+use axum::extract::{ConnectInfo, State};
 use axum::routing::*;
 use axum::{Json, Router};
 
@@ -19,9 +19,12 @@ struct SignupRequest {
 }
 
 #[derive(serde::Serialize)]
-struct SignupResponse {
-    access_token: String,
-    refresh_token: String,
+enum SignupResponse {
+    Success {
+        access_token: String,
+        refresh_token: String,
+    },
+    RequiresEmailVerification,
 }
 
 async fn signup(
@@ -36,7 +39,7 @@ async fn signup(
 
     let (refresh_token, access_token) = keygate.session.create(identity.id).await?;
 
-    Ok(Json(SignupResponse {
+    Ok(Json(SignupResponse::Success {
         access_token: access_token.0,
         refresh_token: refresh_token.0,
     }))
