@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use keygate_utils::{
     random::secure_random_id,
-    tokens::{AccessToken, RefreshToken},
+    tokens::{AccessToken, RawAccessToken, RawRefreshToken, RefreshToken},
 };
 
 use crate::{database::DatabasePool, KeygateInternal};
@@ -25,7 +25,7 @@ impl Session {
         &self.keygate.db
     }
 
-    async fn create(&self, something: ()) -> Result<(RefreshToken, AccessToken), APIError> {
+    pub async fn create(&self, identity_id: String) -> Result<(RawRefreshToken, RawAccessToken), APIError> {
         let session_id = secure_random_id();
         let exp = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
         // let refresh_token = KEYPAIR;

@@ -196,24 +196,7 @@ impl Auth {
         })
     }
 
-    async fn account_exists(
-        &self,
-        // everything with an @ is considered an email
-        username_or_email: &str,
-    ) -> Result<bool, APIError> {
-        let field = match username_or_email.contains('@') {
-            true => "primary_email",
-            false => "username",
-        };
-
-        sqlx::query!("SELECT id FROM Identity WHERE $1 = $2", field, username_or_email)
-            .fetch_optional(self.db())
-            .await
-            .map(|x| x.is_some())
-            .map_err(APIError::from)
-    }
-
-    async fn signup(
+    pub async fn signup(
         &self,
         username: &str,
         password: &str,
