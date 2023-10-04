@@ -1,7 +1,4 @@
 #![deny(unsafe_code)]
-#![allow(unused_variables)]
-#![allow(dead_code)]
-#![allow(clippy::enum_variant_names)]
 
 mod errors;
 mod private;
@@ -47,7 +44,7 @@ pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
 
     let keygate_tasks = keygate.run();
 
-    let e = tokio::select! {
+    tokio::select! {
         res = keygate_tasks => res?,
         res = private_server => res?,
         res = public_server => res?,

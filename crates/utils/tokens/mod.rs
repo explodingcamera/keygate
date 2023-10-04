@@ -39,8 +39,12 @@ pub trait SignatureAlgorithm<const PUBLIC_KEY_SIZE: usize, const PRIVATE_KEY_SIZ
 }
 
 pub trait TokenFormat {
-    fn generate_access_token(keypair: KeygateKeypair, token: GenerateAccessToken) -> Result<RawAccessToken, TokenError>;
-    fn generate_refresh_token(keypair: KeygateKeypair, token: GenerateRefreshToken) -> Result<RawRefreshToken, TokenError>;
+    fn generate_access_token(keypair: KeygateKeypair, token: GenerateAccessToken)
+        -> Result<RawAccessToken, TokenError>;
+    fn generate_refresh_token(
+        keypair: KeygateKeypair,
+        token: GenerateRefreshToken,
+    ) -> Result<RawRefreshToken, TokenError>;
 
     fn verify_access_token(public_key: &[u8], token: &str) -> Result<AccessToken, TokenError>;
     fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<RefreshToken, TokenError>;

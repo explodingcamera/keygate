@@ -18,7 +18,12 @@ pub fn is_valid_username(username: &str) -> bool {
     re.is_match(username) && username.len() >= 3 && username.len() <= 32
 }
 
-pub fn validate_field<E>(field: &Option<String>, required: bool, validator: impl Fn(&str) -> bool, error: E) -> Result<(), E> {
+pub fn validate_field<E>(
+    field: &Option<String>,
+    required: bool,
+    validator: impl Fn(&str) -> bool,
+    error: E,
+) -> Result<(), E> {
     if required && field.is_none() {
         return Err(error);
     }

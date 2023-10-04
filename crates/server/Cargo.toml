@@ -26,4 +26,4 @@ tokio = {version = "1", features = ["rt-multi-thread", "macros", "sync", "time"]
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 
-axum = {version = "0.6", default-features = false, features = ["http1", "headers", "json", "tokio", "tower-log", "tracing"]}
+axum = {version = "0.6", default-features = false, features = ["http1", "headers", "macros", "json", "tokio", "tower-log", "tracing"]}

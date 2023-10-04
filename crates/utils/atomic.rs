@@ -10,7 +10,8 @@ impl AtomicDateTime {
     }
 
     pub fn set(&self, date: OffsetDateTime) {
-        self.0.store(date.unix_timestamp(), std::sync::atomic::Ordering::Relaxed);
+        self.0
+            .store(date.unix_timestamp(), std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn get(&self) -> OffsetDateTime {

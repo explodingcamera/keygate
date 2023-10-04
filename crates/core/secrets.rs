@@ -77,9 +77,10 @@ impl Secrets {
     }
 
     async fn public_key_from_db(&self, key_id: &str) -> KeygateResult<Option<PublicKeyData>> {
-        let key: models::PublicKey = sqlx::query_as!(models::PublicKey, r#"SELECT * FROM PublicKey WHERE id = $0"#, key_id)
-            .fetch_one(self.db())
-            .await?;
+        let key: models::PublicKey =
+            sqlx::query_as!(models::PublicKey, r#"SELECT * FROM PublicKey WHERE id = $0"#, key_id)
+                .fetch_one(self.db())
+                .await?;
 
         let key = PublicKeyData {
             key: match key.key_type.as_str() {

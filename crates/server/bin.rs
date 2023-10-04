@@ -17,7 +17,11 @@ fn install_tracing() {
     use tracing_subscriber::prelude::*;
 
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().compact().with_filter(LevelFilter::INFO))
+        .with(
+            tracing_subscriber::fmt::layer()
+                .compact()
+                .with_filter(LevelFilter::INFO),
+        )
         .with(ErrorLayer::default())
         .init();
 }

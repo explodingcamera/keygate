@@ -13,7 +13,7 @@ use crate::{
     KeygateInternal,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct KeygateSettings {
     keygate: OnceLock<Arc<KeygateInternal>>,
     global: Mutex<Option<GlobalSettings>>,
@@ -44,12 +44,7 @@ pub enum SettingsError {
 
 impl KeygateSettings {
     pub fn new() -> Self {
-        Self {
-            keygate: OnceLock::new(),
-            global: Mutex::new(None),
-            global_updated_at: AtomicDateTime::new(),
-            applications: DashMap::new(),
-        }
+        Self::default()
     }
 
     fn db(&self) -> &DatabasePool {
@@ -135,14 +130,18 @@ impl KeygateSettings {
             return Ok(new_global);
         }
 
-        Ok(global.clone().expect("Global settings is none, this should be impossible"))
+        Ok(global
+            .clone()
+            .expect("Global settings is none, this should be impossible"))
     }
 
     pub async fn app(&self, application_id: &str) -> Result<Option<ApplicationSettings>, SettingsError> {
         let outdated = self
             .applications
             .get(application_id)
-            .map(|d| d.1.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() - APPLICATION_SETTINGS_UPDATE_INTERVAL)
+            .map(|d| {
+                d.1.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() - APPLICATION_SETTINGS_UPDATE_INTERVAL
+            })
             .unwrap_or(true);
 
         if outdated {
@@ -156,8 +155,10 @@ impl KeygateSettings {
 
             let new_settings: ApplicationSettings = serde_json::from_str(app.settings.as_str())?;
 
-            self.applications
-                .insert(application_id.to_string(), (new_settings.clone(), OffsetDateTime::now_utc()));
+            self.applications.insert(
+                application_id.to_string(),
+                (new_settings.clone(), OffsetDateTime::now_utc()),
+            );
 
             return Ok(Some(new_settings));
         }

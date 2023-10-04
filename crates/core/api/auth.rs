@@ -47,10 +47,16 @@ impl LoginStep {
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub enum LoginResponse {
-    NextStep { step_type: Vec<LoginStep>, process_id: String },
-    Success { refresh_token: String },
+    NextStep {
+        step_type: Vec<LoginStep>,
+        process_id: String,
+    },
+    Success {
+        refresh_token: String,
+    },
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct LoginStatusResponse {
     pub current_step: String,
     pub expires_at: Option<time::OffsetDateTime>,
@@ -120,24 +126,38 @@ impl Auth {
         })
     }
 
-    async fn login_step(&self, process_id: &str, step_type: LoginStep, data: &str) -> Result<LoginResponse, APIError> {
+    pub async fn login_step(
+        &self,
+        process_id: &str,
+        step_type: LoginStep,
+        data: &str,
+    ) -> Result<LoginResponse, APIError> {
         let next_steps: Option<Vec<LoginStep>> = {
             let mut tx = self.db().begin().await?;
 
-            let current_process = sqlx::query!("SELECT current_step, identity_id FROM LoginProcess WHERE id = $1", process_id)
-                .fetch_one(&mut *tx)
-                .await?;
+            let current_process = sqlx::query!(
+                "SELECT current_step, identity_id FROM LoginProcess WHERE id = $1",
+                process_id
+            )
+            .fetch_one(&mut *tx)
+            .await?;
 
-            let current_step =
-                LoginStep::from_str_name(&current_process.current_step).ok_or(APIError::invalid_argument("Invalid step type"))?;
+            let current_step = LoginStep::from_str_name(&current_process.current_step)
+                .ok_or(APIError::invalid_argument("Invalid step type"))?;
 
             match (current_step, step_type) {
                 (LoginStep::Email, LoginStep::Password) | (LoginStep::Username, LoginStep::Password) => {
-                    let identity = sqlx::query_as!(Identity, "SELECT * FROM Identity WHERE id = $1", current_process.identity_id)
-                        .fetch_one(&mut *tx)
-                        .await?;
+                    let identity = sqlx::query_as!(
+                        Identity,
+                        "SELECT * FROM Identity WHERE id = $1",
+                        current_process.identity_id
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
 
-                    let password_hash = identity.password_hash.ok_or(APIError::invalid_argument("Password not set"))?;
+                    let password_hash = identity
+                        .password_hash
+                        .ok_or(APIError::invalid_argument("Password not set"))?;
                     if !keygate_utils::hash::verify(data, &password_hash)
                         .map_err(|e| APIError::internal(&format!("Failed to verify password: {}", e)))?
                     {
@@ -162,12 +182,13 @@ impl Auth {
         }
     }
 
-    async fn login_status(&self, process_id: &str) -> Result<LoginStatusResponse, APIError> {
+    pub async fn login_status(&self, process_id: &str) -> Result<LoginStatusResponse, APIError> {
         let process = sqlx::query_as!(LoginProcess, "SELECT * FROM LoginProcess WHERE id = $1", process_id)
             .fetch_one(self.db())
             .await?;
 
-        let _ = LoginStep::from_str_name(&process.current_step).ok_or(APIError::invalid_argument("Invalid step type"))?;
+        let _ =
+            LoginStep::from_str_name(&process.current_step).ok_or(APIError::invalid_argument("Invalid step type"))?;
 
         Ok(LoginStatusResponse {
             current_step: process.current_step.to_string(),
@@ -192,7 +213,13 @@ impl Auth {
             .map_err(APIError::from)
     }
 
-    async fn signup(&self, username: &str, password: &str, email: &str, ip_address: IpAddr) -> Result<Identity, APIError> {
+    async fn signup(
+        &self,
+        username: &str,
+        password: &str,
+        email: &str,
+        ip_address: IpAddr,
+    ) -> Result<Identity, APIError> {
         if !is_valid_username(username) {
             return Err(APIError::invalid_argument("Invalid username"));
         }

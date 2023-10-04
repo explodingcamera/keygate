@@ -7,7 +7,10 @@ use time::{format_description::well_known::Rfc3339, Duration};
 pub struct Paseto();
 
 impl TokenFormat for Paseto {
-    fn generate_access_token(keypair: KeygateKeypair, token: GenerateAccessToken) -> Result<RawAccessToken, TokenError> {
+    fn generate_access_token(
+        keypair: KeygateKeypair,
+        token: GenerateAccessToken,
+    ) -> Result<RawAccessToken, TokenError> {
         let key = keypair.private_key();
         let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(key.as_slice());
 
@@ -25,7 +28,10 @@ impl TokenFormat for Paseto {
         Ok(RawAccessToken(access_token))
     }
 
-    fn generate_refresh_token(keypair: KeygateKeypair, token: GenerateRefreshToken) -> Result<RawRefreshToken, TokenError> {
+    fn generate_refresh_token(
+        keypair: KeygateKeypair,
+        token: GenerateRefreshToken,
+    ) -> Result<RawRefreshToken, TokenError> {
         let key = keypair.private_key();
         let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(key.as_slice());
 

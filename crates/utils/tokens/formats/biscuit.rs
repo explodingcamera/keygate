@@ -13,13 +13,19 @@ impl Biscuit {
 }
 
 impl TokenFormat for Biscuit {
-    fn generate_access_token(keypair: KeygateKeypair, _token: GenerateAccessToken) -> Result<RawAccessToken, TokenError> {
+    fn generate_access_token(
+        keypair: KeygateKeypair,
+        _token: GenerateAccessToken,
+    ) -> Result<RawAccessToken, TokenError> {
         let keypair = Self::to_biscuit_keypair(keypair);
         let biscuit = biscuit!(r#""#).build(&keypair)?;
         Ok(biscuit.to_string().into())
     }
 
-    fn generate_refresh_token(keypair: KeygateKeypair, _token: GenerateRefreshToken) -> Result<RawRefreshToken, TokenError> {
+    fn generate_refresh_token(
+        keypair: KeygateKeypair,
+        _token: GenerateRefreshToken,
+    ) -> Result<RawRefreshToken, TokenError> {
         let keypair = Self::to_biscuit_keypair(keypair);
         let biscuit = biscuit!(r#""#).build(&keypair)?;
         Ok(biscuit.to_string().into())
