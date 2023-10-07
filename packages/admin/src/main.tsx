@@ -2,9 +2,9 @@ import styles from "./main.module.scss";
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Flex, ThemePanel } from "@radix-ui/themes";
+import { Flex } from "@radix-ui/themes";
 
-import { Redirect, Route, Router, Switch } from "wouter";
+import { Route, Router, Switch } from "wouter";
 import { AuthRoutes } from "./pages/auth";
 import { KeygateProvider } from "@keygate/react";
 

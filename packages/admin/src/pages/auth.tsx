@@ -1,12 +1,9 @@
 import { Link, Route, Router, Switch, useLocation, useRouter } from "wouter";
 import { Login, Signup } from "@keygate/react";
-import { Box, Button, Card, Flex } from "@radix-ui/themes";
+import { Box, Button, Flex } from "@radix-ui/themes";
 
 import noise from "../../assets/noise.svg";
 import { useDarkMode } from "@keygate/react/utils/use-dark-mode";
-
-// background: url("/assets/noise.svg"),
-//   background-blend-mode: color-burn;
 
 const bg2 =
 	"radial-gradient(77.73% 77.73% at 98.52% 96.25%, rgb(214, 213, 219) 0%, rgba(170, 167, 177, 0.29) 50.52%, rgba(91, 216, 216, 0) 100%), radial-gradient(141.73% 105.23% at 50% -7.16%, rgb(225, 248, 255) 0%, rgba(160, 198, 255, 0) 50.73%, rgba(162, 147, 255, 0) 100%), radial-gradient(112.27% 48.54% at 1.59% 50%, rgba(72, 241, 178, 0.09) 0%, rgba(255, 123, 234, 0) 53.91%, rgba(254, 216, 255, 0) 100%), linear-gradient(153.07deg, rgba(110, 184, 36, 0.14) 6.37%, rgba(255, 230, 166, 0) 83.82%)";
