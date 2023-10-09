@@ -1,2 +1,1 @@
-mod application;
 mod session;

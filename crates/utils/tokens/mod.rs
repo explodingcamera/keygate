@@ -71,7 +71,7 @@ impl From<String> for RawRefreshToken {
     }
 }
 
-#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccessToken {
     pub audience: String,
     pub subject: String,

@@ -34,7 +34,7 @@ export const AuthRoutes = () => {
 				<Flex justify={"end"}>
 					<Link href={location.includes("/login") ? "/signup" : "/login"}>
 						<Button variant="soft" size={"3"}>
-							{location.includes("/login") ? "Sign up" : "Log in"}
+							{location.includes("/login") ? "Sign up" : "Sign in"}
 						</Button>
 					</Link>
 				</Flex>
