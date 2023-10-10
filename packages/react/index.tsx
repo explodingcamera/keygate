@@ -1,5 +1,4 @@
 import "./styles.css";
-import "@radix-ui/themes/styles.css";
 
 import { Theme } from "@radix-ui/themes";
 import { useDarkMode } from "./utils/use-dark-mode";

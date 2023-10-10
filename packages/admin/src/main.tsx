@@ -16,6 +16,8 @@ import { DashboardRoutes } from "./pages/dashboard";
 
 const base = "";
 
+import "@radix-ui/themes/styles.css";
+
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
 		<KeygateProvider>

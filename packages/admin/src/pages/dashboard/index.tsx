@@ -80,13 +80,14 @@ const NavItem = ({
 }: { active?: boolean; children: React.ReactNode; href: string }) => (
 	<Link href={href}>
 		<Button
+			mr={"3"}
 			highContrast={active}
 			color="gray"
 			variant="ghost"
-			size={"4"}
+			size={"1"}
 			className={styles.navItem}
 		>
-			{children}
+			<Text size={"4"}>{children}</Text>
 		</Button>
 	</Link>
 );

@@ -1,6 +1,6 @@
 import { Link, Route, Router, Switch, useLocation, useRouter } from "wouter";
 import { Login, Signup } from "@keygate/react";
-import { Box, Button, Flex } from "@radix-ui/themes";
+import { Box, Button, Flex, Text } from "@radix-ui/themes";
 
 import noise from "../../assets/noise.svg";
 import { useDarkMode } from "@keygate/react/utils/use-dark-mode";
@@ -27,8 +27,8 @@ export const AuthRoutes = () => {
 				}}
 			>
 				<Box style={{ position: "absolute", bottom: 0, right: 0 }} p="3">
-					<Button variant="ghost" m="2" onClick={toggle}>
-						toggle dark mode
+					<Button variant="ghost" mr="2" size={"3"} onClick={toggle}>
+						<Text size={"2"}>toggle dark mode</Text>
 					</Button>
 				</Box>
 				<Flex justify={"end"}>
