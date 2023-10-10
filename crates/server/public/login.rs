@@ -10,7 +10,7 @@ use std::net::SocketAddr;
 
 pub fn new() -> Router<Keygate> {
     Router::new()
-        .route("", post(login))
+        .route("/", post(login))
         .route("/step", post(login_step))
         .route("/:process_id", get(login_status))
 }

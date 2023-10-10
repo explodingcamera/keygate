@@ -2,8 +2,8 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
-use std::fmt::Debug;
 use std::sync::Arc;
+use std::{fmt::Debug, path::Path};
 
 pub mod api;
 pub mod database;
@@ -19,6 +19,7 @@ use database::DatabasePool;
 use secrets::Secrets;
 use settings::KeygateSettings;
 use thiserror::Error;
+use tracing::{info, warn};
 
 #[derive(Clone, Copy, Debug)]
 pub enum Health {
@@ -40,6 +41,15 @@ pub enum KeygateError {
 
     #[error(transparent)]
     DatabaseError(#[from] sqlx::Error),
+
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
+
+    #[error(transparent)]
+    APIError(#[from] api::APIError),
+
+    #[error(transparent)]
+    SettingsError(#[from] settings::SettingsError),
 }
 
 pub type KeygateResult<T> = Result<T, KeygateError>;
@@ -55,7 +65,6 @@ pub(crate) struct KeygateInternal {
 
 impl KeygateInternal {
     pub async fn run(&self) -> KeygateResult<()> {
-        self.secrets.run().await;
         Ok(())
     }
 }
@@ -69,6 +78,47 @@ pub struct Keygate {
 }
 
 impl Keygate {
+    pub async fn create_admin_app(&self) -> KeygateResult<()> {
+        let app_created = self
+            .inner
+            .settings
+            .create_application(
+                "admin",
+                database::models::ApplicationSettings {
+                    access_token_expires_in: Some(time::Duration::minutes(10)),
+                    refresh_token_expires_in: Some(time::Duration::days(1)),
+                    access_token_format: database::models::TokenFormat::Jwt25519,
+                },
+            )
+            .await?;
+
+        match app_created {
+            true => info!("Created admin application"),
+            false => info!("Admin application already exists"),
+        }
+
+        Ok(())
+    }
+
+    pub async fn create_admin_user(&self) -> KeygateResult<()> {
+        if self.identity.exists("admin").await? {
+            info!("Admin user already exists");
+            return Ok(());
+        }
+
+        let user_pw = keygate_utils::hash::password("admin")?;
+        let user = self
+            .identity
+            .create(api::identity::CreateIdentity {
+                username: Some("admin"),
+                primary_email: Some("admin@keygate.io"),
+                password_hash: Some(&user_pw),
+            })
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn run(&self) -> KeygateResult<()> {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
         loop {
@@ -77,13 +127,41 @@ impl Keygate {
         }
     }
 
+    #[allow(unreachable_patterns)]
     pub async fn new(config: Config) -> Result<Self, KeygateError> {
         sqlx::any::install_default_drivers();
-        let db = DatabasePool::connect("sqlite://:memory:").await?;
-        sqlx::migrate!("./migrations")
-            .run(&db)
-            .await
-            .expect("Failed to run migrations");
+
+        let db = match config.storage_options.clone() {
+            config::StorageOptions::Sqlite { database_path } => {
+                let mut path = database_path;
+
+                if !path.starts_with("sqlite://") {
+                    return Err(KeygateError::ValidationError("Invalid sqlite database path".into()));
+                }
+
+                if path.starts_with("sqlite://~") {
+                    let home = dirs::home_dir().expect("Failed to get home directory");
+                    path = path.replace('~', home.to_str().unwrap());
+                }
+
+                if !path.starts_with("sqlite://:memory:") {
+                    let file_path = &path.strip_prefix("sqlite://").unwrap();
+                    let file_path = Path::new(file_path);
+                    std::fs::create_dir_all(file_path.parent().unwrap())?;
+                    info!("Using sqlite database at {}", file_path.display());
+                } else {
+                    warn!("Using in-memory database. All data will be lost on restart.");
+                }
+
+                let db = DatabasePool::connect(&path).await?;
+                sqlx::migrate!("./migrations")
+                    .run(&db)
+                    .await
+                    .expect("Failed to run migrations");
+                db
+            }
+            _ => panic!("Unsupported storage option"),
+        };
 
         Ok(Keygate::new_with_storage(config, db).await)
     }
@@ -99,6 +177,16 @@ impl Keygate {
 
         internal.settings.set_keygate(internal.clone());
         internal.secrets.set_keygate(internal.clone());
+
+        // ensure global settings exist
+        internal
+            .settings
+            .global()
+            .await
+            .expect("Failed to load global settings");
+
+        // ensure keypair exists
+        internal.secrets.ensure_keypair().await;
 
         Keygate {
             inner: internal.clone(),

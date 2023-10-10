@@ -18,10 +18,10 @@ pub struct Identity {
 }
 
 #[derive(Debug, Clone)]
-pub struct CreateIdentity {
-    pub username: Option<String>,
-    pub primary_email: Option<String>,
-    pub password_hash: Option<String>,
+pub struct CreateIdentity<'a> {
+    pub username: Option<&'a str>,
+    pub primary_email: Option<&'a str>,
+    pub password_hash: Option<&'a str>,
 }
 
 const USERNAME_REQUIRED: bool = true;
@@ -42,16 +42,18 @@ impl Identity {
         // everything with an @ is considered an email
         username_or_email: &str,
     ) -> Result<bool, APIError> {
-        let field = match username_or_email.contains('@') {
-            true => "primary_email",
-            false => "username",
+        let user = match username_or_email.contains('@') {
+            true => sqlx::query!("SELECT id FROM Identity WHERE primary_email = $1", username_or_email)
+                .fetch_optional(self.db())
+                .await?
+                .map(|x| x.id),
+            false => sqlx::query!("SELECT id FROM Identity WHERE username = $1", username_or_email)
+                .fetch_optional(self.db())
+                .await?
+                .map(|x| x.id),
         };
 
-        sqlx::query!("SELECT id FROM Identity WHERE $1 = $2", field, username_or_email)
-            .fetch_optional(self.db())
-            .await
-            .map(|x| x.is_some())
-            .map_err(APIError::from)
+        Ok(user.is_some())
     }
 
     pub async fn get(&self, user: UserIdentifier) -> Result<Option<models::Identity>, APIError> {
@@ -68,10 +70,11 @@ impl Identity {
         Ok(identity)
     }
 
-    async fn create(&self, identity: CreateIdentity) -> Result<models::Identity, APIError> {
+    pub async fn create<'a>(&self, identity: CreateIdentity<'a>) -> Result<models::Identity, APIError> {
         let user_id = secure_random_id();
         let email_token = secure_random_id();
-        let email_expires_at = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
+        let now = time::OffsetDateTime::now_utc();
+        let email_expires_at = now + time::Duration::minutes(15);
 
         validate_field(
             &identity.username,
@@ -79,6 +82,7 @@ impl Identity {
             is_valid_username,
             APIError::invalid_argument("Invalid username"),
         )?;
+
         validate_field(
             &identity.primary_email,
             EMAIL_REQUIRED,
@@ -92,30 +96,55 @@ impl Identity {
             APIError::invalid_argument("Invalid password"),
         )?;
 
-        Ok(sqlx::query_as!(
+        let mut tx = self.db().begin().await?;
+
+        let mut identity = sqlx::query_as!(
             models::Identity,
             r#"
-                INSERT INTO Identity (id, username, primary_email, password_hash)
-                    VALUES ($1, $2, $3, $4)
+                INSERT INTO Identity (id, username, password_hash, created_at, updated_at, last_active)
+                    VALUES ($1, $2, $3, $4, $5, $6)
                     RETURNING *;
-                    
-                INSERT INTO Email (email, identity_id, verified, verification_code, verification_code_expires_at)
-                    VALUES ($5, $6, false, $7, $8);
             "#,
             user_id,
             identity.username,
-            identity.primary_email,
             identity.password_hash,
-            identity.primary_email,
-            user_id,
-            email_token,
-            email_expires_at
+            now,
+            now,
+            now,
         )
-        .fetch_one(self.db())
-        .await?)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if let Some(email) = identity.primary_email.clone() {
+            sqlx::query!(
+                "INSERT INTO Email (email, identity_id, verified, verification_code, verification_code_expires_at, created_at, updated_at)
+                    VALUES ($1, $2, false, $3, $4, $5, $6)",
+                email,
+                user_id,
+                email_token,
+                email_expires_at,
+                now,
+                now
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            identity = sqlx::query_as!(
+                models::Identity,
+                "UPDATE Identity SET primary_email = $1 WHERE id = $2 RETURNING *",
+                identity.primary_email,
+                user_id
+            )
+            .fetch_one(&mut *tx)
+            .await?;
+        }
+
+        tx.commit().await?;
+
+        Ok(identity)
     }
 
-    async fn update(
+    pub async fn update(
         &self,
         update: impl FnOnce(models::Identity) -> models::Identity,
         id: &str,
@@ -152,7 +181,7 @@ impl Identity {
         Ok(identity)
     }
 
-    async fn delete_permanent(&self, id: &str) -> Result<(), APIError> {
+    pub async fn delete_permanent(&self, id: &str) -> Result<(), APIError> {
         sqlx::query!("DELETE FROM Identity WHERE id = $1", id)
             .execute(self.db())
             .await?;
@@ -160,7 +189,7 @@ impl Identity {
         Ok(())
     }
 
-    async fn list(
+    pub async fn list(
         &self,
         filter: Filter,
         sort_by: SortBy,

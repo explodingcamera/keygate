@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
-use crate::KeygateInternal;
-use prisma::PrismaClient;
-use proto::models;
-
-use super::{APIError, UserIdentifier};
+use super::APIError;
+use crate::{database::DatabasePool, KeygateInternal};
 
 #[derive(Debug, Clone)]
 pub struct Template {

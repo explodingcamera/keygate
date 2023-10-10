@@ -7,6 +7,7 @@ pub enum Environment {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum StorageOptions {
     Sqlite { database_path: String },
 }

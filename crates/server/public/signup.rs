@@ -8,7 +8,7 @@ use crate::errors::AppError;
 use std::net::SocketAddr;
 
 pub fn new() -> Router<Keygate> {
-    Router::new().route("", post(signup))
+    Router::new().route("/", post(signup))
 }
 
 #[derive(serde::Deserialize)]

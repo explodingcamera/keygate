@@ -19,7 +19,7 @@ pub fn is_valid_username(username: &str) -> bool {
 }
 
 pub fn validate_field<E>(
-    field: &Option<String>,
+    field: &Option<&str>,
     required: bool,
     validator: impl Fn(&str) -> bool,
     error: E,

@@ -113,7 +113,7 @@ impl Secrets {
         self.keygate.set(keygate).unwrap();
     }
 
-    pub(crate) async fn run(&self) {
+    pub(crate) async fn ensure_keypair(&self) {
         if self.active_keypairs.is_empty() {
             tracing::debug!("No signing keys are configured, generating a new one");
             let new_key_id = self.generate_signing_key();

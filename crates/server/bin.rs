@@ -1,5 +1,5 @@
 use figment::{providers::Env, Figment};
-use keygate_core::KeygateConfig;
+use keygate_core::{config::StorageOptions, KeygateConfig};
 use keygate_server::run;
 
 #[tokio::main]
@@ -7,7 +7,18 @@ async fn main() -> color_eyre::Result<()> {
     install_tracing();
     color_eyre::install()?;
 
-    let config: KeygateConfig = Figment::new().merge(Env::prefixed("KEYGATE_")).extract()?;
+    let defaults = Figment::new().join((
+        "storage_options",
+        StorageOptions::Sqlite {
+            database_path: "sqlite://~/.local/share/keygate/keygate.db".to_string(),
+        },
+    ));
+
+    let config: KeygateConfig = Figment::new()
+        .merge(defaults)
+        .merge(Env::prefixed("KEYGATE_"))
+        .extract()?;
+
     run(config).await
 }
 

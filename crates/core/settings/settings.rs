@@ -118,9 +118,15 @@ impl KeygateSettings {
                     let new_global = default_global_settings();
                     let settings = serde_json::to_string(&new_global)?;
 
-                    sqlx::query!("INSERT INTO Application (id, settings) VALUES ('global', $1)", settings)
-                        .execute(self.db())
-                        .await?;
+                    let now = OffsetDateTime::now_utc();
+                    sqlx::query!(
+                        "INSERT INTO Application (id, settings, created_at, updated_at) VALUES ('global', $1, $2, $3)",
+                        settings,
+                        now,
+                        now
+                    )
+                    .execute(self.db())
+                    .await?;
 
                     new_global
                 }
@@ -169,6 +175,36 @@ impl KeygateSettings {
                 .map(|app| app.0.clone())
                 .expect("Application settings not found, this should not be possible"),
         ))
+    }
+
+    pub async fn create_application(
+        &self,
+        application_id: &str,
+        settings: ApplicationSettings,
+    ) -> Result<bool, SettingsError> {
+        let settings = serde_json::to_string(&settings)?;
+        let now = OffsetDateTime::now_utc();
+
+        let res = sqlx::query!(
+            "INSERT OR IGNORE INTO Application (id, settings, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+            application_id,
+            settings,
+            now,
+            now,
+        )
+        .execute(self.db())
+        .await;
+
+        match res {
+            Err(e) => Err(e.into()),
+            Ok(x) => {
+                if x.rows_affected() == 0 {
+                    Ok(false)
+                } else {
+                    Ok(true)
+                }
+            }
+        }
     }
 
     pub(crate) fn set_keygate(&self, keygate: Arc<KeygateInternal>) {

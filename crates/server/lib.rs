@@ -1,4 +1,6 @@
 #![deny(unsafe_code)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
 
 mod errors;
 mod middleware;
@@ -39,9 +41,18 @@ pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
     let public_server = axum::Server::bind(&"127.0.0.1:3001".parse().unwrap())
         .serve(public_app.into_make_service_with_connect_info::<SocketAddr>());
 
-    info!("Keygate started in {}ms", now.elapsed().as_millis());
+    let elapsed = now.elapsed();
+    let elapsed = if elapsed.as_micros() < 3000 {
+        format!("{}ms", elapsed.as_micros() as f64 / 1000.0)
+    } else {
+        format!("{}ms", elapsed.as_millis())
+    };
+    info!("Keygate started in {}", elapsed);
     info!("Private API listening on {}", "http://localhost:3000");
     info!("Public API listening on {}", "http://localhost:3001");
+
+    keygate.create_admin_app().await?;
+    keygate.create_admin_user().await?;
 
     let keygate_tasks = keygate.run();
 
