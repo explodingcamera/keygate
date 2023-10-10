@@ -4,81 +4,97 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use keygate_core::{api::session::AccessToken, Keygate};
+use keygate_core::{
+    api::{
+        session::{AccessToken, RefreshToken},
+        UserIdentifier,
+    },
+    Keygate,
+};
 
 use crate::errors::AppError;
 
-// An extractor that performs authorization.
+pub enum AppToken {
+    Anon,
+    AccessToken(AccessToken),
+    RefreshToken(RefreshToken),
+}
 
-pub async fn auth<B>(
+pub struct ApplicationID(pub String);
+
+const ANON_PREFIX: &str = "Bearer kg0a.";
+const ACCESS_PREFIX: &str = "Bearer kg0s.";
+const REFRESH_PREFIX: &str = "Bearer kg0r.";
+
+pub async fn validate_token<B>(
     State(keygate): State<Keygate>,
     mut req: Request<B>,
     next: Next<B>,
-) -> Result<Response, StatusCode> {
-    let auth_header = req.headers().get(AUTHORIZATION).and_then(|header| header.to_str().ok());
-
-    let _auth_header = if let Some(auth_header) = auth_header {
-        auth_header
-    } else {
-        return Err(StatusCode::UNAUTHORIZED);
+) -> Result<Response, AppError> {
+    let Some(auth_header) = req.headers().get(AUTHORIZATION).and_then(|header| header.to_str().ok()) else {
+        return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated"));
     };
 
-    if let Some(access_token) = Some(AccessToken {
-        audience: "".to_owned(),
-        subject: "anon".to_owned(),
-        issuer: "".to_owned(),
-        session_id: "".to_owned(),
-        key_id: "".to_owned(),
-    }) {
-        // insert the current user into a request extension so the handler can
-        // extract it
-        req.extensions_mut().insert(access_token);
-        Ok(next.run(req).await)
-    } else {
-        Err(StatusCode::UNAUTHORIZED)
-    }
-}
+    let (token, application_id) = match auth_header {
+        h if h.starts_with(ANON_PREFIX) => (
+            AppToken::Anon,
+            ApplicationID(h.trim_start_matches(ANON_PREFIX).to_owned()),
+        ),
+        h if h.starts_with("Bearer kg0s") => {
+            let token = keygate
+                .auth
+                .verify_access_token(h.trim_start_matches(ACCESS_PREFIX))
+                .await?;
+            let application_id = token.audience.clone();
+            (AppToken::AccessToken(token), ApplicationID(application_id))
+        }
+        h if h.starts_with("Bearer kg0r") => {
+            let token = keygate
+                .auth
+                .verify_refresh_token(h.trim_start_matches(REFRESH_PREFIX))
+                .await?;
+            let application_id = token.audience.clone();
+            (AppToken::RefreshToken(token), ApplicationID(application_id))
+        }
+        _ => return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated")),
+    };
 
-pub struct ReqAuth {
-    identity: ReqIdentity,
-    access_token: AccessToken,
+    req.extensions_mut().insert(token);
+    req.extensions_mut().insert(application_id);
+
+    Ok(next.run(req).await)
 }
 
 pub enum ReqIdentity {
     Anon,
     Identity(keygate_core::database::models::Identity),
+    RefreshIdentity(keygate_core::database::models::Identity),
 }
 
-pub async fn identity<B>(
+pub async fn query_identity<B>(
     State(keygate): State<Keygate>,
     mut req: Request<B>,
     next: Next<B>,
 ) -> Result<Response, AppError> {
-    let Some(access_token) = req.extensions().get::<AccessToken>() else {
+    let Some(app_token) = req.extensions().get::<AppToken>() else {
         return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated"));
     };
 
-    let auth = match access_token.subject.as_str() {
-        "anon" => ReqAuth {
-            identity: ReqIdentity::Anon,
-            access_token: access_token.clone(),
-        },
-        id => {
-            let Some(identity) = keygate
-                .identity
-                .get(keygate_core::api::UserIdentifier::Id(id.to_string()))
-                .await?
-            else {
-                return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated"));
-            };
-
-            ReqAuth {
-                identity: ReqIdentity::Identity(identity),
-                access_token: access_token.clone(),
-            }
+    let identity = match app_token {
+        AppToken::Anon => Some(ReqIdentity::Anon),
+        AppToken::AccessToken(token) => {
+            let identity = keygate.identity.get(UserIdentifier::Id(token.subject.clone())).await?;
+            identity.map(ReqIdentity::Identity)
+        }
+        AppToken::RefreshToken(token) => {
+            let identity = keygate.identity.get(UserIdentifier::Id(token.subject.clone())).await?;
+            identity.map(ReqIdentity::RefreshIdentity)
         }
     };
 
-    req.extensions_mut().insert(auth);
+    if let Some(identity) = identity {
+        req.extensions_mut().insert(identity);
+    }
+
     Ok(next.run(req).await)
 }

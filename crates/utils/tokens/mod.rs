@@ -88,7 +88,14 @@ pub struct GenerateAccessToken {
     pub session_id: String,
 }
 
-pub struct RefreshToken {}
+pub struct RefreshToken {
+    pub audience: String,
+    pub subject: String,
+    pub issuer: String,
+    pub session_id: String,
+    pub key_id: String,
+}
+
 pub struct GenerateRefreshToken {
     pub duration: Duration,
     pub audience: String,

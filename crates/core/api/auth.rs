@@ -2,6 +2,7 @@ use std::{net::IpAddr, sync::Arc};
 
 use keygate_utils::{
     random::secure_random_id,
+    tokens::{AccessToken, RefreshToken},
     validate::{is_valid_email, is_valid_password, is_valid_username},
 };
 
@@ -69,6 +70,26 @@ impl Auth {
 
     fn db(&self) -> &DatabasePool {
         &self.keygate.db
+    }
+
+    pub async fn verify_access_token(&self, token: &str) -> Result<AccessToken, APIError> {
+        Ok(AccessToken {
+            audience: "TODO".to_string(),
+            issuer: "TODO".to_string(),
+            key_id: "TODO".to_string(),
+            session_id: "TODO".to_string(),
+            subject: "TODO".to_string(),
+        })
+    }
+
+    pub async fn verify_refresh_token(&self, token: &str) -> Result<RefreshToken, APIError> {
+        Ok(RefreshToken {
+            audience: "TODO".to_string(),
+            issuer: "TODO".to_string(),
+            key_id: "TODO".to_string(),
+            session_id: "TODO".to_string(),
+            subject: "TODO".to_string(),
+        })
     }
 
     // create a new login process for the given user

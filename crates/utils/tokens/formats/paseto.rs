@@ -71,12 +71,18 @@ impl TokenFormat for Paseto {
         let key: Key<32> = public_key.try_into().map_err(|_| TokenError::InvalidToken)?;
         let key = PasetoAsymmetricPublicKey::<V4, Public>::from(&key);
 
-        PasetoParser::<V4, Public>::default()
+        let claims = PasetoParser::<V4, Public>::default()
             .check_claim(CustomClaim::try_from(("kind", "refresh"))?)
             .parse(token, &key)
             .map_err(|_| TokenError::InvalidToken)?;
 
-        Ok(RefreshToken {})
+        Ok(RefreshToken {
+            audience: claims["aud"].to_string(),
+            subject: claims["sub"].to_string(),
+            issuer: claims["iss"].to_string(),
+            session_id: claims["sid"].to_string(),
+            key_id: claims["kid"].to_string(),
+        })
     }
 }
 
