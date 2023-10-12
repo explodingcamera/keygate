@@ -5,11 +5,33 @@ use axum::{
 };
 use keygate_core::api::APIError;
 use serde_json::json;
+use utoipa::{
+    openapi::{ObjectBuilder, SchemaType},
+    ToSchema,
+};
 
-#[derive(utoipa::ToSchema)]
 pub enum AppError {
     APIError(APIError),
     Generic(StatusCode, &'static str),
+}
+
+impl<'s> ToSchema<'s> for AppError {
+    fn schema() -> (
+        &'s str,
+        utoipa::openapi::RefOr<utoipa::openapi::schema::Schema>,
+    ) {
+        (
+            "AppError",
+            ObjectBuilder::new()
+                .title(Some("AppError"))
+                .property(
+                    "error",
+                    ObjectBuilder::new().schema_type(SchemaType::String).build(),
+                )
+                .description(Some("An error that can be returned by the API"))
+                .into(),
+        )
+    }
 }
 
 impl From<APIError> for AppError {

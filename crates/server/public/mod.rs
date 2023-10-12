@@ -5,6 +5,7 @@ mod _api;
 mod identity;
 mod login;
 mod signup;
+pub use _api::PublicAPI;
 
 pub fn new() -> Router<Keygate> {
     Router::new()

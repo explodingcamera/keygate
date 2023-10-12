@@ -21,6 +21,7 @@ pub struct Auth {
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum LoginStep {
     Email,
     Username,
@@ -47,6 +48,7 @@ impl LoginStep {
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum LoginResponse {
     NextStep {
         step_type: Vec<LoginStep>,
@@ -58,6 +60,7 @@ pub enum LoginResponse {
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub struct LoginStatusResponse {
     pub current_step: String,
     pub expires_at: Option<time::OffsetDateTime>,

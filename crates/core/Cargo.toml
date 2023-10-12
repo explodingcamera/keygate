@@ -17,13 +17,14 @@ thiserror = "1.0"
 tokio = {version = "1", default-features = false, features = ["macros"]}
 tracing = "0.1"
 
+dirs = "5.0.1"
 sqlx = {version = "0.7", features = ["runtime-tokio", "tls-rustls", "time", "uuid", "migrate"]}
 time = {version = "0.3", features = ["serde"]}
+utoipa = {version = "4", default-features = false, optional = true}
 uuid = {version = "1.3", features = ["serde", "v7"]}
-dirs = "5.0.1"
 
 [features]
-default = ["sqlite"]
+default = ["sqlite", "utoipa"]
 
 mysql = ["sqlx/mysql"]
 postgres = ["sqlx/postgres"]

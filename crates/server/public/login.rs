@@ -15,8 +15,8 @@ pub fn new() -> Router<Keygate> {
         .route("/:process_id", get(login_status))
 }
 
-#[derive(serde::Deserialize, utoipa::IntoParams)]
-struct LoginRequest {
+#[derive(serde::Deserialize, utoipa::ToSchema)]
+pub struct LoginRequest {
     username_or_email: String,
 }
 
@@ -39,8 +39,8 @@ async fn login(
     Ok(Json(res))
 }
 
-#[derive(serde::Deserialize, utoipa::IntoParams)]
-struct LoginStepRequest {
+#[derive(serde::Deserialize, utoipa::ToSchema)]
+pub struct LoginStepRequest {
     process_id: String,
     step_type: LoginStep,
     data: String,

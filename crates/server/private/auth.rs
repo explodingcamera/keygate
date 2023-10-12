@@ -10,12 +10,12 @@ pub fn new() -> Router<Keygate> {
     Router::new().route("/validate", post(validate))
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, utoipa::ToSchema)]
 pub struct ValidateRequest {
     token: String,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct ValidateResponse {
     valid: bool,
 }

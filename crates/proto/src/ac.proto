@@ -1,4 +1,0 @@
-syntax = "proto3";
-package v1.api.access_control;
-
-service ACService {}

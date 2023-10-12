@@ -8,6 +8,9 @@ mod openapi;
 mod private;
 mod public;
 
+pub use private::PrivateAPI;
+pub use public::PublicAPI;
+
 use std::net::SocketAddr;
 
 use axum::Router;

@@ -1,2 +1,0 @@
-syntax = "proto3";
-package v1.models.internal;

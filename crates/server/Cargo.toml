@@ -11,6 +11,10 @@ path = "lib.rs"
 name = "keygate"
 path = "bin.rs"
 
+[[bin]]
+name = "gen-openapi"
+path = "./gen_openapi.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -28,5 +32,5 @@ tokio = {version = "1", features = ["rt-multi-thread", "macros", "sync", "time"]
 
 axum = {version = "0.6", default-features = false, features = ["http1", "headers", "macros", "json", "tokio", "tower-log", "tracing"]}
 
-utoipa = {features = ["axum_extras"], version = "4.0"}
+utoipa = {features = ["axum_extras", "time"], version = "4.0"}
 utoipa-swagger-ui = {features = ["axum"], version = "4.0"}
