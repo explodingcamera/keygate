@@ -14,8 +14,8 @@ pub fn password(password: &str) -> std::io::Result<String> {
 
 pub fn verify(password: &str, hash: &str) -> std::io::Result<bool> {
     let argon2 = argon2::Argon2::default();
-    let hash =
-        PasswordHash::new(hash).map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "failed to parse hash"))?;
+    let hash = PasswordHash::new(hash)
+        .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "failed to parse hash"))?;
     let result = argon2
         .verify_password(password.as_bytes(), &hash)
         .map_err(|_| std::io::Error::new(std::io::ErrorKind::Other, "failed to verify password"))

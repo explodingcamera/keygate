@@ -4,6 +4,7 @@
 
 mod errors;
 mod middleware;
+mod openapi;
 mod private;
 mod public;
 
@@ -32,8 +33,12 @@ pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
 
     let keygate = Keygate::new(config).await?;
 
-    let private_app = Router::new().merge(private::new()).with_state(keygate.clone());
-    let public_app = Router::new().merge(public::new()).with_state(keygate.clone());
+    let private_app = Router::new()
+        .merge(private::new())
+        .with_state(keygate.clone());
+    let public_app = Router::new()
+        .merge(public::new())
+        .with_state(keygate.clone());
 
     let private_server = axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
         .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());

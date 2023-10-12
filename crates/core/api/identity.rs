@@ -43,14 +43,20 @@ impl Identity {
         username_or_email: &str,
     ) -> Result<bool, APIError> {
         let user = match username_or_email.contains('@') {
-            true => sqlx::query!("SELECT id FROM Identity WHERE primary_email = $1", username_or_email)
-                .fetch_optional(self.db())
-                .await?
-                .map(|x| x.id),
-            false => sqlx::query!("SELECT id FROM Identity WHERE username = $1", username_or_email)
-                .fetch_optional(self.db())
-                .await?
-                .map(|x| x.id),
+            true => sqlx::query!(
+                "SELECT id FROM Identity WHERE primary_email = $1",
+                username_or_email
+            )
+            .fetch_optional(self.db())
+            .await?
+            .map(|x| x.id),
+            false => sqlx::query!(
+                "SELECT id FROM Identity WHERE username = $1",
+                username_or_email
+            )
+            .fetch_optional(self.db())
+            .await?
+            .map(|x| x.id),
         };
 
         Ok(user.is_some())
@@ -63,14 +69,22 @@ impl Identity {
             UserIdentifier::Id(id) => ("id", id),
         };
 
-        let identity = sqlx::query_as!(models::Identity, "SELECT * FROM Identity WHERE $1 = $2", field, value)
-            .fetch_optional(self.db())
-            .await?;
+        let identity = sqlx::query_as!(
+            models::Identity,
+            "SELECT * FROM Identity WHERE $1 = $2",
+            field,
+            value
+        )
+        .fetch_optional(self.db())
+        .await?;
 
         Ok(identity)
     }
 
-    pub async fn create<'a>(&self, identity: CreateIdentity<'a>) -> Result<models::Identity, APIError> {
+    pub async fn create<'a>(
+        &self,
+        identity: CreateIdentity<'a>,
+    ) -> Result<models::Identity, APIError> {
         let user_id = secure_random_id();
         let email_token = secure_random_id();
         let now = time::OffsetDateTime::now_utc();
@@ -152,10 +166,11 @@ impl Identity {
         let now = time::OffsetDateTime::now_utc();
         let mut tx = self.db().begin().await?;
 
-        let identity = sqlx::query_as!(models::Identity, "SELECT * FROM Identity WHERE id = $1", id)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or(APIError::not_found("User not found"))?;
+        let identity =
+            sqlx::query_as!(models::Identity, "SELECT * FROM Identity WHERE id = $1", id)
+                .fetch_optional(&mut *tx)
+                .await?
+                .ok_or(APIError::not_found("User not found"))?;
 
         let identity = update(identity.clone());
 
@@ -163,7 +178,11 @@ impl Identity {
             return Err(APIError::invalid_argument("Invalid username"));
         }
 
-        if identity.username.clone().is_some_and(|u| !is_valid_username(&u)) {
+        if identity
+            .username
+            .clone()
+            .is_some_and(|u| !is_valid_username(&u))
+        {
             return Err(APIError::invalid_argument("Invalid username"));
         }
 
@@ -198,7 +217,9 @@ impl Identity {
         count: u32,
     ) -> Result<Vec<models::Identity>, APIError> {
         if count > 100 {
-            return Err(APIError::invalid_argument("Count cannot be greater than 100"));
+            return Err(APIError::invalid_argument(
+                "Count cannot be greater than 100",
+            ));
         }
 
         let order_field = match sort_by {
@@ -214,9 +235,9 @@ impl Identity {
             _ => ("id", "".to_string()),
         };
 
-        let identities = match sort_order {
-            SortOrder::Asc => {
-                sqlx::query_as!(
+        let identities =
+            match sort_order {
+                SortOrder::Asc => sqlx::query_as!(
                     models::Identity,
                     r#"SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 ASC LIMIT $4 OFFSET $5"#,
                     filter_field,
@@ -226,10 +247,9 @@ impl Identity {
                     offset
                 )
                 .fetch_all(self.db())
-                .await?
-            }
-            SortOrder::Desc => {
-                sqlx::query_as!(
+                .await?,
+                SortOrder::Desc => {
+                    sqlx::query_as!(
                     models::Identity,
                     "SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 DESC LIMIT $4 OFFSET $5",
                     filter_field,
@@ -238,10 +258,10 @@ impl Identity {
                     count,
                     offset
                 )
-                .fetch_all(self.db())
-                .await?
-            }
-        };
+                    .fetch_all(self.db())
+                    .await?
+                }
+            };
 
         Ok(identities)
     }

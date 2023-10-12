@@ -72,7 +72,11 @@ impl KeygateSettings {
         Ok(())
     }
 
-    pub async fn update_app(&self, application_id: &str, settings: ApplicationSettings) -> Result<(), SettingsError> {
+    pub async fn update_app(
+        &self,
+        application_id: &str,
+        settings: ApplicationSettings,
+    ) -> Result<(), SettingsError> {
         let new_settings = serde_json::to_string(&settings)?;
         let now = OffsetDateTime::now_utc();
 
@@ -85,8 +89,10 @@ impl KeygateSettings {
         .execute(self.db())
         .await?;
 
-        self.applications
-            .insert(application_id.to_string(), (settings, OffsetDateTime::now_utc()));
+        self.applications.insert(
+            application_id.to_string(),
+            (settings, OffsetDateTime::now_utc()),
+        );
 
         Ok(())
     }
@@ -141,19 +147,28 @@ impl KeygateSettings {
             .expect("Global settings is none, this should be impossible"))
     }
 
-    pub async fn app(&self, application_id: &str) -> Result<Option<ApplicationSettings>, SettingsError> {
+    pub async fn app(
+        &self,
+        application_id: &str,
+    ) -> Result<Option<ApplicationSettings>, SettingsError> {
         let outdated = self
             .applications
             .get(application_id)
             .map(|d| {
-                d.1.unix_timestamp() < OffsetDateTime::now_utc().unix_timestamp() - APPLICATION_SETTINGS_UPDATE_INTERVAL
+                d.1.unix_timestamp()
+                    < OffsetDateTime::now_utc().unix_timestamp()
+                        - APPLICATION_SETTINGS_UPDATE_INTERVAL
             })
             .unwrap_or(true);
 
         if outdated {
-            let app = match sqlx::query_as!(Application, "SELECT * FROM Application WHERE id = $1", application_id)
-                .fetch_optional(self.db())
-                .await?
+            let app = match sqlx::query_as!(
+                Application,
+                "SELECT * FROM Application WHERE id = $1",
+                application_id
+            )
+            .fetch_optional(self.db())
+            .await?
             {
                 Some(app) => app,
                 None => return Ok(None),

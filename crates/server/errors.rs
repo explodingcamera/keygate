@@ -6,6 +6,7 @@ use axum::{
 use keygate_core::api::APIError;
 use serde_json::json;
 
+#[derive(utoipa::ToSchema)]
 pub enum AppError {
     APIError(APIError),
     Generic(StatusCode, &'static str),

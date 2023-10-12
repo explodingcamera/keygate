@@ -20,7 +20,14 @@ pub struct ValidateResponse {
     valid: bool,
 }
 
-async fn validate(
+/// Validate
+///
+/// Validate a token.
+#[utoipa::path(post, path = "/auth/validate", tag = "auth", request_body = ValidateRequest, responses(
+    (status = 200, body = ValidateResponse, description = "Token is valid."),
+    (status = 400, body = AppError, description = "Invalid request."),
+))]
+pub(super) async fn validate(
     State(keygate): State<Keygate>,
     Json(data): Json<ValidateRequest>,
 ) -> Result<Json<ValidateResponse>, AppError> {

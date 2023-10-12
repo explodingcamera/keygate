@@ -26,7 +26,10 @@ impl Session {
         &self.keygate.db
     }
 
-    pub async fn create(&self, identity_id: String) -> Result<(RawRefreshToken, RawAccessToken), APIError> {
+    pub async fn create(
+        &self,
+        identity_id: String,
+    ) -> Result<(RawRefreshToken, RawAccessToken), APIError> {
         let session_id = secure_random_id();
         let exp = time::OffsetDateTime::now_utc() + time::Duration::minutes(15);
         // let refresh_token = KEYPAIR;

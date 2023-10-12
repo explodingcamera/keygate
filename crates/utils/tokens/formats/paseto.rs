@@ -15,7 +15,9 @@ impl TokenFormat for Paseto {
         let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(key.as_slice());
 
         let access_token = PasetoBuilder::<V4, Public>::default()
-            .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(token.duration))?)
+            .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(
+                token.duration,
+            ))?)
             .set_claim(AudienceClaim::from(token.audience.as_str()))
             .set_claim(SubjectClaim::from(token.subject.as_str()))
             .set_claim(IssuerClaim::from(token.issuer.as_str()))
@@ -36,7 +38,9 @@ impl TokenFormat for Paseto {
         let key = PasetoAsymmetricPrivateKey::<V4, Public>::from(key.as_slice());
 
         let refresh_token = PasetoBuilder::<V4, Public>::default()
-            .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(token.duration))?)
+            .set_claim(ExpirationClaim::try_from(duration_to_rfc3339(
+                token.duration,
+            ))?)
             .set_claim(AudienceClaim::from(token.audience.as_str()))
             .set_claim(SubjectClaim::from(token.subject.as_str()))
             .set_claim(IssuerClaim::from(token.issuer.as_str()))
@@ -50,7 +54,9 @@ impl TokenFormat for Paseto {
     }
 
     fn verify_access_token(public_key: &[u8], token: &str) -> Result<AccessToken, TokenError> {
-        let key: Key<32> = public_key.try_into().map_err(|_| TokenError::InvalidToken)?;
+        let key: Key<32> = public_key
+            .try_into()
+            .map_err(|_| TokenError::InvalidToken)?;
         let key = PasetoAsymmetricPublicKey::<V4, Public>::from(&key);
 
         let claims = PasetoParser::<V4, Public>::default()
@@ -68,7 +74,9 @@ impl TokenFormat for Paseto {
     }
 
     fn verify_refresh_token(public_key: &[u8], token: &str) -> Result<RefreshToken, TokenError> {
-        let key: Key<32> = public_key.try_into().map_err(|_| TokenError::InvalidToken)?;
+        let key: Key<32> = public_key
+            .try_into()
+            .map_err(|_| TokenError::InvalidToken)?;
         let key = PasetoAsymmetricPublicKey::<V4, Public>::from(&key);
 
         let claims = PasetoParser::<V4, Public>::default()
@@ -95,7 +103,9 @@ pub fn get_key_id(token: &str) -> Result<String, TokenError> {
         return Err(TokenError::InvalidToken);
     }
 
-    let kid = parts[3].decode_base64_string().map_err(|_| TokenError::InvalidToken)?;
+    let kid = parts[3]
+        .decode_base64_string()
+        .map_err(|_| TokenError::InvalidToken)?;
     Ok(kid)
 }
 

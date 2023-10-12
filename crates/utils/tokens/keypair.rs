@@ -43,7 +43,8 @@ impl KeygateKeypair {
             id: new.id.clone(),
             inner: match new.algorithm {
                 Algorithm::Ed25519 => InnerKeygateKeypair::Ed25519(
-                    ed25519::Ed25519Keypair::try_new(new.private_key.as_bytes()).expect("keypair should be valid"),
+                    ed25519::Ed25519Keypair::try_new(new.private_key.as_bytes())
+                        .expect("keypair should be valid"),
                 ),
             },
         })

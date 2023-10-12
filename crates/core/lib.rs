@@ -136,7 +136,9 @@ impl Keygate {
                 let mut path = database_path;
 
                 if !path.starts_with("sqlite://") {
-                    return Err(KeygateError::ValidationError("Invalid sqlite database path".into()));
+                    return Err(KeygateError::ValidationError(
+                        "Invalid sqlite database path".into(),
+                    ));
                 }
 
                 if path.starts_with("sqlite://~") {

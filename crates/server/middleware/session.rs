@@ -31,8 +31,15 @@ pub async fn validate_token<B>(
     mut req: Request<B>,
     next: Next<B>,
 ) -> Result<Response, AppError> {
-    let Some(auth_header) = req.headers().get(AUTHORIZATION).and_then(|header| header.to_str().ok()) else {
-        return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated"));
+    let Some(auth_header) = req
+        .headers()
+        .get(AUTHORIZATION)
+        .and_then(|header| header.to_str().ok())
+    else {
+        return Err(AppError::Generic(
+            StatusCode::UNAUTHORIZED,
+            "Not authenticated",
+        ));
     };
 
     let (token, application_id) = match auth_header {
@@ -56,7 +63,12 @@ pub async fn validate_token<B>(
             let application_id = token.audience.clone();
             (AppToken::RefreshToken(token), ApplicationID(application_id))
         }
-        _ => return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated")),
+        _ => {
+            return Err(AppError::Generic(
+                StatusCode::UNAUTHORIZED,
+                "Not authenticated",
+            ))
+        }
     };
 
     req.extensions_mut().insert(token);
@@ -77,17 +89,26 @@ pub async fn query_identity<B>(
     next: Next<B>,
 ) -> Result<Response, AppError> {
     let Some(app_token) = req.extensions().get::<AppToken>() else {
-        return Err(AppError::Generic(StatusCode::UNAUTHORIZED, "Not authenticated"));
+        return Err(AppError::Generic(
+            StatusCode::UNAUTHORIZED,
+            "Not authenticated",
+        ));
     };
 
     let identity = match app_token {
         AppToken::Anon => Some(ReqIdentity::Anon),
         AppToken::AccessToken(token) => {
-            let identity = keygate.identity.get(UserIdentifier::Id(token.subject.clone())).await?;
+            let identity = keygate
+                .identity
+                .get(UserIdentifier::Id(token.subject.clone()))
+                .await?;
             identity.map(ReqIdentity::Identity)
         }
         AppToken::RefreshToken(token) => {
-            let identity = keygate.identity.get(UserIdentifier::Id(token.subject.clone())).await?;
+            let identity = keygate
+                .identity
+                .get(UserIdentifier::Id(token.subject.clone()))
+                .await?;
             identity.map(ReqIdentity::RefreshIdentity)
         }
     };

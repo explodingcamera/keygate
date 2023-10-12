@@ -27,3 +27,6 @@ thiserror = "1"
 tokio = {version = "1", features = ["rt-multi-thread", "macros", "sync", "time"]}
 
 axum = {version = "0.6", default-features = false, features = ["http1", "headers", "macros", "json", "tokio", "tower-log", "tracing"]}
+
+utoipa = {features = ["axum_extras"], version = "4.0"}
+utoipa-swagger-ui = {features = ["axum"], version = "4.0"}

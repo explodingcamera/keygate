@@ -17,7 +17,10 @@ struct ExistsResponse {
     exists: bool,
 }
 
-async fn exists(keygate: State<Keygate>, Json(data): Json<ExistsRequest>) -> Result<Json<ExistsResponse>, AppError> {
+async fn exists(
+    keygate: State<Keygate>,
+    Json(data): Json<ExistsRequest>,
+) -> Result<Json<ExistsResponse>, AppError> {
     let exists = keygate.identity.exists(&data.username_or_email).await?;
     Ok(Json(ExistsResponse { exists }))
 }

@@ -117,11 +117,15 @@ impl Auth {
                 false => "username",
             };
 
-            let current_identity_id = sqlx::query!("SELECT id FROM Identity WHERE $1 = $2", field, username_or_email)
-                .fetch_optional(&mut *tx)
-                .await?
-                .ok_or(APIError::not_found("User not found"))?
-                .id;
+            let current_identity_id = sqlx::query!(
+                "SELECT id FROM Identity WHERE $1 = $2",
+                field,
+                username_or_email
+            )
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or(APIError::not_found("User not found"))?
+            .id;
 
             sqlx::query!(
                 "INSERT INTO LoginProcess (id, expires_at, current_step, identity_id, ip_address) VALUES ($1, $2, $3, $4, $5)",
@@ -167,7 +171,8 @@ impl Auth {
                 .ok_or(APIError::invalid_argument("Invalid step type"))?;
 
             match (current_step, step_type) {
-                (LoginStep::Email, LoginStep::Password) | (LoginStep::Username, LoginStep::Password) => {
+                (LoginStep::Email, LoginStep::Password)
+                | (LoginStep::Username, LoginStep::Password) => {
                     let identity = sqlx::query_as!(
                         Identity,
                         "SELECT * FROM Identity WHERE id = $1",
@@ -179,9 +184,9 @@ impl Auth {
                     let password_hash = identity
                         .password_hash
                         .ok_or(APIError::invalid_argument("Password not set"))?;
-                    if !keygate_utils::hash::verify(data, &password_hash)
-                        .map_err(|e| APIError::internal(&format!("Failed to verify password: {}", e)))?
-                    {
+                    if !keygate_utils::hash::verify(data, &password_hash).map_err(|e| {
+                        APIError::internal(&format!("Failed to verify password: {}", e))
+                    })? {
                         return Err(APIError::invalid_argument("Invalid password"));
                     }
 
@@ -204,12 +209,16 @@ impl Auth {
     }
 
     pub async fn login_status(&self, process_id: &str) -> Result<LoginStatusResponse, APIError> {
-        let process = sqlx::query_as!(LoginProcess, "SELECT * FROM LoginProcess WHERE id = $1", process_id)
-            .fetch_one(self.db())
-            .await?;
+        let process = sqlx::query_as!(
+            LoginProcess,
+            "SELECT * FROM LoginProcess WHERE id = $1",
+            process_id
+        )
+        .fetch_one(self.db())
+        .await?;
 
-        let _ =
-            LoginStep::from_str_name(&process.current_step).ok_or(APIError::invalid_argument("Invalid step type"))?;
+        let _ = LoginStep::from_str_name(&process.current_step)
+            .ok_or(APIError::invalid_argument("Invalid step type"))?;
 
         Ok(LoginStatusResponse {
             current_step: process.current_step.to_string(),
