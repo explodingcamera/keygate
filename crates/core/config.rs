@@ -14,28 +14,26 @@ pub enum StorageOptions {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ServerConfig {
-    /// the domain keygate is running on, e.g `accounts.example.com`
-    /// refresh tokens are only valid for this domain
+    /// the domain  is running on, e.g `accounts.example.com` refresh
+    /// tokens are only valid for this domain
     pub keygate_domain: String,
 
-    /// admin api port
-    /// if set to 0, the admin api will not be available
+    /// admin API port if set to 0, the admin API will not be available
     pub admin_port: u16,
 
-    /// admin api interface
+    /// admin API interface
     pub admin_interface: String,
 
-    /// admin api prefix
+    /// admin API prefix
     pub admin_prefix: Option<String>,
 
-    /// public api port
-    /// if set to 0, the api will not be available
+    /// public API port if set to 0, the API will not be available
     pub public_port: u16,
 
-    /// public api interface
+    /// public API interface
     pub public_interface: String,
 
-    /// public api prefix
+    /// public API prefix
     pub public_prefix: Option<String>,
 }
 
@@ -45,7 +43,7 @@ pub struct Config {
     pub environment: Environment,
     pub node_id: String,
 
-    /// Options for the storage backend
+    /// Options for the storage back-end
     pub storage_options: StorageOptions,
 
     /// server configuration
