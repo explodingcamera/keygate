@@ -1,5 +1,8 @@
 {
   "name": "@keygate/client",
   "module": "index.ts",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "fets": "^0.4.15"
+  }
 }
