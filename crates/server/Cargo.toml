@@ -15,22 +15,18 @@ path = "bin.rs"
 name = "gen-openapi"
 path = "./gen_openapi.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+color-eyre = "0.6"
+figment = {version = "0.10", features = ["env"]}
+thiserror = "1"
 tracing = "0.1"
 tracing-error = "0.2"
 tracing-subscriber = "0.3"
 
-color-eyre = "0.6"
-figment = {version = "0.10", features = ["env"]}
+axum = {version = "0.6", default-features = false, features = ["http1", "headers", "macros", "json", "tokio", "tower-log", "tracing"]}
 keygate-core = {path = "../core"}
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
-thiserror = "1"
 tokio = {version = "1", features = ["rt-multi-thread", "macros", "sync", "time"]}
-
-axum = {version = "0.6", default-features = false, features = ["http1", "headers", "macros", "json", "tokio", "tower-log", "tracing"]}
-
 utoipa = {features = ["axum_extras", "time"], version = "4.0"}
 utoipa-swagger-ui = {features = ["axum"], version = "4.0"}

@@ -6,21 +6,17 @@ use crate::{encode::ToBase64, random::secure_random_id};
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
+#[derive(Debug, Clone)]
 pub struct KeygateKeypair {
-    #[zeroize(skip)]
     pub id: String,
-
-    #[zeroize(skip)]
     pub algorithm: Algorithm,
-
-    #[zeroize(skip)]
     inner: InnerKeygateKeypair, // this always has to match the algorithm, otherwise a panic will occur
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Zeroize, ZeroizeOnDrop)]
 struct KeygateKeypairJson {
     private_key: String,
+
     #[zeroize(skip)]
     pub id: String,
     #[zeroize(skip)]

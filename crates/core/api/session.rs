@@ -55,11 +55,11 @@ impl Session {
         unimplemented!()
     }
 
-    async fn validate_access_token(&self, something: ()) -> Result<(), APIError> {
+    async fn validate_access_token(&self) -> Result<(), APIError> {
         unimplemented!()
     }
 
-    async fn check_revoked(&self, something: ()) -> Result<(), APIError> {
+    async fn check_revoked(&self) -> Result<(), APIError> {
         unimplemented!()
     }
 }

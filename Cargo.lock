@@ -103,12 +103,6 @@ dependencies = [
 
 [[package]]
 name = "atomic"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c59bdb34bc650a32731b31bd8f0829cc15d24a708ee31559e0bb34f2bc320cba"
-
-[[package]]
-name = "atomic"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d818003e740b63afc82337e3160717f4f63078720a810b7b903e70a5d1d2994"
@@ -954,7 +948,7 @@ version = "0.10.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a014ac935975a70ad13a3bff2463b1c1b083b35ae4cb6309cfc59476aa7a181f"
 dependencies = [
- "atomic 0.6.0",
+ "atomic",
  "pear",
  "serde",
  "uncased",
@@ -1446,7 +1440,6 @@ name = "keygate-core"
 version = "0.1.0"
 dependencies = [
  "arc-swap",
- "async-trait",
  "dashmap",
  "dirs 5.0.1",
  "keygate-utils",
@@ -1458,7 +1451,6 @@ dependencies = [
  "tokio",
  "tracing",
  "utoipa",
- "uuid",
 ]
 
 [[package]]
@@ -2736,7 +2728,6 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "url",
- "uuid",
  "webpki-roots 0.24.0",
 ]
 
@@ -2819,7 +2810,6 @@ dependencies = [
  "thiserror",
  "time",
  "tracing",
- "uuid",
  "whoami",
 ]
 
@@ -2860,7 +2850,6 @@ dependencies = [
  "thiserror",
  "time",
  "tracing",
- "uuid",
  "whoami",
 ]
 
@@ -2885,7 +2874,6 @@ dependencies = [
  "time",
  "tracing",
  "url",
- "uuid",
 ]
 
 [[package]]
@@ -3319,17 +3307,6 @@ dependencies = [
  "serde_json",
  "utoipa",
  "zip",
-]
-
-[[package]]
-name = "uuid"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79daa5ed5740825c40b389c5e50312b9c86df53fccd33f281df655642b43869d"
-dependencies = [
- "atomic 0.5.3",
- "getrandom 0.2.10",
- "serde",
 ]
 
 [[package]]
