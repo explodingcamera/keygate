@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO Application (id, settings, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "b4d6294724bd53b13a52cf39094dddfdfee32b4d073a0d5595f8ee9d838595ad"
+}

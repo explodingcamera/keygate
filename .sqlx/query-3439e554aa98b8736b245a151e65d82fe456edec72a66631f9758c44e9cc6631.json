@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO LoginProcess (id, expires_at, current_step, identity_id, ip_address) VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "3439e554aa98b8736b245a151e65d82fe456edec72a66631f9758c44e9cc6631"
+}

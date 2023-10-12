@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM LoginProcess WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "identity_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "ip_address",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "expires_at",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "completed",
+        "ordinal": 6,
+        "type_info": "Bool"
+      },
+      {
+        "name": "current_step",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "magic_link",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d2f413be9aad0d8b869e4ffb91e8e7544f27af8a7aa41ed1f78e82642bf81299"
+}

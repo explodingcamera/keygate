@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM Identity WHERE $1 = $2",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "last_active",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "username",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "primary_email",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "password_hash",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "9808c6e06a072509918d43b3ef56d546510383bdc51d7e3c15e7ef3604cfcb26"
+}

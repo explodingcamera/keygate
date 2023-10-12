@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE Identity SET updated_at = $1, username = $2 WHERE id = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "22c48ae765e35734bf0da9b7e5c47625d02b067a2e6bf8a913ae291190d9d732"
+}

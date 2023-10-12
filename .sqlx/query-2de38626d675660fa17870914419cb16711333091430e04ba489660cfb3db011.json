@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT * FROM Identity WHERE $1 LIKE $2 ORDER BY $3 DESC LIMIT $4 OFFSET $5",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 1,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "updated_at",
+        "ordinal": 2,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "last_active",
+        "ordinal": 3,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "username",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "primary_email",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "password_hash",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "2de38626d675660fa17870914419cb16711333091430e04ba489660cfb3db011"
+}
