@@ -17,6 +17,8 @@ jobs:
         with:
           components: clippy, rustfmt
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Build debug binaries
         run: cargo build --all --all-targets
 
