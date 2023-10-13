@@ -6,22 +6,22 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
+    env:
+      SQLX_OFFLINE: true
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
 
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install latest stable Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
+          components: clippy, rustfmt
+
+      - name: Build debug binaries
+        run: cargo build --all --all-targets
 
       - name: Run cargo check
         run: cargo check --all --all-targets
 
       - name: Run cargo test
         run: cargo test --all --all-targets
-
-      - name: Build debug binaries
-        run: cargo build --all --all-targets
