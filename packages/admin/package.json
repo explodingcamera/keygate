@@ -9,10 +9,10 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.0.15",
     "@radix-ui/themes": "^2.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "unplugin-fonts": "^1.0.3",
     "wouter": "^2.12.1"
   },
   "devDependencies": {

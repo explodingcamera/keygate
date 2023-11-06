@@ -1,21 +1,21 @@
 {
-  "name": "@keygate/react",
-  "module": "index.tsx",
-  "type": "module",
-  "peerDependencies": {
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": false
-    },
-    "react-dom": {
-      "optional": true
-    }
-  },
-  "dependencies": {
-    "@radix-ui/themes": "^2.0.0",
-    "usehooks-ts": "^2.9.1"
-  }
+	"name": "@keygate/react",
+	"module": "index.tsx",
+	"type": "module",
+	"peerDependencies": {
+		"react": "^18.0.2",
+		"react-dom": "^18.0.2"
+	},
+	"peerDependenciesMeta": {
+		"react": {
+			"optional": false
+		},
+		"react-dom": {
+			"optional": true
+		}
+	},
+	"dependencies": {
+		"@radix-ui/themes": "^2.0.0",
+		"usehooks-ts": "^2.9.1"
+	}
 }

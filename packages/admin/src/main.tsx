@@ -1,4 +1,7 @@
+import "@fontsource-variable/inter";
 import styles from "./main.module.scss";
+import "@radix-ui/themes/styles.css";
+import "./global.scss";
 
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -11,12 +14,9 @@ import { KeygateProvider } from "@keygate/react";
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element not found");
 
-import "./global.scss";
 import { DashboardRoutes } from "./pages/dashboard";
 
 const base = "";
-
-import "@radix-ui/themes/styles.css";
 
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
