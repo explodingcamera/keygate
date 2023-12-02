@@ -92,6 +92,7 @@ pub struct GenerateAccessToken {
     pub session_id: String,
 }
 
+#[derive(Debug, Clone)]
 pub struct RefreshToken {
     pub audience: String,
     pub subject: String,

@@ -11,7 +11,7 @@ mod public;
 pub use private::PrivateAPI;
 pub use public::PublicAPI;
 
-use std::net::SocketAddr;
+use std::{future::IntoFuture, net::SocketAddr};
 
 use axum::Router;
 use keygate_core::{config::Environment, Keygate, KeygateConfig};
@@ -43,11 +43,17 @@ pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
         .merge(public::new())
         .with_state(keygate.clone());
 
-    let private_server = axum::Server::bind(&"127.0.0.1:3000".parse().unwrap())
-        .serve(private_app.into_make_service_with_connect_info::<SocketAddr>());
+    let socket = tokio::net::TcpListener::bind(&"127.0.0.1:3000").await?;
+    let private_server = axum::serve(
+        socket,
+        private_app.into_make_service_with_connect_info::<SocketAddr>(),
+    );
 
-    let public_server = axum::Server::bind(&"127.0.0.1:3001".parse().unwrap())
-        .serve(public_app.into_make_service_with_connect_info::<SocketAddr>());
+    let socket = tokio::net::TcpListener::bind(&"127.0.0.1:3001").await?;
+    let public_server = axum::serve(
+        socket,
+        public_app.into_make_service_with_connect_info::<SocketAddr>(),
+    );
 
     let elapsed = now.elapsed();
     let elapsed = if elapsed.as_micros() < 3000 {
@@ -66,8 +72,8 @@ pub async fn run(mut config: KeygateConfig) -> color_eyre::Result<()> {
 
     tokio::select! {
         res = keygate_tasks => res?,
-        res = private_server => res?,
-        res = public_server => res?,
+        res = private_server.into_future() => res?,
+        res = public_server.into_future() => res?,
     };
 
     Ok(())

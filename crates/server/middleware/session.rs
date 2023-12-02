@@ -1,6 +1,6 @@
 use axum::{
-    extract::State,
-    http::{header::AUTHORIZATION, Request, StatusCode},
+    extract::{Request, State},
+    http::{header::AUTHORIZATION, StatusCode},
     middleware::Next,
     response::Response,
 };
@@ -14,22 +14,24 @@ use keygate_core::{
 
 use crate::errors::AppError;
 
+#[derive(Debug, Clone)]
 pub enum AppToken {
     Anon,
     AccessToken(AccessToken),
     RefreshToken(RefreshToken),
 }
 
+#[derive(Debug, Clone)]
 pub struct ApplicationID(pub String);
 
 const ANON_PREFIX: &str = "Bearer kg0a.";
 const ACCESS_PREFIX: &str = "Bearer kg0s.";
 const REFRESH_PREFIX: &str = "Bearer kg0r.";
 
-pub async fn validate_token<B>(
+pub async fn validate_token(
     State(keygate): State<Keygate>,
-    mut req: Request<B>,
-    next: Next<B>,
+    mut req: Request,
+    next: Next,
 ) -> Result<Response, AppError> {
     let Some(auth_header) = req
         .headers()
@@ -77,16 +79,17 @@ pub async fn validate_token<B>(
     Ok(next.run(req).await)
 }
 
+#[derive(Debug, Clone)]
 pub enum ReqIdentity {
     Anon,
     Identity(keygate_core::database::models::Identity),
     RefreshIdentity(keygate_core::database::models::Identity),
 }
 
-pub async fn query_identity<B>(
+pub async fn query_identity(
     State(keygate): State<Keygate>,
-    mut req: Request<B>,
-    next: Next<B>,
+    mut req: Request,
+    next: Next,
 ) -> Result<Response, AppError> {
     let Some(app_token) = req.extensions().get::<AppToken>() else {
         return Err(AppError::Generic(
