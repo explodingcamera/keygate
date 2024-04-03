@@ -1,10 +1,9 @@
 [workspace]
-members = [
-  "crates/core",
-  "crates/utils",
-  "crates/server",
-]
-resolver = "2"
+resolver="2"
+members=["crates/keygate"]
 
-[profile.release]
-lto = true
+[workspace.package]
+edition="2021"
+license="Apache-2.0"
+authors=["Henry Gressmann <mail@henrygressmann.de>"]
+repository="https://github.com/explodingcamera/keygate"

@@ -22,8 +22,5 @@ jobs:
       - name: Build debug binaries
         run: cargo build --all --all-targets
 
-      - name: Run cargo check
-        run: cargo check --all --all-targets
-
       - name: Run cargo test
         run: cargo test --all --all-targets

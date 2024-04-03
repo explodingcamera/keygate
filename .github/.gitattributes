@@ -1,3 +1,0 @@
-*.lockb binary diff=lockb
-api/* linguist-generated=true
-.sqlx/* linguist-generated=true
